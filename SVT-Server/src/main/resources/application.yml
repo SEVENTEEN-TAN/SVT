@@ -1,0 +1,245 @@
+# 服务器配置
+server:
+  servlet:
+    context-path: /api          # 应用上下文路径
+    encoding:                   # 字符编码配置
+      charset: UTF-8            # 字符集
+      force: true              # 强制使用配置的字符集
+      enabled: true            # 启用字符编码配置
+  tomcat:
+    max-threads: 200           # 最大工作线程数
+    max-connections: 8192      # 最大连接数
+    accept-count: 100          # 等待队列长度
+    connection-timeout: 20000  # 连接超时时间
+
+# Spring基础配置
+spring:
+  application:
+    name: risk-management       # 应用名称
+  profiles:
+    active: dev                # 激活的开发环境配置
+
+# 数据源基础配置
+  datasource:
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      # 连接池基础配置
+      initial-size: 5          # 初始连接数
+      min-idle: 5              # 最小空闲连接数
+      max-active: 20           # 最大活动连接数
+      max-wait: 60000          # 获取连接等待超时时间
+      
+      # 连接池检测配置
+      test-while-idle: true    # 空闲时检测连接是否有效
+      time-between-eviction-runs-millis: 60000  # 检测间隔时间
+      min-evictable-idle-time-millis: 300000    # 最小空闲时间
+      max-evictable-idle-time-millis: 900000    # 最大空闲时间
+      
+      # 连接验证配置
+      validation-query: SELECT 1  # 验证连接是否有效的SQL
+      test-on-borrow: false      # 获取连接时是否验证
+      test-on-return: false      # 归还连接时是否验证
+      
+      # 连接池性能配置
+      pool-prepared-statements: true  # 是否缓存PreparedStatement
+      max-pool-prepared-statement-per-connection-size: 20  # 每个连接最大缓存数
+
+      # 启用Spring监控AOP
+      aop-patterns: com.seventeen.svt.modules.*
+      
+      # Druid过滤器配置
+      filter:                   # 过滤器配置
+        stat:                   # 统计过滤器
+          enabled: true         # 启用统计
+          log-slow-sql: true    # 记录慢SQL
+          slow-sql-millis: 2000 # 慢SQL阈值
+        wall:                   # 防火墙过滤器
+          enabled: true         # 启用防火墙
+          config:
+            # 添加以下配置
+            variant-check: false # 关闭变体检查
+            comment-allow: true  # 允许注释
+            none-base-statement-allow: true # 允许非基本语句
+            multi-statement-allow: true # 允许多语句
+            # 关闭表别名检查
+            select-where-none-check: false
+        slf4j:                  # 日志过滤器
+          enabled: true         # 启用日志
+          statement-log-enabled: true    # 记录SQL执行日志
+          statement-create-after-log-enabled: false  # 创建连接后是否记录日志
+          statement-close-after-log-enabled: true    # 关闭连接后是否记录日志
+          result-set-open-after-log-enabled: false   # 打开结果集后是否记录日志
+          result-set-close-after-log-enabled: false  # 关闭结果集后是否记录日志
+
+# Redis基础配置
+  data:
+    redis:
+      timeout: 5000           # 连接超时时间
+      lettuce:
+        pool:
+          max-active: 8       # 连接池最大活动连接数
+          max-wait: -1        # 连接池最大阻塞等待时间
+          max-idle: 8         # 连接池最大空闲连接数
+          min-idle: 0         # 连接池最小空闲连接数
+
+# 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB     # 单个文件大小限制
+      max-request-size: 100MB  # 单次请求大小限制
+      enabled: true           # 启用文件上传
+
+# 安全配置
+  security:
+    filter:
+      order: -100             # 过滤器优先级
+
+# Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss  # 日期格式
+    time-zone: GMT+8                  # 时区设置
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false  # 日期序列化格式
+
+mybatis-flex:
+  # 配置文件位置
+  # config-location: classpath:/config/mybatis-config.xml
+  # com.seventeen.svt XML 文件位置
+  mapper-locations: classpath:mapper/**/*.xml
+  # 实体类包路径
+  type-aliases-package: com.seventeen.svt.modules.*.entity
+  # 全局配置
+  global-config:
+    # 打印 Banner
+    print-banner: true
+    # 主键配置
+    key-config:
+      key-type: auto
+    # 逻辑删除配置
+    logic-delete-column: del_flag
+    normal-value-of-logic-delete: '0'
+    deleted-value-of-logic-delete: '1'
+    # 租户配置
+    tenant-column: tenant_id
+    # 乐观锁配置
+    version-column: version
+  # 原生配置
+  configuration:
+    # 驼峰命名转换
+    map-underscore-to-camel-case: true
+    # 开启缓存
+    cache-enabled: true
+    # 启用延迟加载
+    lazy-loading-enabled: true
+    # 多结果集支持
+    multiple-result-sets-enabled: true
+    # 使用生成的主键
+    use-generated-keys: true
+    # 默认超时时间(秒)
+    default-statement-timeout: 30
+    # 默认获取记录数
+    default-fetch-size: 100
+
+# JWT配置
+jwt:
+  secret: ocbc_les_risk_management_jwt_secret_key_2025  # JWT密钥
+  expiration: 36000        # 访问令牌过期时间(秒)
+  issuer: ocbc-les-risk     # Token签发者
+  refresh: 300             # Token刷新时间窗口(秒)
+  threshold: 0.8           # 本地与Redis同步阈值
+
+# Knife4j配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-swagger-models: true
+    enable-document-manage: true
+    swagger-model-name: 实体类列表
+    enable-version: false
+    enable-reload-cache-parameter: true
+    enable-after-script: true
+    enable-filter-multipart-api-method-type: POST
+    enable-filter-multipart-apis: false
+    enable-request-cache: true
+    enable-host: false
+    enable-home-custom: false
+    enable-search: true
+    enable-footer: false
+    enable-footer-custom: false
+    enable-dynamic-parameter: false
+    enable-debug: true
+    enable-open-api: true
+    enable-group: true
+  basic:
+    enable: false
+    username: admin
+    password: 123456
+  cors: false
+  security:
+    - name: Bearer
+      type: apiKey
+      in: header
+
+# SpringDoc配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: order
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.seventeen.svt.modules
+  show-actuator: true
+  packages-to-scan: com.seventeen.svt
+  paths-to-match: /**
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+# 日志基础配置
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{userId}][%X{traceId}] [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{userId}][%X{traceId}] [%thread] %-5level %logger{36} - %msg%n"
+
+#SM4加密
+sm4:
+  key: 1233211234567
+
+# 事务管理配置
+transaction:
+  monitor:
+    enabled: true  # 是否启用事务监控
+  prefix:
+    readonly:  # 只读事务方法前缀
+      - get
+      - query
+      - find
+      - list
+      - count
+      - exist
+      - search
+      - fetch
+      - select
+    required:  # 读写事务方法前缀
+      - add
+      - save
+      - insert
+      - update
+      - modify
+      - delete
+      - remove
+      - batch
+      - create
+      - import
+      - export
+      - submit
+      - process
+      - execute
+    none:  # 无事务方法前缀
+      - noTx

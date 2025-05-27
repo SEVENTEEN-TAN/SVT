@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <Property name="LOG_PATH">logs</Property>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{userId}][%X{traceId}] [%thread] %-5level %logger{36} - %msg%n</Property>
+        <Property name="MAX_FILE_SIZE">20MB</Property>
+        <Property name="MAX_HISTORY">30</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- 控制台输出 -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
+        <!-- 系统日志输出 - 所有日志汇总 -->
+        <RollingRandomAccessFile name="FileAppender" 
+                   fileName="${LOG_PATH}/system.log"
+                   filePattern="${LOG_PATH}/system.%d{yyyy-MM-dd}.%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}"/>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy max="${MAX_HISTORY}">
+                <Delete basePath="${LOG_PATH}" maxDepth="1">
+                    <IfFileName glob="system.*.log.gz"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+
+        <!-- 错误日志输出 -->
+        <RollingRandomAccessFile name="ErrorAppender" 
+                   fileName="${LOG_PATH}/error.log"
+                   filePattern="${LOG_PATH}/error.%d{yyyy-MM-dd}.%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}"/>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy max="${MAX_HISTORY}">
+                <Delete basePath="${LOG_PATH}" maxDepth="1">
+                    <IfFileName glob="error.*.log.gz"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+            <Filters>
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            </Filters>
+        </RollingRandomAccessFile>
+        
+        <!-- 按用户ID分类的日志输出 - 使用简化和Windows兼容的配置 -->
+        <Routing name="UserSifting">
+            <Routes pattern="$${ctx:userId}">
+                <!-- 默认路由 -->
+                <Route key="$${ctx:userId}">
+                    <RollingRandomAccessFile name="Default-File" 
+                               fileName="${LOG_PATH}/users/default/system.log"
+                               filePattern="${LOG_PATH}/users/default/system.%d{yyyy-MM-dd}.%i.log.gz">
+                        <PatternLayout pattern="${LOG_PATTERN}"/>
+                        <Policies>
+                            <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}"/>
+                            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                        </Policies>
+                        <DefaultRolloverStrategy max="${MAX_HISTORY}"/>
+                    </RollingRandomAccessFile>
+                </Route>
+                <!-- 动态路由 -->
+                <Route>
+                    <RollingRandomAccessFile name="User-File" 
+                               fileName="${LOG_PATH}/users/${ctx:userId}/system.log"
+                               filePattern="${LOG_PATH}/users/${ctx:userId}/system.%d{yyyy-MM-dd}.%i.log.gz">
+                        <PatternLayout pattern="${LOG_PATTERN}"/>
+                        <Policies>
+                            <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}"/>
+                            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                        </Policies>
+                        <DefaultRolloverStrategy max="${MAX_HISTORY}"/>
+                    </RollingRandomAccessFile>
+                </Route>
+            </Routes>
+        </Routing>
+
+        <!-- 按用户ID分类的错误日志输出 - 使用简化和Windows兼容的配置 -->
+        <Routing name="UserErrorSifting">
+            <Routes pattern="$${ctx:userId}">
+                <!-- 默认路由 -->
+                <Route key="$${ctx:userId}">
+                    <RollingRandomAccessFile name="Default-Error" 
+                               fileName="${LOG_PATH}/users/default/error.log"
+                               filePattern="${LOG_PATH}/users/default/error.%d{yyyy-MM-dd}.%i.log.gz">
+                        <PatternLayout pattern="${LOG_PATTERN}"/>
+                        <Policies>
+                            <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}"/>
+                            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                        </Policies>
+                        <DefaultRolloverStrategy max="${MAX_HISTORY}"/>
+                        <Filters>
+                            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+                        </Filters>
+                    </RollingRandomAccessFile>
+                </Route>
+                <!-- 动态路由 -->
+                <Route>
+                    <RollingRandomAccessFile name="User-Error" 
+                               fileName="${LOG_PATH}/users/${ctx:userId}/error.log"
+                               filePattern="${LOG_PATH}/users/${ctx:userId}/error.%d{yyyy-MM-dd}.%i.log.gz">
+                        <PatternLayout pattern="${LOG_PATTERN}"/>
+                        <Policies>
+                            <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}"/>
+                            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                        </Policies>
+                        <DefaultRolloverStrategy max="${MAX_HISTORY}"/>
+                        <Filters>
+                            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+                        </Filters>
+                    </RollingRandomAccessFile>
+                </Route>
+            </Routes>
+        </Routing>
+
+        <!-- 异步处理器 - 提高性能 -->
+        <Async name="AsyncFile" bufferSize="8192" includeLocation="false">
+            <AppenderRef ref="FileAppender"/>
+        </Async>
+        <Async name="AsyncError" bufferSize="8192" includeLocation="false">
+            <AppenderRef ref="ErrorAppender"/>
+        </Async>
+        <Async name="AsyncUserSifting" bufferSize="8192" includeLocation="false">
+            <AppenderRef ref="UserSifting"/>
+        </Async>
+        <Async name="AsyncUserErrorSifting" bufferSize="8192" includeLocation="false">
+            <AppenderRef ref="UserErrorSifting"/>
+        </Async>
+    </Appenders>
+
+    <Loggers>
+        <!-- 应用日志 -->
+        <Logger name="com.seventeen.svt" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+            <AppenderRef ref="AsyncUserSifting"/>
+            <AppenderRef ref="AsyncUserErrorSifting"/>
+        </Logger>
+
+        <!-- 第三方库日志级别调整 -->
+        <Logger name="org.springframework" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+        
+        <Logger name="org.hibernate" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+        
+        <!-- 开发环境 -->
+        <SpringProfile name="dev">
+            <Root level="info">
+                <AppenderRef ref="Console"/>
+                <AppenderRef ref="AsyncFile"/>
+                <AppenderRef ref="AsyncError"/>
+                <AppenderRef ref="AsyncUserSifting"/>
+                <AppenderRef ref="AsyncUserErrorSifting"/>
+            </Root>
+        </SpringProfile>
+
+        <!-- 生产环境 -->
+        <SpringProfile name="prod">
+            <Root level="info">
+                <AppenderRef ref="AsyncFile"/>
+                <AppenderRef ref="AsyncError"/>
+                <AppenderRef ref="AsyncUserSifting"/>
+                <AppenderRef ref="AsyncUserErrorSifting"/>
+            </Root>
+        </SpringProfile>
+    </Loggers>
+</Configuration> 

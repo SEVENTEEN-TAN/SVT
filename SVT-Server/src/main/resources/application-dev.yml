@@ -1,0 +1,58 @@
+# 开发环境服务器配置
+server:
+  port: 8080                    # 开发环境服务器端口
+
+# 开发环境数据库配置
+spring:
+  datasource:
+    url: jdbc:sqlserver://123.60.68.66:1433;databaseName=demo;encrypt=true;trustServerCertificate=true  # 开发环境数据库URL
+    username: Demo                # 开发环境数据库用户名
+    password: 2ZZDar78bFRBNpfz   # 开发环境数据库密码
+
+  # 开发环境Redis配置
+  data:
+    redis:
+      host: 123.60.68.66        # Redis服务器地址
+      port: 6379                # Redis服务器端口
+      password: 123456          # Redis服务器密码
+      database: 0               # Redis数据库索引
+
+# 开发环境日志配置
+logging:
+  config: classpath:config/log4j2-spring.xml
+  level:
+    root: info                  # 根日志级别
+    com.seventeen.svt: debug         # 应用日志级别
+    org.springframework.web: debug  # Spring Web日志级别
+    org.springframework.security: debug  # Spring Security日志级别
+    org.mybatis: debug          # MyBatis日志级别
+  file:
+    name: logs/log.log  # 开发环境日志文件路径
+
+# 开发环境Spring Security配置
+spring.security.debug: true      # 开启Spring Security调试模式
+
+# 开发环境Swagger配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html    # Swagger UI路径
+    enabled: true             # 启用Swagger UI
+  api-docs:
+    enabled: true             # 启用API文档
+    path: /v3/api-docs        # API文档路径
+
+# 开发环境Knife4j配置
+knife4j:
+  enable: true                # 启用Knife4j
+  setting:
+    enable-swagger-models: true  # 启用实体类
+    enable-document-manage: true  # 启用文档管理
+    enable-version: false        # 关闭版本控制
+    enable-reload-cache-parameter: true  # 启用参数缓存刷新
+  production: false           # 关闭生产环境模式
+
+# 开发环境缓存配置
+spring.cache:
+  type: caffeine              # 使用Caffeine作为本地缓存
+  caffeine:
+    spec: maximumSize=500,expireAfterWrite=600s  # 缓存配置 
