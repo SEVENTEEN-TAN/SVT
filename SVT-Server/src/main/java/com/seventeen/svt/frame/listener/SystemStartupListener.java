@@ -116,7 +116,7 @@ public class SystemStartupListener implements CommandLineRunner {
              this.checkTableInitialization("code_library");
              this.checkTableInitialization("db_key");
              this.checkTableInitialization("menu_info");
-             this.checkTableInitialization("menu_role");
+             this.checkTableInitialization("role_menu");
              this.checkTableInitialization("org_info");
              this.checkTableInitialization("permission_info");
              this.checkTableInitialization("role_info");

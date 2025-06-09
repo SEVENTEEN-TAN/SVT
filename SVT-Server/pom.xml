@@ -11,7 +11,7 @@
     </parent>
     
     <groupId>com.seventeen.svt</groupId>
-    <artifactId>svt</artifactId>
+    <artifactId>SVT-Server</artifactId>
     <version>1.0.1-SNAPSHOT</version>
     <name>svt-management</name>
     <description>SVT Management System</description>
