@@ -5,9 +5,9 @@ server:
 # 开发环境数据库配置
 spring:
   datasource:
-    url: jdbc:sqlserver://123.60.68.66:1433;databaseName=demo;encrypt=true;trustServerCertificate=true  # 开发环境数据库URL
-    username: Demo                # 开发环境数据库用户名
-    password: 2ZZDar78bFRBNpfz   # 开发环境数据库密码
+    url: jdbc:sqlserver://123.60.68.66:1433;databaseName=svt-dev;encrypt=true;trustServerCertificate=true  # 开发环境数据库URL
+    username: sa                # 开发环境数据库用户名
+    password: Tsq19971108!   # 开发环境数据库密码
 
   # 开发环境Redis配置
   data:
