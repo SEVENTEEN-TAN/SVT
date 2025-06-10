@@ -28,5 +28,5 @@ public @interface DistributedId {
     /**
      * 每次取数
      */
-    int batchSiz() default 100;
+    int batchSize() default 100;
 }

@@ -8,18 +8,19 @@
 
 - 后端框架: Spring Boot 3.3.2
 - 安全框架: Spring Security + JWT 0.11.5
-- 持久层框架: MyBatis-Plus 3.5.11
-- 数据库: SQLServer 2022 (JDBC 12.8.1)
+- 持久层框架: MyBatis-Flex 1.10.9
+- 数据库: SQL Server 2022 (JDBC 12.8.1)
 - 数据库连接池: Druid 1.2.24
 - 缓存: Redis 6.0 + Caffeine 3.1.8(二级缓存)
+- 日志框架: Log4j2 + Disruptor (异步高性能日志)
 - API文档: Knife4j 4.5.0
 - 开发工具: 
-  - Lombok
+  - Lombok 1.18.34
   - Spring Boot DevTools
   - Hutool 5.8.16
-- 加密工具: BouncyCastle 1.69
+- 加密工具: BouncyCastle 1.69 (支持SM4国密算法)
 - 工具库: Google Guava 32.1.3-jre
-- 项目管理: Maven 3.8+
+- 项目管理: Maven 3.8+ (JDK 21)
 
 ### 主要功能
 
@@ -76,9 +77,10 @@
   - 多级缓存架构
 - [x] 框架优化
     - 暴露全局自动事务
-- [x] Mybatis Plus 拓展
+- [x] MyBatis-Flex 拓展
     - 类型转换器
     - 自定义ID注入(分布式ID的实现)
+    - 自动填充机制
 - [x] 接口权限
     - 根据客户权限配置表,控制用户对接口的访问权限
 - [x] 缓存管理
@@ -153,7 +155,7 @@
 
 ## 环境要求
 
-- JDK: 17+
+- JDK: 21+
 - Maven: 3.8+
 - SQLServer: 2022
 - Redis: 6.0+
@@ -164,22 +166,22 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/risk-management.git
-cd risk-management
+git clone <repository-url>
+cd SVT-Server
 ```
 
 ### 2. 配置数据库
 
 1. 创建数据库
 ```sql
-CREATE DATABASE risk_management;
+CREATE DATABASE svt_management;
 ```
 
 2. 修改数据库配置
 ```yaml
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=risk_management
+    url: jdbc:sqlserver://localhost:1433;databaseName=svt_management
     username: your-username
     password: your-password
 ```
@@ -202,15 +204,16 @@ mvn spring-boot:run
 ```
 
 访问地址: http://localhost:8080
+API文档: http://localhost:8080/doc.html
 
 ## 项目结构
 
 ```
-risk-management/
+SVT-Server/
 ├── src/ # 源代码目录
 │ ├── main/ # 主代码目录
 │ │ ├── java/ # Java源代码
-│ │ │ └── com/ocbc/les/ # 基础包路径
+│ │ │ └── com/seventeen/svt/ # 基础包路径
 │ │ │ ├── common/ # 公共组件层
 │ │ │ │ ├── annotation/ # 自定义注解
 │ │ │ │ │ ├── audit/ # 审计日志注解
@@ -218,13 +221,12 @@ risk-management/
 │ │ │ │ │ │ └── SensitiveLog.java # 敏感信息注解
 │ │ │ │ │ ├── field/ # 自动填充注解
 │ │ │ │ │ │ └── AutoFill.java # 自动填充注解
-│ │ │ │ │ ├── id/ # 自定义主键注解
-│ │ │ │ │ │ └── AutoId.java # 分布式ID注解
+│ │ │ │ │ ├── dbkey/ # 分布式ID注解
+│ │ │ │ │ │ └── DistributedId.java # 分布式ID注解
 │ │ │ │ │ └── permission/ # 权限注解
-│ │ │ │ │     ├── RequiresPermission.java # 权限校验注解
-│ │ │ │ │     └── RequiresRole.java # 角色校验注解
+│ │ │ │ │     └── RequiresPermission.java # 权限校验注解
 │ │ │ │ ├── config/ # 全局配置
-│ │ │ │ │ ├── MybatisPlusConfig.java # MyBatis-Plus配置
+│ │ │ │ │ ├── MyBatisFlexConfig.java # MyBatis-Flex配置
 │ │ │ │ │ ├── MessageConfig.java # 消息配置
 │ │ │ │ │ ├── SecurityPathConfig.java # 安全路径配置
 │ │ │ │ │ ├── WebMvcConfig.java # Web MVC配置
@@ -314,8 +316,7 @@ risk-management/
 │ │ │ │ │     ├── UserVO.java # 用户视图对象
 │ │ │ │ │     ├── RoleVO.java # 角色视图对象
 │ │ │ │ │     └── MenuVO.java # 菜单视图对象
-│ │ │ │ └── risk/ # 风险管理模块(待开发)
-│ │ │ └── RiskManagementApplication.java # 应用启动类
+│ │ │ │ └── RiskManagementApplication.java # 应用启动类
 │ │ └── resources/ # 资源文件目录
 │ │ ├── application.yml # 主配置文件
 │ │ ├── application-dev.yml # 开发环境配置
@@ -356,13 +357,12 @@ risk-management/
        - SensitiveLog: 敏感信息注解,用于标记需要脱敏的字段
      - field: 自动填充注解
        - AutoFill: 自动填充注解,用于标记需要自动填充的字段
-     - id: 自定义主键注解
-       - AutoId: 分布式ID注解,用于生成分布式ID
+     - dbkey: 分布式ID注解
+       - DistributedId: 分布式ID注解,用于生成分布式ID
      - permission: 权限注解
        - RequiresPermission: 权限校验注解,用于标记需要权限校验的方法
-       - RequiresRole: 角色校验注解,用于标记需要角色校验的方法
    - config: 全局配置类
-     - MybatisPlusConfig: MyBatis-Plus配置
+     - MyBatisFlexConfig: MyBatis-Flex配置
      - MessageConfig: 消息配置
      - SecurityPathConfig: 安全路径配置
      - WebMvcConfig: Web MVC配置

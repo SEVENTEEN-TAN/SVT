@@ -171,7 +171,7 @@ public class DistributedIdGenerator {
             dbKey.setEntityName(entityName);
             dbKey.setPrefix(annotation.prefix());
             dbKey.setDateFormat(annotation.dateFormat());
-            dbKey.setBatchSize(annotation.batchSiz());
+            dbKey.setBatchSize(annotation.batchSize());
             dbKey.setPaddingLength(annotation.paddingLength());
             dbKey.setCurrentId(1L);
             dbKey.setCurrentLetterPosition(0);

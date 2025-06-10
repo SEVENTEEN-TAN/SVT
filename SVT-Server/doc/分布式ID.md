@@ -42,8 +42,8 @@
 ## 工作流程
 
 ### 1. ID生成触发
-- 实体插入时通过MyBatis-Plus自动填充机制检查@DistributedId注解
-- 获取实体类上的@TableName注解值作为表名
+- 实体插入时通过MyBatis-Flex自动填充机制检查@DistributedId注解
+- 获取实体类上的@Table注解值作为表名
 - 使用@DistributedId注解配置的参数
 
 ### 2. ID获取流程
@@ -122,9 +122,9 @@ public @interface DistributedId {
 
 ```java
 @Data
-@TableName("order")
+@Table("order")
 public class Order {
-    @TableField(fill = FieldFill.INSERT)
+    @Column(fill = FieldFill.INSERT)
     @DistributedId(prefix = "ORD", dateFormat = "yyyyMMdd", paddingLength = 6)
     private String orderId;
     
@@ -184,10 +184,10 @@ CREATE INDEX idx_db_key_entity_name ON db_key(entity_name);
 - 使用UUID作为锁值
 - 安全释放锁逻辑
 
-### 4. AutoFillHandler
-- 实现MyBatis-Plus的MetaObjectHandler接口
+### 4. FlexInsertListener
+- 实现MyBatis-Flex的InsertListener接口
 - 自动填充ID字段
-- 获取@TableName和@DistributedId注解信息
+- 获取@Table和@DistributedId注解信息
 - 处理不同字段类型
 
 ## 注意事项
