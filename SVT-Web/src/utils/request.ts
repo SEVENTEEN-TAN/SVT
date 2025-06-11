@@ -71,11 +71,21 @@ request.interceptors.response.use(
       switch (status) {
         case 401:
           // 未授权，清除token并跳转登录
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          message.error('登录已过期，请重新登录');
-          // 跳转到登录页面
-          window.location.href = '/login';
+          // 注意：这里不直接操作localStorage，而是通过authStore统一处理
+          // 避免与TokenManager的处理逻辑冲突
+          console.warn('API请求返回401，Token可能已过期');
+          
+          // 延迟执行，避免与TokenManager的处理冲突
+          setTimeout(() => {
+            const currentPath = window.location.pathname;
+            if (currentPath !== '/login') {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              localStorage.removeItem('expiryDate');
+              message.warning('您已超过5分钟未操作，请重新登录');
+              window.location.href = '/login';
+            }
+          }, 100);
           break;
         case 403:
           message.error('没有权限访问该资源');

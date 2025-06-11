@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import CryptoJS from 'crypto-js';
 import { api } from '@/utils/request';
+import { tokenManager } from '@/utils/tokenManager';
 import type { User, LoginRequest, LoginResponse } from '@/types/user';
 
 // 认证状态接口
@@ -11,6 +11,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
+  expiryDate: string | null; // 新增：token过期日期
   
   // 操作
   login: (credentials: LoginRequest) => Promise<void>;
@@ -18,14 +19,6 @@ interface AuthState {
   refreshUserInfo: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
 }
-
-// AES加密密钥（实际项目中应该从环境变量获取）
-const SECRET_KEY = 'svt-web-secret-key-2024';
-
-// 密码加密函数
-const encryptPassword = (password: string): string => {
-  return CryptoJS.AES.encrypt(password, SECRET_KEY).toString();
-};
 
 // 创建认证状态管理
 export const useAuthStore = create<AuthState>()(
@@ -36,34 +29,53 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       loading: false,
+      expiryDate: null, // 初始化
 
       // 登录操作
       login: async (credentials: LoginRequest) => {
         set({ loading: true });
         
         try {
-          // 加密密码
-          const encryptedPassword = encryptPassword(credentials.password);
-          
-          // 调用登录API
+          // 调用登录API - 直接发送明文密码，依赖HTTPS传输加密
           const response = await api.post<LoginResponse>('/auth/login', {
-            username: credentials.username,
-            password: encryptedPassword,
+            loginId: credentials.loginId,
+            password: credentials.password,  // 直接发送明文密码
+            rememberMe: credentials.rememberMe, // 传递rememberMe选项
           });
           
-          const { token, user } = response;
+          // 修正：根据后端实际返回的数据结构处理
+          const { accessToken } = response;
           
-          // 保存到localStorage
-          localStorage.setItem('token', token);
-          localStorage.setItem('user', JSON.stringify(user));
+          const now = new Date();
+          let calculatedExpiryDate: string | null = null;
+          if (credentials.rememberMe) {
+            // 如果记住我，设置30天有效期
+            now.setDate(now.getDate() + 30);
+            calculatedExpiryDate = now.toISOString();
+          }
+
+          // 保存token和expiryDate到localStorage
+          localStorage.setItem('token', accessToken);
+          if (calculatedExpiryDate) {
+            localStorage.setItem('expiryDate', calculatedExpiryDate);
+          } else {
+            localStorage.removeItem('expiryDate'); // 如果不记住，确保清除旧的有效期
+          }
           
-          // 更新状态
+          // 更新状态 - 暂时不设置用户信息，需要额外获取
           set({
-            user,
-            token,
+            token: accessToken,
             isAuthenticated: true,
             loading: false,
+            expiryDate: calculatedExpiryDate,
           });
+
+          // 启动Token管理器
+          tokenManager.start();
+
+          // TODO: 需要调用用户详情接口获取用户信息
+          // 这里可以调用 /login/get-user-details 接口
+          
         } catch (error) {
           set({ loading: false });
           throw error;
@@ -72,9 +84,13 @@ export const useAuthStore = create<AuthState>()(
 
       // 退出登录
       logout: () => {
+        // 停止Token管理器
+        tokenManager.stop();
+        
         // 清除localStorage
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('expiryDate'); // 新增：清除expiryDate
         
         // 重置状态
         set({
@@ -91,9 +107,10 @@ export const useAuthStore = create<AuthState>()(
         if (!token) return;
         
         try {
-          const user = await api.get<User>('/user/profile');
-          set({ user });
-          localStorage.setItem('user', JSON.stringify(user));
+          // TODO: 调用正确的用户详情接口
+          // const user = await api.get<User>('/user/profile');
+          // set({ user });
+          // localStorage.setItem('user', JSON.stringify(user));
         } catch (error) {
           console.error('刷新用户信息失败:', error);
           // 如果刷新失败，可能token已过期，执行logout
@@ -126,16 +143,22 @@ export const useAuthStore = create<AuthState>()(
           const token = localStorage.getItem('token');
           const user = localStorage.getItem('user');
           
-          if (token && user) {
-            try {
-              const parsedUser = JSON.parse(user);
-              state.token = token;
-              state.user = parsedUser;
-              state.isAuthenticated = true;
-            } catch (error) {
-              console.error('恢复用户状态失败:', error);
-              state.logout();
+          if (token) {
+            state.token = token;
+            state.isAuthenticated = true;
+            
+            if (user) {
+              try {
+                const parsedUser = JSON.parse(user);
+                state.user = parsedUser;
+              } catch (error) {
+                console.error('恢复用户状态失败:', error);
+                localStorage.removeItem('user');
+              }
             }
+            
+            // 如果有有效Token，启动Token管理器
+            tokenManager.start();
           } else {
             state.logout();
           }

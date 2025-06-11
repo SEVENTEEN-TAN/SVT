@@ -21,16 +21,15 @@ export interface UserProfile extends User {
 }
 
 export interface LoginRequest {
-  username: string;
+  loginId: string;
   password: string;
   captcha?: string;
   rememberMe?: boolean;
 }
 
 export interface LoginResponse {
-  token: string;
-  user: User;
-  expiresIn?: number;
+  accessToken: string;
+  accessTokenExpireIn: number;
 }
 
 export interface RegisterRequest {

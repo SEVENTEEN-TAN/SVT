@@ -1,0 +1,172 @@
+/* 
+  LoginPage.css
+  Design inspired by the provided image.
+  - Full-screen, two-column layout.
+  - Left panel for branding and illustration.
+  - Right panel for the login form.
+  - Clean, modern, and professional aesthetic.
+*/
+
+/* --- Root Container --- */
+.login-page {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* --- Left Panel (Branding & Illustration) --- */
+.login-left {
+  flex: 6; /* 60% width */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  background-color: #f8f9fa;
+  box-sizing: border-box;
+}
+
+.left-content {
+  max-width: 500px;
+  text-align: center;
+}
+
+.left-title {
+  font-size: 28px !important;
+  font-weight: 600 !important;
+  color: #212529 !important;
+  margin-bottom: 16px !important;
+}
+
+.left-description {
+  font-size: 16px;
+  color: #6c757d;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.illustration {
+  width: 100%;
+  max-width: 450px;
+  height: auto;
+}
+
+/* --- Right Panel (Form) --- */
+.login-right {
+  flex: 4; /* 40% width */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.form-title {
+  font-size: 26px !important;
+  font-weight: 600 !important;
+  color: #343a40 !important;
+  text-align: left;
+  margin-bottom: 30px !important;
+}
+
+.login-form .ant-form-item {
+  margin-bottom: 25px;
+}
+
+.login-form .ant-input-affix-wrapper {
+  padding: 12px 15px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+}
+
+.login-form .ant-input-affix-wrapper:hover,
+.login-form .ant-input-affix-wrapper:focus,
+.login-form .ant-input-affix-wrapper-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.input-icon {
+  color: #adb5bd;
+  font-size: 16px;
+}
+
+.remember-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.remember-me {
+  font-size: 14px;
+  color: #495057;
+}
+
+.forgot-password {
+  font-size: 14px;
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.login-button {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.form-footer {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.signup-link {
+  color: #1890ff;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 992px) {
+  .login-left {
+    display: none;
+  }
+
+  .login-right {
+    flex-basis: 100%;
+  }
+
+  .form-container {
+    max-width: 420px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-right {
+    padding: 20px;
+  }
+
+  .form-title {
+    text-align: center;
+  }
+} 
