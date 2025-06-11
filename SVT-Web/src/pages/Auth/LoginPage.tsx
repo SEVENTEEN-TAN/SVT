@@ -8,10 +8,11 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import type { LoginRequest } from '@/types/user';
+import { appConfig, getAdminContactText } from '@/config/env';
 import loginBg from '@/assets/login-bg.png';
 import './LoginPage.css';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -52,10 +53,10 @@ const LoginPage: React.FC = () => {
       <div className="login-left">
         <div className="left-content">
           <Title level={2} className="left-title">
-            欢迎来到 SVT 管理系统
+            欢迎来到 {appConfig.appTitle}
           </Title>
           <Paragraph className="left-description">
-            一个现代化、高效、可靠的企业级解决方案，助力您的业务增长与数字化转型。
+            {appConfig.appDescription}
           </Paragraph>
           <img 
             src={loginBg}
@@ -123,8 +124,15 @@ const LoginPage: React.FC = () => {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox className="remember-me">记住我</Checkbox>
               </Form.Item>
-              <a href="#" className="forgot-password">
-                忘记密码?
+              <a 
+                href="#" 
+                className="forgot-password"
+                onClick={(e) => {
+                  e.preventDefault(); // 阻止默认跳转行为
+                  messageApi.info(getAdminContactText());
+                }}
+              >
+                需求帮助?
               </a>
             </div>
 
@@ -142,20 +150,6 @@ const LoginPage: React.FC = () => {
               </Button>
             </Form.Item>
           </Form>
-
-          <div className="form-footer">
-            <Text>还没有账户?</Text>{' '}
-            <a 
-              href="#" 
-              className="signup-link"
-              onClick={(e) => {
-                e.preventDefault(); // 阻止默认跳转行为
-                messageApi.info('请联系管理员：admin@svt.com');
-              }}
-            >
-              联系管理员
-            </a>
-          </div>
         </div>
       </div>
     </div>
