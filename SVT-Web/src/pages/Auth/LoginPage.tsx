@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Form, Input, Button, Checkbox, Typography, message, Modal, Select, Spin } from 'antd';
 import type { ValidateErrorEntity } from 'rc-field-form/lib/interface';
 import { 
@@ -35,15 +35,8 @@ const LoginPage: React.FC = () => {
   const [orgList, setOrgList] = useState<UserOrgInfo[]>([]);
   const [roleList, setRoleList] = useState<UserRoleInfo[]>([]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      // 登录成功后显示机构角色选择弹窗
-      showOrgRoleSelection();
-    }
-  }, [isAuthenticated, navigate]);
-
   // 显示机构角色选择弹窗
-  const showOrgRoleSelection = async () => {
+  const showOrgRoleSelection = useCallback(async () => {
     try {
       setOrgRoleLoading(true);
       setShowOrgRoleModal(true);
@@ -74,7 +67,14 @@ const LoginPage: React.FC = () => {
     } finally {
       setOrgRoleLoading(false);
     }
-  };
+  }, [navigate, orgRoleForm, messageApi]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // 登录成功后显示机构角色选择弹窗
+      showOrgRoleSelection();
+    }
+  }, [isAuthenticated, navigate, showOrgRoleSelection]);
 
   const handleSubmit = async (values: LoginRequest) => {
     try {
