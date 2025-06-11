@@ -1,41 +1,86 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Checkbox, Typography, message } from 'antd';
+import { Form, Input, Button, Checkbox, Typography, message, Modal, Select, Spin } from 'antd';
 import type { ValidateErrorEntity } from 'rc-field-form/lib/interface';
 import { 
   UserOutlined, 
-  LockOutlined, 
+  LockOutlined,
+  BankOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { getUserOrgList, getUserRoleList, getUserDetails } from '@/api/auth';
 import type { LoginRequest } from '@/types/user';
+import type { UserOrgInfo, UserRoleInfo, OrgRoleSelectForm } from '@/types/org-role';
 import { appConfig, getAdminContactText } from '@/config/env';
 import loginBg from '@/assets/login-bg.png';
 import './LoginPage.css';
 
 const { Title, Paragraph } = Typography;
+const { Option } = Select;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login, loading, isAuthenticated } = useAuthStore();
+  const { login, loading, isAuthenticated, updateUser } = useAuthStore();
   const [form] = Form.useForm();
+  const [orgRoleForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   
   const [isFormValid, setIsFormValid] = useState(false);
+  
+  // 机构角色选择弹窗相关状态
+  const [showOrgRoleModal, setShowOrgRoleModal] = useState(false);
+  const [orgRoleLoading, setOrgRoleLoading] = useState(false);
+  const [orgRoleSubmitting, setOrgRoleSubmitting] = useState(false);
+  const [orgList, setOrgList] = useState<UserOrgInfo[]>([]);
+  const [roleList, setRoleList] = useState<UserRoleInfo[]>([]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
+      // 登录成功后显示机构角色选择弹窗
+      showOrgRoleSelection();
     }
-  }, [isAuthenticated, navigate, location.state]);
+  }, [isAuthenticated, navigate]);
+
+  // 显示机构角色选择弹窗
+  const showOrgRoleSelection = async () => {
+    try {
+      setOrgRoleLoading(true);
+      setShowOrgRoleModal(true);
+      
+      // 并行加载机构和角色列表
+      const [orgResponse, roleResponse] = await Promise.all([
+        getUserOrgList(),
+        getUserRoleList()
+      ]);
+      
+      setOrgList(orgResponse.orgInfos || []);
+      setRoleList(roleResponse.userRoleInfos || []);
+      
+      // 如果只有一个机构或角色，自动选择
+      if (orgResponse.orgInfos?.length === 1) {
+        orgRoleForm.setFieldValue('orgId', orgResponse.orgInfos[0].orgId);
+      }
+      if (roleResponse.userRoleInfos?.length === 1) {
+        orgRoleForm.setFieldValue('roleId', roleResponse.userRoleInfos[0].roleId);
+      }
+      
+    } catch (error) {
+      console.error('加载机构角色列表失败:', error);
+      messageApi.error('加载机构和角色列表失败');
+      // 如果加载失败，关闭弹窗并跳转到dashboard
+      setShowOrgRoleModal(false);
+      navigate('/dashboard', { replace: true });
+    } finally {
+      setOrgRoleLoading(false);
+    }
+  };
 
   const handleSubmit = async (values: LoginRequest) => {
     try {
       await login(values);
-      messageApi.success('登录成功！即将跳转...');
-      const from = location.state?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
+      messageApi.success('登录成功！正在加载机构角色信息...');
+      // 登录成功后，useEffect会自动显示机构角色选择弹窗
     } catch (error: unknown) {
       const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || '登录失败，请检查您的凭据';
       messageApi.error(errorMessage);
@@ -44,6 +89,52 @@ const LoginPage: React.FC = () => {
 
   const handleSubmitFailed = (errorInfo: ValidateErrorEntity<LoginRequest>) => {
     console.log('表单验证失败:', errorInfo);
+  };
+
+  // 处理机构角色选择提交
+  const handleOrgRoleSubmit = async (values: OrgRoleSelectForm) => {
+    try {
+      setOrgRoleSubmitting(true);
+      messageApi.loading('正在获取用户详情...', 0);
+      
+      // 获取用户详情
+      const userDetails = await getUserDetails({
+        orgId: values.orgId,
+        roleId: values.roleId
+      });
+      
+      // 存储用户详情到本地缓存
+      localStorage.setItem('userDetails', JSON.stringify(userDetails));
+      
+      // 更新认证状态中的用户信息
+      updateUser({
+        username: userDetails.userNameZh,
+        avatar: '', // 如果有头像字段可以添加
+        // 可以添加其他需要的用户信息
+      });
+      
+      messageApi.destroy();
+      messageApi.success('登录成功！即将跳转到系统首页...');
+      
+      // 关闭弹窗并跳转到dashboard
+      setShowOrgRoleModal(false);
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 1000);
+      
+    } catch (error) {
+      messageApi.destroy();
+      console.error('获取用户详情失败:', error);
+      messageApi.error('获取用户详情失败，请重试');
+    } finally {
+      setOrgRoleSubmitting(false);
+    }
+  };
+
+  // 取消机构角色选择（直接跳转到dashboard）
+  const handleOrgRoleCancel = () => {
+    setShowOrgRoleModal(false);
+    navigate('/dashboard', { replace: true });
   };
 
   return (
@@ -152,6 +243,117 @@ const LoginPage: React.FC = () => {
           </Form>
         </div>
       </div>
+
+      {/* 机构角色选择弹窗 */}
+      <Modal
+        title="选择机构和角色"
+        open={showOrgRoleModal}
+        onCancel={handleOrgRoleCancel}
+        footer={null}
+        width={500}
+        centered
+        maskClosable={false}
+        destroyOnClose
+      >
+        <div style={{ padding: '20px 0' }}>
+          <Paragraph style={{ marginBottom: 24, color: '#666' }}>
+            请选择您要登录的机构和角色，系统将为您配置相应的权限和菜单。
+          </Paragraph>
+          
+          {orgRoleLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin size="large" />
+              <div style={{ marginTop: 16, color: '#666' }}>正在加载机构和角色信息...</div>
+            </div>
+          ) : (
+            <Form
+              form={orgRoleForm}
+              name="orgRoleSelect"
+              onFinish={handleOrgRoleSubmit}
+              layout="vertical"
+              requiredMark={false}
+            >
+              <Form.Item
+                label="选择机构"
+                name="orgId"
+                rules={[{ required: true, message: '请选择您的机构' }]}
+              >
+                <Select
+                  placeholder="请选择机构"
+                  size="large"
+                  disabled={orgRoleSubmitting || orgList.length === 0}
+                  suffixIcon={<BankOutlined />}
+                  showSearch
+                  filterOption={(input, option) => {
+                    const label = option?.label;
+                    if (typeof label === 'string') {
+                      return label.toLowerCase().includes(input.toLowerCase());
+                    }
+                    return false;
+                  }}
+                >
+                  {orgList.map(org => (
+                    <Option key={org.orgId} value={org.orgId} label={org.orgNameZh}>
+                      {org.orgNameZh}
+                      {org.orgNameEn && org.orgNameEn !== org.orgNameZh && (
+                        <span style={{ color: '#999', marginLeft: 8 }}>
+                          ({org.orgNameEn})
+                        </span>
+                      )}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="选择角色"
+                name="roleId"
+                rules={[{ required: true, message: '请选择您的角色' }]}
+              >
+                <Select
+                  placeholder="请选择角色"
+                  size="large"
+                  disabled={orgRoleSubmitting || roleList.length === 0}
+                  suffixIcon={<UserOutlined />}
+                  showSearch
+                  filterOption={(input, option) => {
+                    const label = option?.label;
+                    if (typeof label === 'string') {
+                      return label.toLowerCase().includes(input.toLowerCase());
+                    }
+                    return false;
+                  }}
+                >
+                  {roleList.map(role => (
+                    <Option key={role.roleId} value={role.roleId} label={role.roleNameZh}>
+                      {role.roleNameZh}
+                      {role.roleNameEn && role.roleNameEn !== role.roleNameZh && (
+                        <span style={{ color: '#999', marginLeft: 8 }}>
+                          ({role.roleNameEn})
+                        </span>
+                      )}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item style={{ marginBottom: 0, marginTop: 32 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={orgRoleSubmitting}
+                  disabled={orgList.length === 0 || roleList.length === 0}
+                  icon={<CheckCircleOutlined />}
+                  block
+                  size="large"
+                >
+                  {orgRoleSubmitting ? '正在进入系统...' : '确认进入系统'}
+                </Button>
+              </Form.Item>
+            </Form>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

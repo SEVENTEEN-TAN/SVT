@@ -3,6 +3,12 @@
  */
 import { api } from '@/utils/request';
 import type { LoginRequest, LoginResponse, User } from '@/types/user';
+import type { 
+  GetUserOrgResponse, 
+  GetUserRoleResponse, 
+  GetUserDetailsRequest, 
+  UserDetailCache 
+} from '@/types/org-role';
 
 /**
  * 用户登录
@@ -60,4 +66,32 @@ export const validateToken = async (): Promise<boolean> => {
   } catch {
     return false;
   }
+};
+
+/**
+ * 获取当前用户的机构列表
+ * @returns 机构列表
+ */
+export const getUserOrgList = async (): Promise<GetUserOrgResponse> => {
+  const response = await api.get<GetUserOrgResponse>('/login/get-user-org-list');
+  return response;
+};
+
+/**
+ * 获取当前用户的角色列表
+ * @returns 角色列表
+ */
+export const getUserRoleList = async (): Promise<GetUserRoleResponse> => {
+  const response = await api.get<GetUserRoleResponse>('/login/get-user-role');
+  return response;
+};
+
+/**
+ * 获取当前用户详情
+ * @param params 机构ID和角色ID
+ * @returns 用户详情
+ */
+export const getUserDetails = async (params: GetUserDetailsRequest): Promise<UserDetailCache> => {
+  const response = await api.post<UserDetailCache>('/login/get-user-details', params);
+  return response;
 }; 
