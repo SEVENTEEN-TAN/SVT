@@ -10,7 +10,12 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Environment files
 *.local
+# 注意：开发环境配置(.env.development)可以提交
+# 生产环境配置(.env.production)包含示例值，实际部署时需要修改
+# 如果生产环境包含敏感信息，请添加到 .env.production.local
 
 # Editor directories and files
 .vscode/*
