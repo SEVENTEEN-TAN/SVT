@@ -79,11 +79,11 @@ request.interceptors.response.use(
           setTimeout(() => {
             const currentPath = window.location.pathname;
             if (currentPath !== '/login') {
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
               localStorage.removeItem('expiryDate');
               message.warning('您已超过5分钟未操作，请重新登录');
-              window.location.href = '/login';
+          window.location.href = '/login';
             }
           }, 100);
           break;
