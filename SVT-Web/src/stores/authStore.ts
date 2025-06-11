@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { api } from '@/utils/request';
 import { tokenManager } from '@/utils/tokenManager';
-import type { User, LoginRequest, LoginResponse } from '@/types/user';
+import * as authApi from '@/api/auth';
+import type { User, LoginRequest } from '@/types/user';
 
 // 认证状态接口
 interface AuthState {
@@ -15,7 +15,7 @@ interface AuthState {
   
   // 操作
   login: (credentials: LoginRequest) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUserInfo: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
 }
@@ -36,12 +36,8 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true });
         
         try {
-          // 调用登录API - 直接发送明文密码，依赖HTTPS传输加密
-          const response = await api.post<LoginResponse>('/auth/login', {
-            loginId: credentials.loginId,
-            password: credentials.password,  // 直接发送明文密码
-            rememberMe: credentials.rememberMe, // 传递rememberMe选项
-          });
+          // 调用登录API
+          const response = await authApi.login(credentials);
           
           // 修正：根据后端实际返回的数据结构处理
           const { accessToken } = response;
@@ -83,22 +79,33 @@ export const useAuthStore = create<AuthState>()(
       },
 
       // 退出登录
-      logout: () => {
-        // 停止Token管理器
-        tokenManager.stop();
+      logout: async () => {
+        set({ loading: true });
         
-        // 清除localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('expiryDate'); // 新增：清除expiryDate
-        
-        // 重置状态
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          loading: false,
-        });
+        try {
+          // 调用后端退出登录接口
+          await authApi.logout();
+        } catch (error) {
+          console.warn('后端退出登录失败:', error);
+          // 即使后端失败，前端也要清除本地状态
+        } finally {
+          // 停止Token管理器
+          tokenManager.stop();
+          
+          // 清除localStorage
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('expiryDate');
+          
+          // 重置状态
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            loading: false,
+            expiryDate: null,
+          });
+        }
       },
 
       // 刷新用户信息
@@ -114,7 +121,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('刷新用户信息失败:', error);
           // 如果刷新失败，可能token已过期，执行logout
-          get().logout();
+          await get().logout();
         }
       },
 
@@ -160,7 +167,14 @@ export const useAuthStore = create<AuthState>()(
             // 如果有有效Token，启动Token管理器
             tokenManager.start();
           } else {
-            state.logout();
+            // 注意：这里不能使用await，因为onRehydrateStorage不支持异步
+            // 直接清除本地状态即可
+            state.token = null;
+            state.user = null;
+            state.isAuthenticated = false;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('expiryDate');
           }
         }
       },

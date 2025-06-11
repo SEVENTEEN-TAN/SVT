@@ -84,14 +84,18 @@ class TokenManager {
   /**
    * 处理Token过期
    */
-  private handleTokenExpired() {
+  private async handleTokenExpired() {
     const authStore = useAuthStore.getState();
     
     // 停止所有定时器
     this.stop();
     
-    // 执行登出
-    authStore.logout();
+    try {
+      // 执行登出
+      await authStore.logout();
+    } catch (error) {
+      console.warn('自动登出失败:', error);
+    }
     
     // 显示过期提示
     message.warning('您已超过5分钟未操作，系统已自动登出');

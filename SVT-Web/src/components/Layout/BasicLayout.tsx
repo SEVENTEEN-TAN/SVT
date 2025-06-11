@@ -77,9 +77,15 @@ const BasicLayout: React.FC = () => {
     },
   ];
 
-  function handleLogout() {
-    logout();
-    navigate('/login');
+  async function handleLogout() {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('退出登录失败:', error);
+      // 即使失败也跳转到登录页
+      navigate('/login');
+    }
   }
 
   return (
