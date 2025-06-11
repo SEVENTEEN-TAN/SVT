@@ -8,7 +8,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
- * OCBC LES 风险管理系统启动类
+ * OCBC LES SVT管理系统启动类
  */
 @SpringBootApplication
 @EnableTransactionManagement

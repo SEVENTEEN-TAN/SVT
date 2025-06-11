@@ -24,7 +24,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 // 基本信息配置
                 .info(new Info()
-                        .title("风险管理系统 API文档")
+                        .title("SVT管理系统 API文档")
                         .description("API文档包含接口说明及认证方式")
                         .version("1.0")
                         .contact(new Contact()
