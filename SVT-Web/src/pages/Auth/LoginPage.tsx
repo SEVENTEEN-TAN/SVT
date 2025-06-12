@@ -21,7 +21,7 @@ const { Option } = Select;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, loading, isAuthenticated, updateUser } = useAuthStore();
+  const { login, logout, loading, isAuthenticated, updateUser } = useAuthStore();
   const [form] = Form.useForm();
   const [orgRoleForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
@@ -79,7 +79,7 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (values: LoginRequest) => {
     try {
       await login(values);
-      messageApi.success('登录成功！正在加载机构角色信息...');
+      messageApi.success('验证成！请选择登录机构与角色....');
       // 登录成功后，useEffect会自动显示机构角色选择弹窗
     } catch (error: unknown) {
       const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || '登录失败，请检查您的凭据';
@@ -114,7 +114,7 @@ const LoginPage: React.FC = () => {
       });
       
       messageApi.destroy();
-      messageApi.success('登录成功！即将跳转到系统首页...');
+      messageApi.success('即将跳转到系统首页...');
       
       // 关闭弹窗并跳转到dashboard
       setShowOrgRoleModal(false);
@@ -131,10 +131,18 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  // 取消机构角色选择（直接跳转到dashboard）
-  const handleOrgRoleCancel = () => {
-    setShowOrgRoleModal(false);
-    navigate('/dashboard', { replace: true });
+  // 取消机构角色选择（调用退出登录API）
+  const handleOrgRoleCancel = async () => {
+    try {
+      setShowOrgRoleModal(false);
+      // 调用退出登录API
+      await logout();
+      // 跳转到登录页
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('退出登录失败:', error);
+      messageApi.error('退出登录失败');
+    }
   };
 
   return (
