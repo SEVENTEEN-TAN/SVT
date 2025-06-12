@@ -69,8 +69,8 @@ export const useAuthStore = create<AuthState>()(
           // 启动Token管理器
           tokenManager.start();
 
-          // TODO: 需要调用用户详情接口获取用户信息
-          // 这里可以调用 /login/get-user-details 接口
+          // 获取用户详细信息
+          await get().refreshUserInfo();
           
         } catch (error) {
           set({ loading: false });
@@ -114,12 +114,59 @@ export const useAuthStore = create<AuthState>()(
         if (!token) return;
         
         try {
-          // TODO: 调用正确的用户详情接口
-          // const user = await api.get<User>('/user/profile');
-          // set({ user });
-          // localStorage.setItem('user', JSON.stringify(user));
+          console.log('🔄 开始获取用户信息...');
+          
+          // 1. 获取用户机构列表
+          const orgResponse = await authApi.getUserOrgList();
+          console.log('📋 用户机构列表:', orgResponse);
+          
+          // 2. 获取用户角色列表  
+          const roleResponse = await authApi.getUserRoleList();
+          console.log('🎭 用户角色列表:', roleResponse);
+          
+          // 3. 选择第一个机构和角色获取详情 (实际项目中可能需要用户选择)
+          if (orgResponse.orgInfos.length > 0 && roleResponse.userRoleInfos.length > 0) {
+            const selectedOrg = orgResponse.orgInfos[0];
+            const selectedRole = roleResponse.userRoleInfos[0];
+            
+            console.log('🎯 选择机构和角色:', { 
+              orgId: selectedOrg.orgId, 
+              orgName: selectedOrg.orgNameZh,
+              roleId: selectedRole.roleId,
+              roleName: selectedRole.roleNameZh 
+            });
+            
+            // 4. 获取用户详情
+            const userDetails = await authApi.getUserDetails({
+              orgId: selectedOrg.orgId,
+              roleId: selectedRole.roleId
+            });
+            
+            console.log('✅ 获取用户详情成功:', userDetails);
+            
+                         // 5. 转换格式并保存用户信息
+             const user: User = {
+               id: parseInt(userDetails.userId, 10),
+               username: userDetails.userNameZh,
+               email: '', // 后端没有提供，设为空
+               roles: [selectedRole.roleCode],
+               permissions: userDetails.permissionKeys,
+               serverVersion: userDetails.serverVersion,
+               createTime: userDetails.loginTime,
+               updateTime: new Date().toISOString(),
+             };
+            
+            set({ user });
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            console.log('💾 用户信息已保存到状态和localStorage:', user);
+            
+          } else {
+            console.warn('⚠️ 未找到有效的机构或角色信息');
+          }
+          
         } catch (error) {
-          console.error('刷新用户信息失败:', error);
+          console.error('❌ 刷新用户信息失败:', error);
           // 如果刷新失败，可能token已过期，执行logout
           await get().logout();
         }

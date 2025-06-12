@@ -253,7 +253,7 @@ const LoginPage: React.FC = () => {
         width={500}
         centered
         maskClosable={false}
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ padding: '20px 0' }}>
           <Paragraph style={{ marginBottom: 24, color: '#666' }}>

@@ -7,6 +7,7 @@ export interface User {
   avatar?: string;
   roles: string[];
   permissions?: string[];
+  serverVersion?: string;
   createTime?: string;
   updateTime?: string;
 }

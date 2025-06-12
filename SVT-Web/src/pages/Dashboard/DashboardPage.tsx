@@ -73,7 +73,7 @@ const DashboardPage: React.FC = () => {
       </Row>
 
       {/* 快速操作 */}
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={12}>
           <Card title="快速操作" extra={<a href="#">更多</a>}>
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -115,6 +115,44 @@ const DashboardPage: React.FC = () => {
                 <Text>{new Date().toLocaleString('zh-CN')}</Text>
               </div>
             </Space>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* 测试滚动区域 - 添加大量内容 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col span={24}>
+          <Card title="滚动测试区域" extra={<Text type="secondary">测试内容区域滚动</Text>}>
+            <div style={{ height: '800px', background: 'linear-gradient(45deg, #f0f2f5 25%, transparent 25%), linear-gradient(-45deg, #f0f2f5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f2f5 75%), linear-gradient(-45deg, transparent 75%, #f0f2f5 75%)', backgroundSize: '20px 20px', backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+              <Title level={3} style={{ color: '#1890ff' }}>这是一个高度为800px的测试区域</Title>
+              <Text style={{ fontSize: '16px', marginBottom: '20px' }}>用于测试内容区域的滚动效果</Text>
+              <Text type="secondary">左侧菜单和顶部导航应该保持固定</Text>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col span={24}>
+          <Card title="更多测试内容">
+            {Array.from({ length: 20 }, (_, index) => (
+              <div key={index} style={{ padding: '16px 0', borderBottom: index < 19 ? '1px solid #f0f0f0' : 'none' }}>
+                <Text strong>测试项目 {index + 1}</Text>
+                <br />
+                <Text type="secondary">这是第 {index + 1} 个测试项目，用于验证滚动效果是否正常工作。内容区域应该可以独立滚动，而左侧菜单和顶部导航保持固定位置。</Text>
+              </div>
+            ))}
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
+          <Card title="底部测试区域" style={{ marginBottom: '50px' }}>
+            <div style={{ height: '300px', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+              <Title level={4}>页面底部</Title>
+              <Text>如果你能看到这里，说明滚动功能正常工作！</Text>
+            </div>
           </Card>
         </Col>
       </Row>

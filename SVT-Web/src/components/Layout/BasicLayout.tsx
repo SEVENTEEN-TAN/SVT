@@ -5,7 +5,6 @@ import {
   Menu,
   Button,
   Dropdown,
-  Avatar,
   Typography,
   theme,
   Breadcrumb,
@@ -95,7 +94,9 @@ const BasicLayout: React.FC = () => {
       return prev;
     });
     setActiveTabKey(path);
-  }, [getTabName]);
+    // 导航到对应路由
+    navigate(path);
+  }, [getTabName, navigate]);
 
   // 关闭Tab
   const removeTab = useCallback((targetKey: string) => {
@@ -197,15 +198,69 @@ const BasicLayout: React.FC = () => {
     }
   }, [logout, navigate]);
 
-  // 用户下拉菜单
-  const userMenuItems: MenuProps['items'] = [
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      onClick: handleLogout,
-    },
-  ];
+  // 用户信息浮窗内容
+  const userInfoDropdown = (
+    <div style={{ 
+      padding: '16px', 
+      minWidth: '240px',
+      background: '#fff',
+      borderRadius: '8px',
+      boxShadow: '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)'
+    }}>
+      {/* 用户信息区域 */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontSize: '14px', lineHeight: '28px' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            marginBottom: '8px'
+          }}>
+            <span style={{ color: '#8c8c8c' }}>机构：</span>
+            <span style={{ color: '#262626', fontWeight: 500 }}>浙江总部</span>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            marginBottom: '8px'
+          }}>
+            <span style={{ color: '#8c8c8c' }}>角色：</span>
+            <span style={{ color: '#262626', fontWeight: 500 }}>系统管理员</span>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            marginBottom: '8px'
+          }}>
+            <span style={{ color: '#8c8c8c' }}>前端版本：</span>
+            <span style={{ color: '#262626', fontWeight: 500 }}>v{import.meta.env.VITE_APP_VERSION}</span>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}>
+            <span style={{ color: '#8c8c8c' }}>后端版本：</span>
+            <span style={{ color: '#262626', fontWeight: 500 }}>v{user?.serverVersion || '1.0.0'}</span>
+          </div>
+        </div>
+        
+        {/* 退出按钮 */}
+        <Button 
+          type="primary" 
+          danger 
+          block 
+          icon={<LogoutOutlined />}
+          onClick={handleLogout}
+          style={{ 
+            height: '36px',
+            borderRadius: '6px'
+          }}
+        >
+          退出登录
+        </Button>
+      </div>
+    </div>
+  );
 
   // 生成面包屑项
   const breadcrumbItems = [
@@ -269,7 +324,7 @@ const BasicLayout: React.FC = () => {
   }));
 
   return (
-    <Layout style={{ minHeight: '100vh', height: '100vh' }}>
+    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       {/* 侧边栏 */}
       <Sider
         trigger={null}
@@ -278,13 +333,18 @@ const BasicLayout: React.FC = () => {
         style={{
           background: colorBgContainer,
           borderRight: '1px solid #f0f0f0',
+          height: '100vh',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          zIndex: 100,
         }}
         width={240}
       >
         {/* Logo区域 */}
         <div
           style={{
-            height: 64,
+            height: 48,
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
@@ -309,29 +369,38 @@ const BasicLayout: React.FC = () => {
         </div>
 
         {/* 菜单 */}
-        <Menu
-          mode="inline"
-          defaultSelectedKeys={['/dashboard']}
-          selectedKeys={[activeTabKey]}
-          items={menuItems}
-          style={{
-            border: 'none',
-            background: 'transparent',
-          }}
-          onClick={handleMenuClick}
-        />
+        <div style={{ height: 'calc(100vh - 48px)', overflow: 'auto' }}>
+          <Menu
+            mode="inline"
+            defaultSelectedKeys={['/dashboard']}
+            selectedKeys={[activeTabKey]}
+            items={menuItems}
+            style={{
+              border: 'none',
+              background: 'transparent',
+            }}
+            onClick={handleMenuClick}
+          />
+        </div>
       </Sider>
 
-      <Layout>
+      <Layout style={{ marginLeft: collapsed ? 80 : 240, transition: 'margin-left 0.2s' }}>
         {/* 头部 */}
         <Header
           style={{
-            padding: '0 24px',
+            padding: '0 16px',
             background: colorBgContainer,
             borderBottom: '1px solid #f0f0f0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            left: collapsed ? 80 : 240,
+            zIndex: 100,
+            transition: 'left 0.2s',
+            height: 48,
           }}
         >
           {/* 折叠按钮和面包屑 */}
@@ -344,76 +413,106 @@ const BasicLayout: React.FC = () => {
                 fontSize: '16px',
                 width: 40,
                 height: 40,
+                border: 'none',
+                background: 'transparent',
+                boxShadow: 'none',
+                outline: 'none',
               }}
             />
             <Breadcrumb items={breadcrumbItems} />
           </Space>
 
           {/* 用户信息 */}
-          <Space>
-            <span>欢迎，{user?.username || '用户'}</span>
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              arrow
+          <Dropdown
+            dropdownRender={() => userInfoDropdown}
+            placement="bottomRight"
+            arrow
+            trigger={['click']}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                padding: '8px 12px',
+                borderRadius: 8,
+                transition: 'all 0.3s',
+                border: '1px solid transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                e.currentTarget.style.borderColor = '#d9d9d9';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'transparent';
+              }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  transition: 'background-color 0.3s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f5f5f5';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                <Avatar
-                  size={32}
-                  icon={<UserOutlined />}
-                  src={user?.avatar}
-                  style={{ marginRight: 8 }}
-                />
-                <Text strong>{user?.username || '用户'}</Text>
-              </div>
-            </Dropdown>
-          </Space>
+              <Text strong>{user?.username || '用户'}</Text>
+            </div>
+          </Dropdown>
         </Header>
 
         {/* 动态Tab区域 */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+        <div 
+          style={{ 
+            background: '#fff', 
+            borderBottom: '1px solid #f0f0f0',
+            position: 'fixed',
+            top: 48,
+            right: 0,
+            left: collapsed ? 80 : 240,
+            zIndex: 99,
+            transition: 'left 0.2s',
+            height: 45,
+            display: 'flex',
+            alignItems: 'flex-end',
+          }}
+        >
           <Tabs
             type="card"
             activeKey={activeTabKey}
             onChange={switchTab}
             items={tabItems}
             style={{ 
-              margin: '0 24px',
+              margin: '0 16px',
+              width: 'calc(100% - 32px)',
             }}
             tabBarStyle={{
               marginBottom: 0,
+              height: 34,
+              minHeight: 34,
             }}
           />
         </div>
 
-        {/* 主内容区域 */}
-        <Content
+        {/* 可滚动内容容器 */}
+        <div
           style={{
-            margin: '16px',
-            padding: 24,
-            minHeight: 'calc(100vh - 112px)',
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
+            position: 'fixed',
+            inset: `calc(48px + 45px) 0px 0px ${collapsed ? 80 : 240}px`,
             overflow: 'auto',
+            transition: 'all 0.2s',
+            zIndex: 1,
+            padding: 0,
+            margin: 0,
+            background: '#f0f2f5',
           }}
         >
-          <Outlet />
-        </Content>
+          {/* 主内容区域 */}
+          <Content
+            style={{
+              padding: '24px',
+              background: colorBgContainer,
+              borderRadius: borderRadiusLG,
+              margin: '16px', // 在Content上设置margin
+              minHeight: 'calc(100vh - 64px - 46px - 32px)', // 调整高度计算
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+            }}
+          >
+            <Outlet />
+          </Content>
+        </div>
       </Layout>
     </Layout>
   );

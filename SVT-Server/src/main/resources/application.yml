@@ -12,6 +12,10 @@ server:
     accept-count: 100          # 等待队列长度
     connection-timeout: 20000  # 连接超时时间
 
+# 应用信息配置
+app:
+  version: 1.0.0               # 应用版本号
+
 # Spring基础配置
 spring:
   application:

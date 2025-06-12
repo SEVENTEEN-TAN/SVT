@@ -78,6 +78,8 @@ export interface UserDetailCache {
   loginTime: string;
   /** 登录IP */
   loginIp: string;
+  /** 服务器版本 */
+  serverVersion?: string;
   /** 权限键列表 */
   permissionKeys: string[];
   /** 菜单树 */

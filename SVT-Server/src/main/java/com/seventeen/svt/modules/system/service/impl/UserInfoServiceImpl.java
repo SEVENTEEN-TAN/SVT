@@ -17,6 +17,7 @@ import com.seventeen.svt.modules.system.mapper.UserInfoMapper;
 import com.seventeen.svt.modules.system.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -62,6 +63,9 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
         mapper.insertSelective(userInfo);
     }
 
+    @Value("${app.version}")
+    private String appVersion;
+
     @Override
     public UserDetailCache getUserDetails(GetUserDetailsDTO userDetailsDTO) {
 
@@ -74,6 +78,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
         if (ObjectUtil.isEmpty(userDetail)) {
             throw new BusinessException(MessageUtils.getMessage("auth.login.expired"));
         }
+
+        userDetail.setServerVersion(appVersion);
 
         //获取用户选择的机构详情
         OrgInfo orgInfo = orgInfoServiceImpl.selectOrgInfoByOrgId(userDetailsDTO.getOrgId());
