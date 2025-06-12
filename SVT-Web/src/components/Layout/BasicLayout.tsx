@@ -23,6 +23,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
+import Footer from './Footer';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -221,27 +222,12 @@ const BasicLayout: React.FC = () => {
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between',
-            marginBottom: '8px'
+            marginBottom: '16px'
           }}>
             <span style={{ color: '#8c8c8c' }}>角色：</span>
             <span style={{ color: '#262626', fontWeight: 500 }}>系统管理员</span>
           </div>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            marginBottom: '8px'
-          }}>
-            <span style={{ color: '#8c8c8c' }}>前端版本：</span>
-            <span style={{ color: '#262626', fontWeight: 500 }}>v{import.meta.env.VITE_APP_VERSION}</span>
-          </div>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            marginBottom: '16px'
-          }}>
-            <span style={{ color: '#8c8c8c' }}>后端版本：</span>
-            <span style={{ color: '#262626', fontWeight: 500 }}>v{user?.serverVersion || '1.0.0'}</span>
-          </div>
+
         </div>
         
         {/* 退出按钮 */}
@@ -486,32 +472,44 @@ const BasicLayout: React.FC = () => {
           />
         </div>
 
-        {/* 可滚动内容容器 */}
+        {/* 内容和页脚容器 */}
         <div
           style={{
             position: 'fixed',
             inset: `calc(48px + 45px) 0px 0px ${collapsed ? 80 : 240}px`,
-            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
             transition: 'all 0.2s',
             zIndex: 1,
-            padding: 0,
-            margin: 0,
             background: '#f0f2f5',
           }}
         >
-          {/* 主内容区域 */}
-          <Content
+          {/* 可滚动内容容器 */}
+          <div
             style={{
-              padding: '24px',
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
-              margin: '16px', // 在Content上设置margin
-              minHeight: 'calc(100vh - 64px - 46px - 32px)', // 调整高度计算
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              flex: 1,
+              overflow: 'auto',
+              padding: 0,
+              margin: 0,
             }}
           >
-            <Outlet />
-          </Content>
+            {/* 主内容区域 */}
+            <Content
+              style={{
+                padding: '24px',
+                background: colorBgContainer,
+                borderRadius: borderRadiusLG,
+                margin: '16px',
+                minHeight: 'calc(100vh - 64px - 46px - 48px - 32px)', // 调整高度计算
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              }}
+            >
+              <Outlet />
+            </Content>
+          </div>
+
+          {/* 页脚组件 */}
+          <Footer />
         </div>
       </Layout>
     </Layout>
