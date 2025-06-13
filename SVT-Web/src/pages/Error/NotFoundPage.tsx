@@ -10,8 +10,8 @@ const NotFoundPage: React.FC = () => {
       display: 'flex', 
       justifyContent: 'center', 
       alignItems: 'center', 
-      minHeight: '100vh',
-      background: '#f5f5f5'
+      minHeight: 'calc(100vh - 120px)', // 适配内容区域高度
+      padding: '40px 24px'
     }}>
       <Result
         status="404"

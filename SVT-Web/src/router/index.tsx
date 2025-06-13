@@ -59,19 +59,15 @@ export const router = createBrowserRouter([
         path: 'settings',
         element: <div>系统设置页面 - 待开发</div>,
       },
+      {
+        path: '*',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <NotFoundPage />
+          </Suspense>
+        ),
+      },
     ],
-  },
-  {
-    path: '/404',
-    element: (
-      <Suspense fallback={<PageLoading />}>
-        <NotFoundPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: '*',
-    element: <Navigate to="/404" replace />,
   },
 ]);
 

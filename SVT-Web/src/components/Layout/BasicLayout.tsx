@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Layout,
@@ -21,6 +21,11 @@ import {
   LogoutOutlined,
   HomeOutlined,
   CloseOutlined,
+  ShopOutlined,
+  FormOutlined,
+  SearchOutlined,
+  TeamOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import Footer from './Footer';
@@ -36,19 +41,32 @@ interface TabItem {
   closable: boolean;
 }
 
-// 路径到Tab名称的映射
-const pathToTabMap: Record<string, string> = {
-  '/dashboard': '仪表盘',
-  '/users': '用户管理',
-  '/settings': '系统设置',
-  // 可以根据需要添加更多路径映射
-};
+// 🔧 动态路径映射生成函数
+const generatePathMaps = (menuTrees: any[]) => {
+  const tabMap: Record<string, string> = { 
+    '/dashboard': '仪表盘'
+  };
+  const breadcrumbMap: Record<string, string> = { 
+    '/dashboard': '仪表盘'
+  };
 
-// 路径到面包屑名称的映射  
-const pathToBreadcrumbMap: Record<string, string> = {
-  '/dashboard': '仪表盘',
-  '/users': '用户管理',
-  '/settings': '系统设置',
+  const processMenu = (menus: any[]) => {
+    menus.forEach(menu => {
+      if (menu.menuPath) {
+        tabMap[menu.menuPath] = menu.menuNameZh;
+        breadcrumbMap[menu.menuPath] = menu.menuNameZh;
+      }
+      if (menu.children && menu.children.length > 0) {
+        processMenu(menu.children);
+      }
+    });
+  };
+
+  if (menuTrees && Array.isArray(menuTrees)) {
+    processMenu(menuTrees);
+  }
+
+  return { tabMap, breadcrumbMap };
 };
 
 const BasicLayout: React.FC = () => {
@@ -59,6 +77,44 @@ const BasicLayout: React.FC = () => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // 图标映射函数
+  const getIcon = useCallback((iconName: string) => {
+    const iconMap: Record<string, React.ReactNode> = {
+      'setting': <SettingOutlined />,
+      'user': <UserOutlined />,
+      'team': <TeamOutlined />,
+      'menu': <MenuOutlined />,
+      'shop': <ShopOutlined />,
+      'form': <FormOutlined />,
+      'search': <SearchOutlined />,
+      'dashboard': <DashboardOutlined />,
+      'home': <HomeOutlined />,
+    };
+    return iconMap[iconName] || <MenuOutlined />;
+  }, []);
+
+  // 递归转换菜单树为Ant Design Menu格式
+  const convertMenuTrees = useCallback((menuTrees: any[]): MenuProps['items'] => {
+    if (!menuTrees || !Array.isArray(menuTrees)) return [];
+
+    return menuTrees
+      .sort((a, b) => parseInt(a.menuSort) - parseInt(b.menuSort))
+      .map(menu => {
+        const menuItem: any = {
+          key: menu.menuPath,
+          icon: getIcon(menu.menuIcon),
+          label: menu.menuNameZh,
+        };
+
+        // 如果有子菜单，递归处理
+        if (menu.children && menu.children.length > 0) {
+          menuItem.children = convertMenuTrees(menu.children);
+        }
+
+        return menuItem;
+      });
+  }, [getIcon]);
 
   // 防重复操作的ref
   const isOperatingRef = useRef(false);
@@ -74,10 +130,35 @@ const BasicLayout: React.FC = () => {
     },
   ]);
 
+  // 🔧 动态获取路径映射
+  const pathMaps = useMemo(() => {
+    return generatePathMaps(user?.menuTrees || []);
+  }, [user?.menuTrees]);
+
   // 根据路径获取Tab名称
   const getTabName = useCallback((path: string): string => {
-    return pathToTabMap[path] || '未知页面';
-  }, []);
+    // 如果是有效路径，返回映射的名称
+    if (pathMaps.tabMap[path]) {
+      return pathMaps.tabMap[path];
+    }
+    
+    // 对于无效路径，从菜单项中查找对应的label（如果是从菜单点击进来的）
+    const findMenuLabel = (menus: any[], targetPath: string): string | null => {
+      for (const menu of menus) {
+        if (menu.menuPath === targetPath) {
+          return menu.menuNameZh;
+        }
+        if (menu.children && menu.children.length > 0) {
+          const found = findMenuLabel(menu.children, targetPath);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const menuLabel = user?.menuTrees ? findMenuLabel(user.menuTrees, path) : null;
+    return menuLabel || '页面未找到';
+  }, [pathMaps.tabMap, user?.menuTrees]);
 
   // 添加新Tab
   const addTab = useCallback((path: string) => {
@@ -153,36 +234,27 @@ const BasicLayout: React.FC = () => {
   useEffect(() => {
     const currentPath = location.pathname;
     
-    // 如果当前路径有对应的Tab名称，则添加Tab
-    if (pathToTabMap[currentPath]) {
+    // 🔧 为所有路径添加Tab，包括无效路径
+    // 这样无效路径会显示为菜单名称，但内容显示404
+    if (currentPath !== '/login') {
       addTab(currentPath);
-    } else {
-      // 如果是未知路径，默认激活仪表盘
-      setActiveTabKey('/dashboard');
-      if (currentPath !== '/dashboard') {
-        navigate('/dashboard');
-      }
     }
-  }, [location.pathname, addTab, navigate]);
+  }, [location.pathname, addTab]);
 
-  // 菜单项配置
-  const menuItems: MenuProps['items'] = [
-    {
+  // 🔧 动态生成菜单项
+  const menuItems: MenuProps['items'] = useMemo(() => {
+    // 始终包含仪表盘作为首页
+    const dashboardItem = {
       key: '/dashboard',
       icon: <DashboardOutlined />,
       label: '仪表盘',
-    },
-    {
-      key: '/users',
-      icon: <UserOutlined />,
-      label: '用户管理',
-    },
-    {
-      key: '/settings',
-      icon: <SettingOutlined />,
-      label: '系统设置',
-    },
-  ];
+    };
+
+    // 从用户菜单树生成其他菜单
+    const userMenuItems = user?.menuTrees ? convertMenuTrees(user.menuTrees) : [];
+
+    return [dashboardItem, ...(userMenuItems || [])];
+  }, [user?.menuTrees, convertMenuTrees]);
 
   // 处理菜单点击
   const handleMenuClick = useCallback((e: { key: string }) => {
@@ -265,9 +337,9 @@ const BasicLayout: React.FC = () => {
   ];
 
   const currentPath = location.pathname;
-  if (currentPath !== '/' && pathToBreadcrumbMap[currentPath]) {
+  if (currentPath !== '/' && pathMaps.breadcrumbMap[currentPath]) {
     breadcrumbItems.push({
-      title: <span>{pathToBreadcrumbMap[currentPath]}</span>,
+      title: <span>{pathMaps.breadcrumbMap[currentPath]}</span>,
     });
   }
 
