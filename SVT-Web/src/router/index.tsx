@@ -13,10 +13,8 @@ const LoginPage = React.lazy(() => import('@/pages/Auth/LoginPage'));
 const DashboardPage = React.lazy(() => import('@/pages/Dashboard/DashboardPage'));
 const NotFoundPage = React.lazy(() => import('@/pages/Error/NotFoundPage'));
 
-// 全局加载组件
-const PageLoading: React.FC = () => (
-  <Spin size="large" tip="页面加载中..." fullscreen />
-);
+// 简单的加载组件
+const fallbackElement = <Spin size="large" tip="页面加载中..." style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }} />;
 
 // 路由配置
 export const router = createBrowserRouter([
@@ -27,7 +25,7 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: (
-      <Suspense fallback={<PageLoading />}>
+      <Suspense fallback={fallbackElement}>
         <LoginPage />
       </Suspense>
     ),
@@ -36,7 +34,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: (
       <ProtectedRoute>
-        <Suspense fallback={<PageLoading />}>
+        <Suspense fallback={fallbackElement}>
           <BasicLayout />
         </Suspense>
       </ProtectedRoute>
@@ -45,7 +43,7 @@ export const router = createBrowserRouter([
       {
         path: 'dashboard',
         element: (
-          <Suspense fallback={<PageLoading />}>
+          <Suspense fallback={fallbackElement}>
             <DashboardPage />
           </Suspense>
         ),
@@ -62,7 +60,7 @@ export const router = createBrowserRouter([
       {
         path: '*',
         element: (
-          <Suspense fallback={<PageLoading />}>
+          <Suspense fallback={fallbackElement}>
             <NotFoundPage />
           </Suspense>
         ),

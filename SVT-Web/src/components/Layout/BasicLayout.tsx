@@ -42,7 +42,7 @@ interface TabItem {
 }
 
 // 🔧 动态路径映射生成函数
-const generatePathMaps = (menuTrees: any[]) => {
+const generatePathMaps = (menuTrees: unknown[]) => {
   const tabMap: Record<string, string> = { 
     '/dashboard': '仪表盘'
   };
@@ -50,14 +50,15 @@ const generatePathMaps = (menuTrees: any[]) => {
     '/dashboard': '仪表盘'
   };
 
-  const processMenu = (menus: any[]) => {
+  const processMenu = (menus: unknown[]) => {
     menus.forEach(menu => {
-      if (menu.menuPath) {
-        tabMap[menu.menuPath] = menu.menuNameZh;
-        breadcrumbMap[menu.menuPath] = menu.menuNameZh;
+      const menuItem = menu as { menuPath?: string; menuNameZh?: string; children?: unknown[] };
+      if (menuItem.menuPath) {
+        tabMap[menuItem.menuPath] = menuItem.menuNameZh || '';
+        breadcrumbMap[menuItem.menuPath] = menuItem.menuNameZh || '';
       }
-      if (menu.children && menu.children.length > 0) {
-        processMenu(menu.children);
+      if (menuItem.children && menuItem.children.length > 0) {
+        processMenu(menuItem.children);
       }
     });
   };
@@ -95,15 +96,16 @@ const BasicLayout: React.FC = () => {
   }, []);
 
   // 递归转换菜单树为Ant Design Menu格式
-  const convertMenuTrees = useCallback((menuTrees: any[]): MenuProps['items'] => {
+  const convertMenuTrees = useCallback((menuTrees: unknown[]): MenuProps['items'] => {
     if (!menuTrees || !Array.isArray(menuTrees)) return [];
 
     return menuTrees
-      .sort((a, b) => parseInt(a.menuSort) - parseInt(b.menuSort))
+      .map(menu => menu as { menuPath?: string; menuIcon?: string; menuNameZh?: string; menuSort?: string; children?: unknown[] })
+      .sort((a, b) => parseInt(a.menuSort || '0') - parseInt(b.menuSort || '0'))
       .map(menu => {
-        const menuItem: any = {
+        const menuItem: Record<string, unknown> = {
           key: menu.menuPath,
-          icon: getIcon(menu.menuIcon),
+          icon: getIcon(menu.menuIcon || ''),
           label: menu.menuNameZh,
         };
 
@@ -113,7 +115,7 @@ const BasicLayout: React.FC = () => {
         }
 
         return menuItem;
-      });
+      }) as unknown as MenuProps['items'];
   }, [getIcon]);
 
   // 防重复操作的ref
@@ -143,13 +145,14 @@ const BasicLayout: React.FC = () => {
     }
     
     // 对于无效路径，从菜单项中查找对应的label（如果是从菜单点击进来的）
-    const findMenuLabel = (menus: any[], targetPath: string): string | null => {
+    const findMenuLabel = (menus: unknown[], targetPath: string): string | null => {
       for (const menu of menus) {
-        if (menu.menuPath === targetPath) {
-          return menu.menuNameZh;
+        const menuItem = menu as { menuPath?: string; menuNameZh?: string; children?: unknown[] };
+        if (menuItem.menuPath === targetPath) {
+          return menuItem.menuNameZh || null;
         }
-        if (menu.children && menu.children.length > 0) {
-          const found = findMenuLabel(menu.children, targetPath);
+        if (menuItem.children && menuItem.children.length > 0) {
+          const found = findMenuLabel(menuItem.children, targetPath);
           if (found) return found;
         }
       }
