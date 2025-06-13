@@ -21,7 +21,7 @@ const { Option } = Select;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, logout, loading, isAuthenticated, updateUser } = useAuthStore();
+  const { login, logout, loading, isAuthenticated, hasSelectedOrgRole, completeOrgRoleSelection } = useAuthStore();
   const [form] = Form.useForm();
   const [orgRoleForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
@@ -60,21 +60,25 @@ const LoginPage: React.FC = () => {
       
     } catch (error) {
       console.error('加载机构角色列表失败:', error);
-      messageApi.error('加载机构和角色列表失败');
-      // 如果加载失败，关闭弹窗并跳转到dashboard
+      messageApi.error('加载机构和角色列表失败，将退出登录');
+      // 🔧 如果加载失败，退出登录而不是跳转到dashboard
       setShowOrgRoleModal(false);
-      navigate('/dashboard', { replace: true });
+      await logout();
+      navigate('/login', { replace: true });
     } finally {
       setOrgRoleLoading(false);
     }
   }, [navigate, orgRoleForm, messageApi]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      // 登录成功后显示机构角色选择弹窗
+    if (isAuthenticated && !hasSelectedOrgRole) {
+      // 🔧 只有登录成功且未选择机构角色时才显示弹窗
       showOrgRoleSelection();
+    } else if (isAuthenticated && hasSelectedOrgRole) {
+      // 🔧 已完成选择，直接跳转
+      navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate, showOrgRoleSelection]);
+  }, [isAuthenticated, hasSelectedOrgRole, navigate, showOrgRoleSelection]);
 
   const handleSubmit = async (values: LoginRequest) => {
     try {
@@ -103,15 +107,8 @@ const LoginPage: React.FC = () => {
         roleId: values.roleId
       });
       
-      // 存储用户详情到本地缓存
-      localStorage.setItem('userDetails', JSON.stringify(userDetails));
-      
-      // 更新认证状态中的用户信息
-      updateUser({
-        username: userDetails.userNameZh,
-        avatar: '', // 如果有头像字段可以添加
-        // 可以添加其他需要的用户信息
-      });
+      // 🔧 使用新的completeOrgRoleSelection方法
+      completeOrgRoleSelection(userDetails);
       
       messageApi.destroy();
       messageApi.success('即将跳转到系统首页...');

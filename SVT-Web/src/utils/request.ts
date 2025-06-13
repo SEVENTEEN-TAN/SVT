@@ -27,8 +27,19 @@ const request: AxiosInstance = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 添加Authorization header
-    const token = localStorage.getItem('token');
+    // 🔧 从Zustand persist获取token（优先）或localStorage（兼容旧数据）
+    let token = null;
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        token = parsed.state?.token;
+      }
+    } catch {
+      // 兜底：从单独的localStorage获取（兼容旧数据）
+      token = localStorage.getItem('token');
+    }
+    
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }

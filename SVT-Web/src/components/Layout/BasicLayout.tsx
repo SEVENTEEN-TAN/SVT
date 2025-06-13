@@ -217,7 +217,9 @@ const BasicLayout: React.FC = () => {
             marginBottom: '8px'
           }}>
             <span style={{ color: '#8c8c8c' }}>机构：</span>
-            <span style={{ color: '#262626', fontWeight: 500 }}>浙江总部</span>
+            <span style={{ color: '#262626', fontWeight: 500 }}>
+              {user?.orgNameZh || '未知机构'}
+            </span>
           </div>
           <div style={{ 
             display: 'flex', 
@@ -225,7 +227,9 @@ const BasicLayout: React.FC = () => {
             marginBottom: '16px'
           }}>
             <span style={{ color: '#8c8c8c' }}>角色：</span>
-            <span style={{ color: '#262626', fontWeight: 500 }}>系统管理员</span>
+            <span style={{ color: '#262626', fontWeight: 500 }}>
+              {user?.roleNameZh || '未知角色'}
+            </span>
           </div>
 
         </div>

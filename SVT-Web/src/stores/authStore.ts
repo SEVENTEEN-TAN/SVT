@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import { tokenManager } from '@/utils/tokenManager';
 import * as authApi from '@/api/auth';
 import type { User, LoginRequest } from '@/types/user';
+import type { UserDetailCache } from '@/types/org-role';
+import { cleanupLegacyStorage } from '@/utils/storageCleanup';
 
 // 认证状态接口
 interface AuthState {
@@ -12,12 +14,14 @@ interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   expiryDate: string | null; // 新增：token过期日期
+  hasSelectedOrgRole: boolean; // 新增：是否已选择机构角色
   
   // 操作
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   refreshUserInfo: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
+  completeOrgRoleSelection: (userDetails: UserDetailCache) => void;
 }
 
 // 创建认证状态管理
@@ -30,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       loading: false,
       expiryDate: null, // 初始化
+      hasSelectedOrgRole: false, // 初始化
 
       // 登录操作
       login: async (credentials: LoginRequest) => {
@@ -50,8 +55,7 @@ export const useAuthStore = create<AuthState>()(
             calculatedExpiryDate = now.toISOString();
           }
 
-          // 保存token和expiryDate到localStorage
-          localStorage.setItem('token', accessToken);
+          // 🔧 token通过Zustand persist自动存储，无需单独存储到localStorage
           if (calculatedExpiryDate) {
             localStorage.setItem('expiryDate', calculatedExpiryDate);
           } else {
@@ -69,8 +73,8 @@ export const useAuthStore = create<AuthState>()(
           // 启动Token管理器
           tokenManager.start();
 
-          // 获取用户详细信息
-          await get().refreshUserInfo();
+          // 🔧 移除自动调用refreshUserInfo，让登录页面控制机构角色选择流程
+          // await get().refreshUserInfo(); // 删除这一行
           
         } catch (error) {
           set({ loading: false });
@@ -92,10 +96,13 @@ export const useAuthStore = create<AuthState>()(
           // 停止Token管理器
           tokenManager.stop();
           
-          // 清除localStorage
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          // 清除localStorage（token和user通过Zustand persist自动管理）
           localStorage.removeItem('expiryDate');
+          // 🔧 清理可能的遗留数据
+          localStorage.removeItem('token'); // 清理可能存在的单独token存储
+          localStorage.removeItem('user'); // 清理可能存在的单独user存储
+          localStorage.removeItem('userDetails'); // 清理遗留的userDetails
+          localStorage.removeItem('isWhitelist');
           
           // 重置状态
           set({
@@ -104,6 +111,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             loading: false,
             expiryDate: null,
+            hasSelectedOrgRole: false,
           });
         }
       },
@@ -181,48 +189,87 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem('user', JSON.stringify(updatedUser));
         }
       },
+
+      // 完成机构角色选择
+      completeOrgRoleSelection: (userDetails: UserDetailCache) => {
+        // 🔧 将UserDetailCache完整信息整合到User中，避免重复存储
+        const user: User = {
+          id: userDetails.userId,
+          username: userDetails.userNameZh,
+          email: '', // 后端没有提供，设为空
+          roles: [userDetails.roleId],
+          permissions: userDetails.permissionKeys,
+          serverVersion: userDetails.serverVersion,
+          createTime: userDetails.loginTime,
+          updateTime: new Date().toISOString(),
+          
+          // 🔧 整合userDetails的所有独有信息
+          userNameEn: userDetails.userNameEn,
+          orgId: userDetails.orgId,
+          orgNameZh: userDetails.orgNameZh,
+          orgNameEn: userDetails.orgNameEn,
+          roleId: userDetails.roleId,
+          roleNameZh: userDetails.roleNameZh,
+          roleNameEn: userDetails.roleNameEn,
+          loginIp: userDetails.loginIp,
+          menuTrees: userDetails.menuTrees,
+        };
+
+        // 🔧 不再单独存储userDetails，所有信息都在user中了
+
+        // 更新状态
+        set({ 
+          user: user,
+          hasSelectedOrgRole: true
+        });
+      },
     }),
     {
       name: 'auth-storage', // localStorage key
-      // 只持久化token和user，不持久化loading状态
+      // 只持久化token、user和选择状态，不持久化loading状态
       partialize: (state: AuthState) => ({
         token: state.token,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        hasSelectedOrgRole: state.hasSelectedOrgRole,
       }),
       // 从localStorage恢复状态时的处理
       onRehydrateStorage: () => (state: AuthState | undefined) => {
+        // 🔧 清理遗留的缓存数据
+        cleanupLegacyStorage();
+        
         if (state) {
-          // 检查token是否存在且有效
-          const token = localStorage.getItem('token');
-          const user = localStorage.getItem('user');
-          
-          if (token) {
-            state.token = token;
-            state.isAuthenticated = true;
-            
-            if (user) {
-              try {
-                const parsedUser = JSON.parse(user);
-                state.user = parsedUser;
-              } catch (error) {
-                console.error('恢复用户状态失败:', error);
-                localStorage.removeItem('user');
-              }
-            }
-            
-            // 如果有有效Token，启动Token管理器
-            tokenManager.start();
-          } else {
-            // 注意：这里不能使用await，因为onRehydrateStorage不支持异步
-            // 直接清除本地状态即可
-            state.token = null;
-            state.user = null;
-            state.isAuthenticated = false;
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('expiryDate');
-          }
+          // 🔧 通过Zustand persist自动恢复状态，检查是否已完成机构角色选择
+          if (state.token && state.isAuthenticated) {
+                       if (state.hasSelectedOrgRole && state.user) {
+             // 🔧 用户已完成机构角色选择，启动Token管理器
+             tokenManager.start();
+           } else {
+                           // 🔧 用户还没选择机构角色就刷新页面，清除状态
+             console.log('用户未完成机构角色选择，清除登录状态');
+             localStorage.removeItem('expiryDate');
+             localStorage.removeItem('token'); // 清理遗留token
+             localStorage.removeItem('user'); // 清理遗留user
+             localStorage.removeItem('userDetails'); // 清理遗留userDetails
+             localStorage.removeItem('isWhitelist');
+             
+             state.token = null;
+             state.user = null;
+             state.isAuthenticated = false;
+             state.hasSelectedOrgRole = false;
+           }
+         } else {
+           // 清除本地状态
+           state.token = null;
+           state.user = null;
+           state.isAuthenticated = false;
+           state.hasSelectedOrgRole = false;
+           localStorage.removeItem('expiryDate');
+           localStorage.removeItem('token'); // 清理遗留token
+           localStorage.removeItem('user'); // 清理遗留user
+           localStorage.removeItem('userDetails'); // 清理遗留userDetails
+           localStorage.removeItem('isWhitelist');
+         }
         }
       },
     }
