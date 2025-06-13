@@ -22,6 +22,11 @@ import java.util.concurrent.TimeUnit;
  * 注意: Caffeine的初始化有固定大小本地没有会尝试从云端同步
  * - 最大容量80
  * - 过期时间5分钟
+ * 
+ * 优化说明：
+ * - 添加了Redis异常处理机制
+ * - 实现了优雅降级策略
+ * - 缓存操作失败不会影响主业务流程
  */
 @Slf4j
 @Component
@@ -51,6 +56,35 @@ public class JwtCacheUtils {
 
     // endregion
 
+    /**
+     * 安全执行Redis操作
+     * @param operation Redis操作
+     * @param operationName 操作名称
+     */
+    private static void safeRedisOperation(Runnable operation, String operationName) {
+        try {
+            operation.run();
+        } catch (Exception e) {
+            log.warn("Redis operation [{}] failed, degrading to local cache only. Error: {}", 
+                     operationName, e.getMessage());
+        }
+    }
+
+    /**
+     * 安全执行Redis获取操作
+     * @param operation Redis获取操作
+     * @param operationName 操作名称
+     * @return 获取结果，失败时返回null
+     */
+    private static <T> T safeRedisGet(java.util.function.Supplier<T> operation, String operationName) {
+        try {
+            return operation.get();
+        } catch (Exception e) {
+            log.warn("Redis get operation [{}] failed, using local cache only. Error: {}", 
+                     operationName, e.getMessage());
+            return null;
+        }
+    }
 
     /**
      * 初始化initJwt
@@ -81,12 +115,19 @@ public class JwtCacheUtils {
         JwtCache jwtCache = userLocalCache.getIfPresent(userId);
         if (ObjectUtil.isEmpty(jwtCache)) {
             //尝试从云端获取
-            jwtCache = (JwtCache) RedisUtils.get(JWT_KEY_PREFIX + userId);
+            jwtCache = safeRedisGet(() -> (JwtCache) RedisUtils.get(JWT_KEY_PREFIX + userId), "getJwt");
             if (ObjectUtil.isNotEmpty(jwtCache)) {
-                putJwt(userId, jwtCache); // 本地同步
+                putJwtToLocal(userId, jwtCache); // 本地同步
             }
         }
         return jwtCache;
+    }
+
+    /**
+     * 添加JWT到本地缓存
+     */
+    private static void putJwtToLocal(String userId, JwtCache jwtCache) {
+        userLocalCache.put(userId, jwtCache);
     }
 
     /**
@@ -95,24 +136,27 @@ public class JwtCacheUtils {
     public static void putJwt(String userId, JwtCache jwtCache) {
         long expiration = Long.parseLong(SpringUtil.getProperty("jwt.expiration"));
         //在本地存放
-        userLocalCache.put(userId, jwtCache);
+        putJwtToLocal(userId, jwtCache);
         //云端同步
-        RedisUtils.set(JWT_KEY_PREFIX + userId, jwtCache, expiration);
+        safeRedisOperation(() -> RedisUtils.set(JWT_KEY_PREFIX + userId, jwtCache, expiration), "putJwt");
     }
 
     /**
      * 删除用户缓存(登出)
+     * 优化：即使Redis操作失败，也要确保本地缓存被清理
      */
     public static void removeJwt(String userId) {
         //Token添加到黑名单
         JwtCache jwt = getJwt(userId);
         if (ObjectUtil.isNotEmpty(jwt)) {
-            invalidJwt(jwt.getToken());
+            safeRedisOperation(() -> invalidJwt(jwt.getToken()), "invalidJwt");
         }
-        //本地删除
+        //本地删除（优先执行，确保本地状态正确）
         userLocalCache.invalidate(userId);
         //云端删除
-        RedisUtils.del(JWT_KEY_PREFIX + userId);
+        safeRedisOperation(() -> RedisUtils.del(JWT_KEY_PREFIX + userId), "removeJwt");
+        
+        log.debug("Successfully removed JWT cache for user: {}", userId);
     }
 
     /**
@@ -123,7 +167,7 @@ public class JwtCacheUtils {
     public static void invalidJwt(String token) {
         long expiration = Long.parseLong(SpringUtil.getProperty("jwt.expiration"));
         //添加到黑名单
-        RedisUtils.set(JWT_BLACKLIST_KEY + token, "1", expiration);
+        safeRedisOperation(() -> RedisUtils.set(JWT_BLACKLIST_KEY + token, "1", expiration), "invalidJwt");
     }
 
     /**
@@ -133,7 +177,8 @@ public class JwtCacheUtils {
      * @return 是否黑名单
      */
     public static boolean isBlackToken(String token) {
-        return RedisUtils.hasKey(JWT_BLACKLIST_KEY + token);
+        Boolean result = safeRedisGet(() -> RedisUtils.hasKey(JWT_BLACKLIST_KEY + token), "isBlackToken");
+        return result != null && result;
     }
 
     /**
@@ -210,11 +255,13 @@ public class JwtCacheUtils {
         threshold = threshold > 1.0 ? 1.0 : Math.max(threshold, 0.0);
         if (ObjectUtil.isNotEmpty(jwt)) {
             //在本地存放
-            userLocalCache.put(userId, jwtCache);
+            putJwtToLocal(userId, jwtCache);
             if ((jwt.getRefreshTime() - System.currentTimeMillis()) <= refreshTime * 1000 * (1 - threshold)) {
                 //云端同步
-                long remainingExpiration = RedisUtils.getExpire(JWT_KEY_PREFIX + userId);
-                RedisUtils.set(JWT_KEY_PREFIX + userId, jwtCache, remainingExpiration);
+                safeRedisOperation(() -> {
+                    long remainingExpiration = RedisUtils.getExpire(JWT_KEY_PREFIX + userId);
+                    RedisUtils.set(JWT_KEY_PREFIX + userId, jwtCache, remainingExpiration);
+                }, "updateJwt");
             }
         }
     }
