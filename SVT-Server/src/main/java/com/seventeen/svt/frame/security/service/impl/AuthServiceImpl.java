@@ -56,6 +56,9 @@ public class AuthServiceImpl implements AuthService {
         // 生成访问令牌
         String accessToken = jwtUtils.generateToken(customAuthentication);
 
+        //保持单点 将旧的JWT失效
+        JwtCacheUtils.removeJwt(userInfo.getUserId());
+
         // 初始化存储Token信息
         JwtCache jwtCache = JwtCacheUtils.initJwt(accessToken, userInfo.getUserId());
         JwtCacheUtils.putJwt(userInfo.getUserId(), jwtCache);
