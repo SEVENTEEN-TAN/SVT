@@ -13,7 +13,7 @@ spring:
   data:
     redis:
       host: 123.60.68.66        # Redis服务器地址
-      port: 6379                # Redis服务器端口
+      port: 26739                # Redis服务器端口
       password: 123456          # Redis服务器密码
       database: 0               # Redis数据库索引
 
