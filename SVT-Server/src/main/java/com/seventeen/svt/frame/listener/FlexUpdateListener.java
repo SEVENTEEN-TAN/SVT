@@ -19,6 +19,12 @@ import java.time.LocalDateTime;
 @Component
 public class FlexUpdateListener implements UpdateListener {
 
+    private final UserDetailCacheUtils userDetailCacheUtils;
+
+    public FlexUpdateListener(UserDetailCacheUtils userDetailCacheUtils) {
+        this.userDetailCacheUtils = userDetailCacheUtils;
+    }
+
     @Override
     public void onUpdate(Object originalObject) {
         log.debug("开始进行更新操作自动填充");
@@ -66,7 +72,7 @@ public class FlexUpdateListener implements UpdateListener {
         UserDetailCache userDetail = null;
         try {
             String requestUserId = RequestContextUtils.getRequestUserId();
-            userDetail = UserDetailCacheUtils.getUserDetail(requestUserId);
+            userDetail = userDetailCacheUtils.getUserDetail(requestUserId);
         } catch (Exception e) {
             log.debug("无法从上下文获取获取当前登录用户");
         }

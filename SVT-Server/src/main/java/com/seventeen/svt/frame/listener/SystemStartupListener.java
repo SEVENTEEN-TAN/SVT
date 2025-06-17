@@ -1,5 +1,6 @@
 package com.seventeen.svt.frame.listener;
 
+import com.seventeen.svt.common.config.AESConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -29,6 +30,9 @@ public class SystemStartupListener implements CommandLineRunner {
 
     @Autowired
     private RedisConnectionFactory redisConnectionFactory;
+
+    @Autowired
+    private AESConfig aesConfig;
 
 
     @Override
@@ -102,6 +106,9 @@ public class SystemStartupListener implements CommandLineRunner {
         // 检查系统配置
         checkSystemConfig();
         
+        // 检查AES加密配置
+        checkAESConfig();
+        
         log.info("系统初始化检查完成\n");
     }
 
@@ -152,12 +159,63 @@ public class SystemStartupListener implements CommandLineRunner {
     }
 
     /**
+     * 检查AES加密配置
+     */
+    private void checkAESConfig() {
+        log.info("开始检查AES加密配置...");
+        try {
+            // 检查AES配置状态
+            log.info("AES加密状态: {}", aesConfig.isEnabled() ? "已启用" : "已禁用");
+            
+            if (aesConfig.isEnabled()) {
+                // 验证配置有效性
+                validateAESConfig();
+
+                log.info("加密算法: {}", aesConfig.getAlgorithm());
+                log.info("密钥长度: {} 位", aesConfig.getKeyLength());
+                log.info("最大数据大小: {} MB", aesConfig.getMaxDataSize() / 1024 / 1024);
+                log.info("时间戳容差: {} 分钟", aesConfig.getTimestampTolerance() / 60000);
+                log.info("⚠️ 当前使用默认AES密钥: {}",aesConfig.getKey());
+                log.info("✅ AES配置验证通过");
+            } else {
+                log.warn("⚠️ AES加密已禁用，API数据将不进行加密传输！");
+            }
+            
+            log.info("AES加密配置检查: 成功 √");
+        } catch (Exception e) {
+            log.error("AES加密配置检查: 失败 X", e);
+            throw new RuntimeException("AES加密配置检查失败", e);
+        }
+    }
+
+    /**
+     * 验证AES配置有效性
+     */
+    private void validateAESConfig() {
+        // 验证密钥
+        if (aesConfig.getKey() == null || aesConfig.getKey().trim().isEmpty()) {
+            throw new IllegalArgumentException("AES密钥不能为空");
+        }
+
+        // 验证密钥长度
+        int keyLength = aesConfig.getKeyLength();
+        if (keyLength != 128 && keyLength != 192 && keyLength != 256) {
+            throw new IllegalArgumentException("AES密钥长度必须是128、192或256位");
+        }
+
+        // 验证数据大小限制
+        if (aesConfig.getMaxDataSize() <= 0) {
+            throw new IllegalArgumentException("最大数据大小必须大于0");
+        }
+    }
+
+    /**
      * 初始化系统必要数据到缓存
      */
     private void initializeSystemData() {
         log.info("开始初始化系统必要数据到缓存...");
         //TODO: 一些必要缓存可以在此处优先预载到本地
-        
+
         log.info("系统数据初始化完成\n");
     }
 } 

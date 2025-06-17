@@ -31,6 +31,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserInfoService userInfoService;
     private final JwtUtils jwtUtils;
     private final Sm4PasswordEncoder sm4PasswordEncoder;
+    private final JwtCacheUtils jwtCacheUtils;
+    private final UserDetailCacheUtils userDetailCacheUtils;
 
     @Override
     public TokenVO login(LoginRequestDTO loginRequest) {
@@ -48,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
         // 返回UserDetails对象
         CustomAuthentication customAuthentication = new CustomAuthentication(userInfo.getUserId(), userInfo.getUserNameZh(), userInfo.getPassword());
 
-        // 验证密码 TODO: 注意当前使用的是明文
+        // 验证密码
         if (!sm4PasswordEncoder.matches(loginRequest.getPassword(), customAuthentication.getPassword())) {
             throw new BusinessException(MessageUtils.getMessage("auth.login.wrongcredentials"));
         }
@@ -57,11 +59,11 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtUtils.generateToken(customAuthentication);
 
         //保持单点 将旧的JWT失效
-        JwtCacheUtils.removeJwt(userInfo.getUserId());
+        jwtCacheUtils.removeJwt(userInfo.getUserId());
 
         // 初始化存储Token信息
-        JwtCache jwtCache = JwtCacheUtils.initJwt(accessToken, userInfo.getUserId());
-        JwtCacheUtils.putJwt(userInfo.getUserId(), jwtCache);
+        JwtCache jwtCache = jwtCacheUtils.createJwtCache(accessToken, userInfo.getUserId(), RequestContextUtils.getIpAddress());
+        jwtCacheUtils.putJwt(userInfo.getUserId(), jwtCache);
 
         //创建当前用户详情的缓存
         UserDetailCache userDetailCache = UserDetailCache.builder()
@@ -70,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
                 .userNameEn(userInfo.getUserNameEn())
                 .loginIp(RequestContextUtils.getIpAddress())
                 .loginTime(LocalDateTime.now()).build();
-        UserDetailCacheUtils.putUserDetail(userInfo.getUserId(),userDetailCache);
+        userDetailCacheUtils.putUserDetail(userInfo.getUserId(),userDetailCache);
 
         // 构建并返回TokenDTO
         return TokenVO.builder()
@@ -81,8 +83,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Result<?> logout(String requestUserId) {
-        JwtCacheUtils.removeJwt(requestUserId);
-        UserDetailCacheUtils.removeUserDetail(requestUserId);
+        jwtCacheUtils.removeJwt(requestUserId);
+        userDetailCacheUtils.removeUserDetail(requestUserId);
         return Result.success(MessageUtils.getMessage("auth.logout.success"));
     }
 }

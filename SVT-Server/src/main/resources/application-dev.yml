@@ -55,4 +55,20 @@ knife4j:
 spring.cache:
   type: caffeine              # 使用Caffeine作为本地缓存
   caffeine:
-    spec: maximumSize=500,expireAfterWrite=600s  # 缓存配置 
+    spec: maximumSize=500,expireAfterWrite=600s  # 缓存配置
+
+# 开发环境SVT配置
+svt:
+  security:
+    aes:
+      enabled: true           # 开发环境启用AES加密
+      debug: true             # 开发环境启用调试模式
+      key: wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg= # AES API密钥(Base64, 32-byte)
+    sm4:
+      key: "SVT-DEV-SM4-KEY-CHANGE-ME-1234" # SM4密码加密密钥
+
+# 开发环境JWT配置
+jwt:
+  secret: "SVT-DEV-JWT-SECRET-CHANGE-ME-5678-VERY-LONG-AND-SECURE"
+  expiration: 18000 # 5 hours
+  refresh-threshold-seconds: 3600 # 1 hour

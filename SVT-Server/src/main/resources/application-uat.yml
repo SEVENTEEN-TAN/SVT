@@ -1,0 +1,67 @@
+# UAT环境服务器配置
+server:
+  port: 8080                    # UAT环境服务器端口
+
+# UAT环境数据库配置
+spring:
+  datasource:
+    url: jdbc:sqlserver://123.60.68.66:1433;databaseName=svt-uat;encrypt=true;trustServerCertificate=true  # UAT环境数据库URL
+    username: sa                # UAT环境数据库用户名
+    password: Tsq19971108!   # UAT环境数据库密码
+
+  # UAT环境Redis配置
+  data:
+    redis:
+      host: 123.60.68.66        # Redis服务器地址
+      port: 26739                # Redis服务器端口
+      password: 123456          # Redis服务器密码
+      database: 1               # Redis数据库索引 (UAT使用1)
+
+# UAT环境日志配置
+logging:
+  config: classpath:config/log4j2-spring.xml
+  level:
+    root: info                  # 根日志级别
+    com.seventeen.svt: info         # 应用日志级别
+    org.springframework.web: info  # Spring Web日志级别
+    org.springframework.security: info  # Spring Security日志级别
+    org.mybatis: info          # MyBatis日志级别
+  file:
+    name: logs/log.log  # UAT环境日志文件路径
+
+# UAT环境Spring Security配置
+spring.security.debug: false      # 关闭Spring Security调试模式
+
+# UAT环境Swagger配置
+springdoc:
+  swagger-ui:
+    enabled: false             # 禁用Swagger UI
+  api-docs:
+    enabled: false             # 禁用API文档
+
+# UAT环境Knife4j配置
+knife4j:
+  enable: false                # 禁用Knife4j
+  production: true           # 开启生产环境模式
+
+# UAT环境缓存配置
+spring.cache:
+  type: caffeine              # 使用Caffeine作为本地缓存
+  caffeine:
+    spec: maximumSize=500,expireAfterWrite=600s  # 缓存配置
+
+# UAT环境SVT配置
+svt:
+  security:
+    aes:
+      enabled: true           # UAT环境启用AES加密
+      debug: false             # UAT环境关闭调试模式
+      key: wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg= # AES API密钥(Base64, 32-byte)
+    sm4:
+      key: "SVT-UAT-SM4-KEY-CHANGE-ME-ABCD" # SM4密码加密密钥
+
+# UAT环境JWT配置
+jwt:
+  secret: "SVT-UAT-JWT-SECRET-CHANGE-ME-EFGH-VERY-LONG-AND-SECURE"
+  expiration: 18000 # 5 hours
+  refresh-threshold-seconds: 3600 # 1 hour 

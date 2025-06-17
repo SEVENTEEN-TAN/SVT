@@ -1,135 +1,97 @@
 package com.seventeen.svt.common.util;
 
-import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.SmUtil;
 import cn.hutool.crypto.symmetric.SM4;
-import cn.hutool.extra.spring.SpringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
- * SM4加密工具类
+ * SM4加密工具类 (重构为标准的Spring Bean)
  */
+@Slf4j
 @Component
 public class Sm4Utils {
-    private static final Logger logger = LoggerFactory.getLogger(Sm4Utils.class);
-    private static SM4 sm4;
 
-    static {
-        try {
-            initSm4();
-        } catch (Exception e) {
-            logger.error("SM4初始化失败: {}", e.getMessage());
-            throw new RuntimeException("SM4初始化失败", e);
-        }
-    }
+    @Value("${svt.security.sm4.key}")
+    private String sm4Key;
 
-    private static void initSm4() {
-        String sm4Key = SpringUtil.getProperty("sm4.key");
-        if (sm4Key == null) {
-            throw new IllegalArgumentException("SM4 key must not be null.");
+    private SM4 sm4;
+
+    @PostConstruct
+    public void init() {
+        log.info("Initializing SM4 utility...");
+        if (!StringUtils.hasText(sm4Key)) {
+            log.error("SM4 key is not configured. Please check 'svt.security.sm4.key' in your application properties.");
+            throw new IllegalArgumentException("SM4 key cannot be null or empty.");
         }
-        
-        // 去除空格
-        sm4Key = sm4Key.replaceAll(" ", "");
-        
-        // 处理密钥长度，确保是16字节（128位）
-        byte[] keyBytes;
+
         try {
-            // 将十六进制字符串转换为字节数组
-            keyBytes = HexUtil.decodeHex(sm4Key);
-            
-            // 如果密钥长度小于16字节，补0
-            if (keyBytes.length < 16) {
-                byte[] paddedKey = new byte[16];
-                System.arraycopy(keyBytes, 0, paddedKey, 0, keyBytes.length);
-                // 剩余的位置默认为0
-                keyBytes = paddedKey;
+            // SM4密钥要求16字节 (128位)
+            byte[] keyBytes = sm4Key.getBytes("UTF-8");
+            if (keyBytes.length != 16) {
+                log.warn("SM4 key length is not 16 bytes. It will be truncated or padded. For production, a 16-byte key is recommended.");
+                byte[] newKey = new byte[16];
+                System.arraycopy(keyBytes, 0, newKey, 0, Math.min(keyBytes.length, 16));
+                keyBytes = newKey;
             }
-            // 如果密钥长度大于16字节，截取前16字节
-            else if (keyBytes.length > 16) {
-                byte[] truncatedKey = new byte[16];
-                System.arraycopy(keyBytes, 0, truncatedKey, 0, 16);
-                keyBytes = truncatedKey;
-            }
-            
-            logger.debug("SM4 key length: {} bytes", keyBytes.length);
-            sm4 = SmUtil.sm4(keyBytes);
+            this.sm4 = SmUtil.sm4(keyBytes);
+            log.info("SM4 utility initialized successfully.");
         } catch (Exception e) {
-            logger.error("SM4密钥初始化失败: {}", e.getMessage());
-            throw new RuntimeException("SM4密钥初始化失败: " + e.getMessage(), e);
+            log.error("Failed to initialize SM4 utility", e);
+            throw new RuntimeException("Failed to initialize SM4 utility", e);
         }
     }
 
     /**
      * 加密
-     *
      * @param content 待加密内容
-     * @return 加密后的内容
+     * @return 加密后的Hex字符串
      */
-    public static String encrypt(String content) {
+    public String encrypt(String content) {
+        if (!StringUtils.hasText(content)) {
+            return null;
+        }
         try {
-            if (content == null) {
-                return null;
-            }
-            // 使用ECB模式加密（不使用向量）
             return sm4.encryptHex(content);
         } catch (Exception e) {
-            logger.error("加密失败: {}, content: {}", e.getMessage(), content);
-            throw new RuntimeException("加密失败: " + e.getMessage(), e);
+            log.error("SM4 encryption failed for content", e);
+            // 在生产环境中，可能不希望向上抛出原始异常
+            return null; 
         }
     }
 
     /**
      * 解密
-     *
-     * @param encryptContent 加密内容
+     * @param encryptContent 加密的Hex字符串
      * @return 解密后的内容
      */
-    public static String decrypt(String encryptContent) {
+    public String decrypt(String encryptContent) {
+        if (!StringUtils.hasText(encryptContent)) {
+            return null;
+        }
         try {
-            if (encryptContent == null) {
-                return null;
-            }
             return sm4.decryptStr(encryptContent);
         } catch (Exception e) {
-            logger.error("解密失败: {}, encryptContent: {}", e.getMessage(), encryptContent);
-            throw new RuntimeException("解密失败: " + e.getMessage(), e);
+            log.error("SM4 decryption failed for encrypted content", e);
+            // 解密失败通常应返回null或抛出特定异常
+            return null;
         }
     }
 
     /**
-     * 验证密码
-     *
-     * @param password 明文密码
-     * @param encryptPassword 加密密码
+     * 验证密码 (加密后比较)
+     * @param rawPassword 明文密码
+     * @param encryptedPassword 数据库中存储的加密密码
      * @return 是否匹配
      */
-    public static boolean verifyPassword(String password, String encryptPassword) {
-        try {
-            if (password == null || encryptPassword == null) {
-                return false;
-            }
-            
-            // 加密明文密码进行比较
-            String encryptedInput = encrypt(password);
-            logger.debug("Password verification - Encrypted input: {}, Stored encrypted: {}", 
-                        encryptedInput, encryptPassword);
-            if (encryptedInput != null) {
-                return encryptedInput.equals(encryptPassword);
-            }
-        } catch (Exception e) {
-            logger.error("密码验证失败: {}", e.getMessage());
+    public boolean verifyPassword(String rawPassword, String encryptedPassword) {
+        if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(encryptedPassword)) {
             return false;
         }
-        return false;
-    }
-
-    /**
-     * 重新初始化SM4
-     */
-    public static void reinitialize() {
-        initSm4();
+        String encryptedInput = encrypt(rawPassword);
+        return encryptedPassword.equals(encryptedInput);
     }
 } 

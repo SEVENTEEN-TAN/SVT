@@ -23,6 +23,12 @@ import java.time.LocalDateTime;
 @Component
 public class FlexInsertListener implements InsertListener {
 
+    private final UserDetailCacheUtils userDetailCacheUtils;
+
+    public FlexInsertListener(UserDetailCacheUtils userDetailCacheUtils) {
+        this.userDetailCacheUtils = userDetailCacheUtils;
+    }
+
     @Override
     public void onInsert(Object originalObject) {
         log.debug("开始进行插入操作自动填充");
@@ -80,7 +86,7 @@ public class FlexInsertListener implements InsertListener {
         UserDetailCache userDetail = null;
         try {
             String requestUserId = RequestContextUtils.getRequestUserId();
-            userDetail = UserDetailCacheUtils.getUserDetail(requestUserId);
+            userDetail = userDetailCacheUtils.getUserDetail(requestUserId);
         } catch (Exception e) {
             log.debug("无法从上下文获取获取当前登录用户");
         }

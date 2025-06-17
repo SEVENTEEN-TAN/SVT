@@ -10,14 +10,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class Sm4PasswordEncoder implements PasswordEncoder {
 
+    private final Sm4Utils sm4Utils;
+
+    public Sm4PasswordEncoder(Sm4Utils sm4Utils) {
+        this.sm4Utils = sm4Utils;
+    }
 
     @Override
     public String encode(CharSequence rawPassword) {
-        return Sm4Utils.encrypt(rawPassword.toString());
+        return sm4Utils.encrypt(rawPassword.toString());
     }
 
     @Override
     public boolean matches(CharSequence rawPassword, String encodedPassword) {
-        return Sm4Utils.verifyPassword(rawPassword.toString(), encodedPassword);
+        return sm4Utils.verifyPassword(rawPassword.toString(), encodedPassword);
     }
 } 
