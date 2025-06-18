@@ -22,6 +22,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns("*")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
+                .exposedHeaders("X-Encrypted", "Content-Type") // 暴露自定义响应头
                 .allowCredentials(true)
                 .maxAge(3600);
     }

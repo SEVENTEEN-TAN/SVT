@@ -48,6 +48,7 @@ public class AESCryptoFilter implements Filter {
         
         // 检查是否启用AES加密
         if (!aesConfig.isEnabled()) {
+            log.debug("AES加密未启用，跳过处理");
             chain.doFilter(request, response);
             return;
         }
@@ -56,8 +57,11 @@ public class AESCryptoFilter implements Filter {
             HttpServletRequest httpRequest = (HttpServletRequest) request;
             HttpServletResponse httpResponse = (HttpServletResponse) response;
             
+            log.debug("处理请求: {} {}", httpRequest.getMethod(), httpRequest.getRequestURI());
+            
             // 检查是否是API请求
             if (!isApiRequest(httpRequest.getRequestURI())) {
+                log.debug("非API请求，跳过AES处理: {}", httpRequest.getRequestURI());
                 chain.doFilter(request, response);
                 return;
             }
@@ -68,11 +72,13 @@ public class AESCryptoFilter implements Filter {
                 
                 // 创建响应包装器用于加密响应
                 AESResponseWrapper responseWrapper = new AESResponseWrapper(httpResponse);
+                log.debug("创建AES响应包装器");
                 
                 // 继续过滤器链
                 chain.doFilter(processedRequest, responseWrapper);
                 
                 // 处理响应加密
+                log.debug("开始处理响应加密");
                 processResponse(httpRequest, httpResponse, responseWrapper);
                 
             } catch (Exception e) {
@@ -152,31 +158,48 @@ public class AESCryptoFilter implements Filter {
                                AESResponseWrapper responseWrapper) throws IOException {
         
         String encryptedHeader = request.getHeader("X-Encrypted");
+        log.debug("检查请求头 X-Encrypted: {}", encryptedHeader);
         
         // 只对加密请求的响应进行加密
         if (!"true".equalsIgnoreCase(encryptedHeader)) {
+            log.debug("非加密请求，返回原始响应");
+            responseWrapper.copyToOriginalResponse();
+            return;
+        }
+
+        // 🔧 调试模式检查：如果启用调试模式，直接返回明文响应
+        if (aesConfig.isDebug()) {
+            log.info("AES调试模式已启用，返回明文响应（未加密）");
             responseWrapper.copyToOriginalResponse();
             return;
         }
 
         try {
             String responseContent = responseWrapper.getContent();
+            log.debug("获取响应内容，长度: {}", responseContent != null ? responseContent.length() : 0);
             
             if (!StringUtils.hasText(responseContent)) {
+                log.debug("响应内容为空，返回原始响应");
                 responseWrapper.copyToOriginalResponse();
                 return;
             }
 
             log.debug("开始加密响应数据，原始长度: {}", responseContent.length());
+            log.debug("响应内容预览: {}", responseContent.length() > 200 ? responseContent.substring(0, 200) + "..." : responseContent);
             
             // 执行加密
             Map<String, Object> encryptedResponse = aesUtils.encryptForAPI(responseContent);
             String encryptedJson = objectMapper.writeValueAsString(encryptedResponse);
             
-            // 设置响应头
-            response.setHeader("X-Encrypted", "true");
-            response.setContentType("application/json;charset=UTF-8");
-            response.setContentLength(encryptedJson.getBytes(StandardCharsets.UTF_8).length);
+            // 设置响应头（必须在写入响应之前设置）
+            if (!response.isCommitted()) {
+                response.setHeader("X-Encrypted", "true");
+                response.setContentType("application/json;charset=UTF-8");
+                response.setContentLength(encryptedJson.getBytes(StandardCharsets.UTF_8).length);
+                log.info("AES_FILTER: Set response headers - X-Encrypted=true");
+            } else {
+                log.warn("AES_FILTER: Response already committed, cannot set headers");
+            }
             
             // 写入加密后的响应
             try (PrintWriter writer = response.getWriter()) {
@@ -307,9 +330,12 @@ public class AESCryptoFilter implements Filter {
      * AES响应包装器
      */
     private static class AESResponseWrapper extends HttpServletResponseWrapper {
+        private final java.io.ByteArrayOutputStream byteArrayOutputStream = new java.io.ByteArrayOutputStream();
         private final java.io.StringWriter stringWriter = new java.io.StringWriter();
         private final PrintWriter writer = new PrintWriter(stringWriter);
         private final HttpServletResponse originalResponse;
+        private boolean usingOutputStream = false;
+        private boolean usingWriter = false;
 
         public AESResponseWrapper(HttpServletResponse response) {
             super(response);
@@ -317,13 +343,55 @@ public class AESCryptoFilter implements Filter {
         }
 
         @Override
-        public PrintWriter getWriter() {
+        public PrintWriter getWriter() throws IOException {
+            if (usingOutputStream) {
+                throw new IllegalStateException("getOutputStream() has already been called on this response");
+            }
+            usingWriter = true;
             return writer;
+        }
+
+        @Override
+        public ServletOutputStream getOutputStream() throws IOException {
+            if (usingWriter) {
+                throw new IllegalStateException("getWriter() has already been called on this response");
+            }
+            usingOutputStream = true;
+            return new ServletOutputStream() {
+                @Override
+                public boolean isReady() {
+                    return true;
+                }
+
+                @Override
+                public void setWriteListener(WriteListener listener) {
+                    // Not implemented
+                }
+
+                @Override
+                public void write(int b) throws IOException {
+                    byteArrayOutputStream.write(b);
+                }
+
+                @Override
+                public void write(byte[] b) throws IOException {
+                    byteArrayOutputStream.write(b);
+                }
+
+                @Override
+                public void write(byte[] b, int off, int len) throws IOException {
+                    byteArrayOutputStream.write(b, off, len);
+                }
+            };
         }
 
         public String getContent() {
             writer.flush();
-            return stringWriter.toString();
+            if (usingOutputStream) {
+                return new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
+            } else {
+                return stringWriter.toString();
+            }
         }
 
         public void copyToOriginalResponse() throws IOException {

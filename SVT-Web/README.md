@@ -16,29 +16,190 @@ pnpm install
 npm install
 ```
 
-### 1.3 开发环境配置
-在项目根目录创建一个`.env.development`文件，并配置以下必要的环境变量：
+### 1.3 环境配置
 
+#### 1.3.1 环境文件说明
+
+项目包含以下环境配置文件：
+
+| 文件名 | 用途 | 加载时机 |
+|--------|------|----------|
+| `.env.development` | 开发环境 | `npm run dev` 时自动加载 |
+| `.env.uat` | UAT测试环境 | `npm run dev:uat` 时加载 |
+| `.env.production` | 生产环境 | `npm run build` 时自动加载 |
+| `.env.local` | 本地覆盖配置 | 所有环境都会加载（优先级最高）|
+
+#### 1.3.2 环境变量详解
+
+每个环境文件包含以下配置项：
+
+```env
+# ================================
+# 📱 应用基本信息
+# ================================
+VITE_APP_TITLE=SVT 管理系统                    # 应用标题，显示在浏览器标签页
+VITE_APP_DESCRIPTION=一个现代化、高效、可靠的企业级解决方案...  # 应用描述，用于SEO
+VITE_APP_VERSION=1.0.0                        # 应用版本号
+VITE_APP_ENV=development                      # 环境标识
+
+# ================================
+# 🌐 后端API配置
+# ================================
+VITE_API_BASE_URL=http://localhost:8080/api   # 后端API基础URL
+VITE_API_TIMEOUT=10000                        # API请求超时时间（毫秒）
+
+# ================================
+# 👥 管理员联系信息
+# ================================
+VITE_ADMIN_EMAIL=admin@svt.com                # 管理员邮箱
+VITE_ADMIN_PHONE=                            # 管理员电话（可选）
+VITE_SUPPORT_URL=                            # 技术支持链接（可选）
+
+# ================================
+# ⚙️ 功能开关
+# ================================
+VITE_ENABLE_MOCK=false                        # 是否启用Mock数据
+VITE_ENABLE_DEBUG=true                        # 是否启用调试模式
+
+# ================================
+# 🔒 AES加密配置
+# ================================
+# 是否启用前端AES加密 (true/false/不设置)
+# - true: 强制启用加密
+# - false: 强制禁用加密  
+# - 不设置: 根据VITE_AES_KEY是否存在自动决定
+VITE_AES_ENABLED=true
+
+# AES密钥 (Base64格式，32字节)
+# 必须与后端配置的密钥完全一致
+VITE_AES_KEY=wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg=
+
+# ================================
+# 🎨 主题配置
+# ================================
+VITE_THEME_PRIMARY_COLOR=#1890ff              # 主题色
+VITE_THEME_MODE=light                         # 主题模式（light/dark）
+
+# ================================
+# 📄 页脚配置
+# ================================
+VITE_FOOTER_COPYRIGHT=SVT System              # 版权信息
+VITE_FOOTER_YEAR=2025                         # 年份
 ```
-# .env.development
 
-# API代理的目标地址 (你的后端服务地址)
-VITE_API_BASE_URL=http://localhost:8080
+#### 1.3.3 不同环境的配置差异
 
-# 是否启用AES加密 (true/false)，开发时可设为false以方便调试
-VITE_CRYPTO_ENABLED=true
+| 配置项 | Development | UAT | Production |
+|--------|-------------|-----|------------|
+| **标题** | SVT 管理系统 | SVT 管理系统 (UAT) | SVT 管理系统 |
+| **API地址** | `localhost:8080` | `uat.svt.com` | `prod.svt.com` |
+| **协议** | HTTP | HTTP | HTTPS |
+| **超时时间** | 10秒 | 15秒 | 20秒 |
+| **调试模式** | ✅ 启用 | ❌ 禁用 | ❌ 禁用 |
+| **AES加密** | ✅ 启用 | ✅ 启用 | ✅ 启用 |
 
-# AES 密钥 (Base64编码, 32字节), 必须与后端配置的密钥完全一致
-VITE_AES_KEY="your-32-byte-base64-encoded-aes-key-here"
+#### 1.3.4 本地配置覆盖
+
+如果需要在本地临时覆盖某些配置，可以创建 `.env.local` 文件：
+
+```env
+# .env.local（本地开发时的特殊配置）
+VITE_API_BASE_URL=http://192.168.1.100:8080/api
+VITE_AES_ENABLED=false
 ```
 
-### 1.4 启动开发服务器
+⚠️ **注意：** `.env.local` 文件不会被Git跟踪，适合存放个人开发配置。
+
+### 1.4 启动应用
+
+#### 1.4.1 开发模式启动
+
 ```bash
-pnpm dev
-# 或
+# 启动开发环境（默认）
 npm run dev
+# 等同于：vite --mode development
+# 自动加载 .env.development 文件
+
+# 启动UAT环境开发模式
+npm run dev:uat
+# 等同于：vite --mode uat
+# 自动加载 .env.uat 文件
+
+# 启动生产环境开发模式（用于本地测试生产配置）
+npm run dev:prod
+# 等同于：vite --mode production
+# 自动加载 .env.production 文件
 ```
+
+#### 1.4.2 构建模式
+
+```bash
+# 构建生产版本（默认）
+npm run build
+# 等同于：npm run build:prod
+
+# 构建开发版本
+npm run build:dev
+
+# 构建UAT版本
+npm run build:uat
+
+# 构建生产版本
+npm run build:prod
+```
+
+#### 1.4.3 验证环境配置
+
+启动后，您可以在浏览器控制台中查看当前环境：
+
+```javascript
+// 查看当前环境变量
+console.log('当前环境:', import.meta.env.VITE_APP_ENV);
+console.log('API地址:', import.meta.env.VITE_API_BASE_URL);
+console.log('调试模式:', import.meta.env.VITE_ENABLE_DEBUG);
+console.log('AES加密:', import.meta.env.VITE_AES_ENABLED);
+```
+
 应用启动后，可在 `http://localhost:5173` (或Vite指定的其他端口) 访问。
+
+### 1.5 验证AES加密配置
+
+#### 1.5.1 AES加密配置优先级
+
+1. `VITE_AES_ENABLED=false` → 强制禁用加密
+2. `VITE_AES_ENABLED=true` → 强制启用加密
+3. 未设置`VITE_AES_ENABLED` → 根据`VITE_AES_KEY`是否存在自动决定
+
+#### 1.5.2 运行时验证
+
+启动前端服务后，可以通过以下方式验证AES配置：
+
+```javascript
+// 查看当前AES配置
+console.log('AES配置:', window.cryptoConfig?.get());
+
+// 检查加密状态
+console.log('AES加密状态:', window.cryptoConfig?.isEnabled());
+
+// 动态控制加密状态（仅开发环境）
+window.cryptoConfig?.enable();   // 启用加密
+window.cryptoConfig?.disable();  // 禁用加密
+```
+
+#### 1.5.3 常见配置场景
+
+```env
+# 🔹 开发环境 - 启用加密（推荐）
+VITE_AES_ENABLED=true
+VITE_AES_KEY=wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg=
+
+# 🔹 开发环境 - 禁用加密（便于调试）
+VITE_AES_ENABLED=false
+
+# 🔹 生产环境
+VITE_AES_ENABLED=true
+VITE_AES_KEY=your-production-key
+```
 
 ## 2. 技术栈
 
@@ -69,7 +230,44 @@ npm run dev
 - **[API加密 (AES)](./docs/API-Encryption-AES.md)**
 - **[状态管理 (Zustand)](./docs/State-Management.md)**
 
-## 5. 开发规范
+## 5. 环境变量快速参考
+
+### 5.1 必需配置
+
+| 变量名 | 说明 | 示例值 | 必需 |
+|--------|------|--------|------|
+| `VITE_API_BASE_URL` | 后端API地址 | `http://localhost:8080/api` | ✅ |
+| `VITE_AES_KEY` | AES加密密钥 | `wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg=` | ✅ |
+
+### 5.2 可选配置
+
+| 变量名 | 说明 | 默认值 | 可选值 |
+|--------|------|--------|--------|
+| `VITE_AES_ENABLED` | 是否启用AES加密 | 自动检测 | `true`, `false` |
+| `VITE_API_TIMEOUT` | API超时时间(毫秒) | `10000` | 数字 |
+| `VITE_ENABLE_DEBUG` | 调试模式 | `false` | `true`, `false` |
+| `VITE_THEME_PRIMARY_COLOR` | 主题色 | `#1890ff` | 颜色值 |
+| `VITE_APP_TITLE` | 应用标题 | `SVT 管理系统` | 字符串 |
+
+### 5.3 环境差异配置
+
+不同环境的主要配置差异：
+
+```bash
+# 开发环境
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_ENABLE_DEBUG=true
+
+# UAT环境  
+VITE_API_BASE_URL=http://uat.svt.com/api
+VITE_ENABLE_DEBUG=false
+
+# 生产环境
+VITE_API_BASE_URL=https://prod.svt.com/api
+VITE_ENABLE_DEBUG=false
+```
+
+## 6. 开发规范
 - **组件**: 优先创建可复用的、由Props驱动的纯组件。
 - **Hooks**: 将可复用的逻辑（数据获取、事件处理等）抽取为自定义Hooks。
 - **样式**: 组件级样式与组件文件放在一起（如`LoginPage.css`），全局样式放在`src/styles`下。

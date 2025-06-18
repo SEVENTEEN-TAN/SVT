@@ -48,23 +48,19 @@ class CryptoConfigManager {
   private init(): void {
     try {
       // 从环境变量读取配置
-      this.config.enabled = import.meta.env.VITE_AES_ENABLED === 'true';
-      this.config.debug = import.meta.env.VITE_DEBUG === 'true';
-
-      // 输出初始化日志
-      console.log('=== 前端AES加密配置初始化 ===');
-      console.log(`AES加密状态: ${this.config.enabled ? '已启用' : '已禁用'}`);
+      const aesEnabled = import.meta.env.VITE_AES_ENABLED;
       
-      if (this.config.enabled) {
-        console.log(`加密算法: ${this.config.algorithm}`);
-        console.log(`密钥大小: ${this.config.keySize * 32} 位`);
-        console.log(`最大数据大小: ${this.config.maxDataSize / 1024 / 1024} MB`);
-        console.log(`时间戳容差: ${this.config.timestampTolerance / 60000} 分钟`);
+      // 🔧 支持多种配置方式
+      if (aesEnabled !== undefined) {
+        // 显式设置了VITE_AES_ENABLED
+        this.config.enabled = aesEnabled === 'true';
       } else {
-        console.warn('⚠️ AES加密已禁用，API数据将不进行加密传输！');
+        // 未设置时，检查是否有AES密钥，有密钥则默认启用
+        const hasAesKey = !!import.meta.env.VITE_AES_KEY;
+        this.config.enabled = hasAesKey;
       }
       
-      console.log('===========================');
+      this.config.debug = false;
       
       this.initialized = true;
     } catch (error) {
@@ -92,20 +88,14 @@ class CryptoConfigManager {
    * 动态启用加密
    */
   enable(): void {
-    if (!this.config.enabled) {
-      this.config.enabled = true;
-      console.log('✅ AES加密已动态启用');
-    }
+    this.config.enabled = true;
   }
 
   /**
    * 动态禁用加密
    */
   disable(): void {
-    if (this.config.enabled) {
-      this.config.enabled = false;
-      console.warn('⚠️ AES加密已动态禁用');
-    }
+    this.config.enabled = false;
   }
 
   /**
@@ -136,7 +126,6 @@ class CryptoConfigManager {
    */
   updateConfig(updates: Partial<CryptoConfig>): void {
     this.config = { ...this.config, ...updates };
-    console.log('AES配置已更新:', this.getConfigSummary());
   }
 
   /**
@@ -145,23 +134,9 @@ class CryptoConfigManager {
   resetConfig(): void {
     this.config = { ...DEFAULT_CONFIG };
     this.init();
-    console.log('AES配置已重置为默认值');
   }
 
-  /**
-   * 获取调试信息
-   */
-  getDebugInfo(): Record<string, any> {
-    return {
-      initialized: this.initialized,
-      config: this.config,
-      environment: {
-        VITE_AES_ENABLED: import.meta.env.VITE_AES_ENABLED,
-        VITE_DEBUG: import.meta.env.VITE_DEBUG,
-        VITE_AES_KEY: import.meta.env.VITE_AES_KEY ? '***已配置***' : '未配置',
-      }
-    };
-  }
+
 }
 
 // 创建全局配置管理器实例
@@ -204,10 +179,7 @@ export const cryptoConfig = {
    */
   getSummary: () => cryptoConfigManager.getConfigSummary(),
 
-  /**
-   * 获取调试信息
-   */
-  getDebugInfo: () => cryptoConfigManager.getDebugInfo(),
+
 
   /**
    * 更新配置

@@ -99,10 +99,7 @@ export const useAuthStore = create<AuthState>()(
           // 清除localStorage（token和user通过Zustand persist自动管理）
           localStorage.removeItem('expiryDate');
           // 🔧 清理可能的遗留数据
-          localStorage.removeItem('token'); // 清理可能存在的单独token存储
-          localStorage.removeItem('user'); // 清理可能存在的单独user存储
-          localStorage.removeItem('userDetails'); // 清理遗留的userDetails
-          localStorage.removeItem('isWhitelist');
+          cleanupLegacyStorage();
           
           // 重置状态
           set({
@@ -248,10 +245,7 @@ export const useAuthStore = create<AuthState>()(
                            // 🔧 用户还没选择机构角色就刷新页面，清除状态
              console.log('用户未完成机构角色选择，清除登录状态');
              localStorage.removeItem('expiryDate');
-             localStorage.removeItem('token'); // 清理遗留token
-             localStorage.removeItem('user'); // 清理遗留user
-             localStorage.removeItem('userDetails'); // 清理遗留userDetails
-             localStorage.removeItem('isWhitelist');
+             cleanupLegacyStorage();
              
              state.token = null;
              state.user = null;
@@ -265,10 +259,7 @@ export const useAuthStore = create<AuthState>()(
            state.isAuthenticated = false;
            state.hasSelectedOrgRole = false;
            localStorage.removeItem('expiryDate');
-           localStorage.removeItem('token'); // 清理遗留token
-           localStorage.removeItem('user'); // 清理遗留user
-           localStorage.removeItem('userDetails'); // 清理遗留userDetails
-           localStorage.removeItem('isWhitelist');
+           cleanupLegacyStorage();
          }
         }
       },

@@ -26,7 +26,7 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import { cryptoConfig } from '@/config/crypto';
-import { getCryptoStats } from '@/utils/crypto';
+
 
 interface CryptoConfigPanelProps {
   showAdvanced?: boolean;
@@ -47,13 +47,11 @@ const CryptoConfigPanel: React.FC<CryptoConfigPanelProps> = ({
     setLoading(true);
     try {
       const currentConfig = cryptoConfig.get();
-      const currentStats = getCryptoStats();
       
       setEnabled(currentConfig.enabled);
       setConfig(currentConfig);
-      setStats(currentStats);
+      setStats({ hasKey: false, keyExpiry: 0 }); // 简化stats
       
-      console.log('AES配置已刷新:', currentConfig);
     } catch (error) {
       console.error('配置刷新失败:', error);
       message.error('配置刷新失败');
@@ -229,30 +227,7 @@ const CryptoConfigPanel: React.FC<CryptoConfigPanelProps> = ({
         </>
       )}
 
-      {/* 操作按钮 */}
-      {showAdvanced && (
-        <>
-          <Divider />
-          <Space>
-            <Button 
-              type="primary" 
-              size="small"
-              onClick={() => console.log('调试信息:', cryptoConfig.getDebugInfo())}
-            >
-              输出调试信息
-            </Button>
-            <Button 
-              size="small"
-              onClick={() => {
-                const summary = cryptoConfig.getSummary();
-                message.info(summary);
-              }}
-            >
-              显示配置摘要
-            </Button>
-          </Space>
-        </>
-      )}
+
     </Card>
   );
 };

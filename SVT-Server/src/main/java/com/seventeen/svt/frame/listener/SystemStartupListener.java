@@ -175,7 +175,7 @@ public class SystemStartupListener implements CommandLineRunner {
                 log.info("密钥长度: {} 位", aesConfig.getKeyLength());
                 log.info("最大数据大小: {} MB", aesConfig.getMaxDataSize() / 1024 / 1024);
                 log.info("时间戳容差: {} 分钟", aesConfig.getTimestampTolerance() / 60000);
-                log.info("⚠️ 当前使用默认AES密钥: {}",aesConfig.getKey());
+//                log.info("⚠️ 当前使用默认AES密钥: {}",aesConfig.getKey());
                 log.info("✅ AES配置验证通过");
             } else {
                 log.warn("⚠️ AES加密已禁用，API数据将不进行加密传输！");

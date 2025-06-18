@@ -14,7 +14,12 @@ const DashboardPage = React.lazy(() => import('@/pages/Dashboard/DashboardPage')
 const NotFoundPage = React.lazy(() => import('@/pages/Error/NotFoundPage'));
 
 // 简单的加载组件
-const fallbackElement = <Spin size="large" tip="页面加载中..." style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }} />;
+const fallbackElement = (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+    <Spin size="large" />
+    <div style={{ marginTop: 16, color: '#666' }}>页面加载中...</div>
+  </div>
+);
 
 // 路由配置
 export const router = createBrowserRouter([

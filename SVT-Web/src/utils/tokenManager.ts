@@ -82,20 +82,18 @@ class TokenManager {
     try {
       // 检查Token格式
       if (!token || typeof token !== 'string') {
-        console.warn('Token格式无效：Token为空或非字符串');
         return null;
       }
 
       const parts = token.split('.');
       if (parts.length !== 3) {
-        console.warn('Token格式无效：不是标准的JWT格式 (应该有3个部分)');
         return null;
       }
 
       const payload = parts[1];
       
-      // 确保base64字符串长度是4的倍数
-      let decodedPayload = payload;
+      // 确保base64字符串长度是4的倍数，并处理URL安全的base64编码
+      let decodedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
       const mod = decodedPayload.length % 4;
       if (mod !== 0) {
         decodedPayload += '='.repeat(4 - mod);
@@ -106,24 +104,20 @@ class TokenManager {
       
       // 检查必要字段
       if (!parsed.exp) {
-        console.warn('Token缺少过期时间字段 (exp)');
         return null;
       }
 
       return parsed;
-          } catch (error) {
-        console.error('Token解析失败:', error);
-        console.log('Token完整内容:', token);
-        console.log('Token长度:', token.length);
-        console.log('Token分段情况:', token.split('.').map((part, index) => `段${index+1}: ${part.length}字符`));
-        
-        // 如果Token不是JWT格式，可能是其他类型的Token，直接返回null但不报错
-        if (!token.includes('.')) {
-          console.warn('Token不是JWT格式，跳过过期检查');
-        }
-        
-        return null;
+    } catch (error) {
+      // 如果Token不是JWT格式，可能是其他类型的Token，直接返回null但不报错
+      if (!token.includes('.')) {
+        console.debug('Token不是JWT格式，跳过过期检查');
+      } else {
+        console.warn('Token解析失败，可能格式不正确');
       }
+      
+      return null;
+    }
   }
 
   /**

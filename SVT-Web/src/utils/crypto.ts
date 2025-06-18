@@ -137,8 +137,6 @@ export class AESCryptoUtils {
       });
 
       const result = encrypted.toString();
-      console.debug(`AES加密成功，原文长度: ${plainText.length}，密文长度: ${result.length}`);
-      
       return result;
 
     } catch (error) {
@@ -178,8 +176,6 @@ export class AESCryptoUtils {
         throw new Error('解密结果为空，可能是密钥不正确或数据损坏');
       }
 
-      console.debug(`AES解密成功，密文长度: ${encryptedData.length}，明文长度: ${result.length}`);
-      
       return result;
 
     } catch (error) {
@@ -239,12 +235,14 @@ export class AESCryptoUtils {
 
     try {
       // 验证时间戳（防重放攻击）
-      if (!cryptoConfig.isTimestampValid(encryptedResponse.timestamp)) {
+      const timestampValid = cryptoConfig.isTimestampValid(encryptedResponse.timestamp);
+      if (!timestampValid) {
         console.warn('响应时间戳异常，可能存在重放攻击');
       }
 
       const decryptedText = await this.decrypt(encryptedResponse.data, encryptedResponse.iv);
-      return JSON.parse(decryptedText);
+      const result = JSON.parse(decryptedText);
+      return result;
 
     } catch (error) {
       console.error('API数据解密失败:', error);
@@ -260,7 +258,6 @@ export class AESCryptoUtils {
       const key = await this.getKey();
       return key.sigBytes === 32;
     } catch (error) {
-      console.warn('密钥验证失败:', error);
       return false;
     }
   }
@@ -271,7 +268,6 @@ export class AESCryptoUtils {
   static clearKeyCache(): void {
     cachedKey = null;
     keyExpiry = 0;
-    console.debug('AES密钥缓存已清除');
   }
 
   /**
@@ -282,35 +278,7 @@ export class AESCryptoUtils {
     return CryptoJS.enc.Base64.stringify(key);
   }
 
-  /**
-   * 测试加密解密功能
-   */
-  static async testEncryption(): Promise<void> {
-    try {
-      const testData = { username: 'admin', password: '123456' };
-      const testJson = JSON.stringify(testData);
-      
-      console.log('=== 前端加密测试 ===');
-      console.log('原始数据:', testJson);
-      
-      // 生成IV并加密
-      const iv = this.generateIV();
-      console.log('生成的IV:', iv);
-      
-      const encryptedData = await this.encrypt(testJson, iv);
-      console.log('加密结果:', encryptedData);
-      
-      // 解密验证
-      const decryptedData = await this.decrypt(encryptedData, iv);
-      console.log('解密结果:', decryptedData);
-      
-      console.log('加密测试:', testJson === decryptedData ? '✅ 成功' : '❌ 失败');
-      console.log('==================');
-      
-    } catch (error) {
-      console.error('加密测试失败:', error);
-    }
-  }
+
 }
 
 // [INTERNAL_ACTION: Fetching current time via mcp.server_time.]
@@ -333,18 +301,7 @@ export function isEncryptedData(data: any): data is EncryptedData {
   );
 }
 
-/**
- * 获取加密统计信息
- */
-export function getCryptoStats() {
-  return {
-    enabled: AESCryptoUtils.isEnabled(),
-    hasKey: cachedKey !== null,
-    keyExpiry: keyExpiry,
-    config: CRYPTO_CONFIG,
-    configManager: cryptoConfig.getDebugInfo()
-  };
-}
+
 
 // 导出默认实例
 export default AESCryptoUtils; 

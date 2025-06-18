@@ -489,7 +489,7 @@ const BasicLayout: React.FC = () => {
 
           {/* 用户信息 */}
           <Dropdown
-            dropdownRender={() => userInfoDropdown}
+            popupRender={() => userInfoDropdown}
             placement="bottomRight"
             arrow
             trigger={['click']}

@@ -6,7 +6,6 @@ import type {
   InternalAxiosRequestConfig
 } from 'axios';
 import { message } from 'antd';
-import { cryptoConfig } from '@/config/crypto';
 import { AESCryptoUtils, isEncryptedData } from '@/utils/crypto';
 
 // 定义响应数据结构
@@ -54,29 +53,32 @@ request.interceptors.request.use(
       };
     }
 
-    // AES加密处理（仅对POST/PUT请求的data进行加密）
-    if (AESCryptoUtils.isEnabled() && config.data && ['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '')) {
-      try {
-        console.debug('启用AES加密，正在加密请求数据...');
-        const encryptedData = await AESCryptoUtils.encryptForAPI(config.data);
-        
-        // 替换请求体为加密数据
-        config.data = encryptedData;
-        
-        // 设置请求头标识加密
+    // AES加密处理
+    if (AESCryptoUtils.isEnabled()) {
+      const method = config.method?.toLowerCase() || '';
+      
+      // 对POST/PUT/PATCH请求的data进行加密
+      if (config.data && ['post', 'put', 'patch'].includes(method)) {
+        try {
+          const encryptedData = await AESCryptoUtils.encryptForAPI(config.data);
+          
+          // 替换请求体为加密数据
+          config.data = encryptedData;
+          
+          // 设置请求头标识加密
+          if (config.headers) {
+            config.headers['X-Encrypted'] = 'true';
+            config.headers['Content-Type'] = 'application/json';
+          }
+        } catch (error) {
+          console.error('请求数据AES加密失败:', error);
+          throw new Error('请求数据加密失败');
+        }
+      }
+      // 对所有API请求（包括GET）设置加密响应标识
+      else if (config.url?.startsWith('/')) {
         if (config.headers) {
           config.headers['X-Encrypted'] = 'true';
-          config.headers['Content-Type'] = 'application/json';
-        }
-        
-        console.debug('请求数据AES加密完成');
-      } catch (error) {
-        console.error('请求数据AES加密失败:', error);
-        // 加密失败时，根据配置决定是否继续发送请求
-        if (cryptoConfig.get().debug) {
-          console.warn('调试模式：AES加密失败，继续发送未加密请求');
-        } else {
-          throw new Error('请求数据加密失败');
         }
       }
     }
@@ -92,34 +94,29 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   async (response: AxiosResponse<ApiResponse>) => {
-    const { data } = response;
+    let { data } = response;
     
     // 🔓 AES解密处理
-    if (AESCryptoUtils.isEnabled() && response.headers['x-encrypted'] === 'true') {
+    // axios会自动将响应头转换为小写
+    const encryptedHeader = response.headers['x-encrypted'];
+    
+    if (AESCryptoUtils.isEnabled() && encryptedHeader === 'true') {
       try {
-        console.debug('检测到加密响应，正在解密...');
-        
         // 检查响应数据是否为加密格式
         if (isEncryptedData(data)) {
           const decryptedData = await AESCryptoUtils.decryptFromAPI(data);
           response.data = decryptedData;
-          console.debug('响应数据AES解密完成');
-        } else {
-          console.warn('响应标记为加密但数据格式不正确');
+          // 🔧 关键修复：更新本地data变量，以便后续成功判断使用解密后的数据
+          data = decryptedData;
         }
       } catch (error) {
         console.error('响应数据AES解密失败:', error);
-        // 解密失败时，根据配置决定是否继续处理
-        if (cryptoConfig.get().debug) {
-          console.warn('调试模式：AES解密失败，使用原始响应数据');
-        } else {
-          throw new Error('响应数据解密失败');
-        }
+        throw new Error('响应数据解密失败');
       }
     }
     
     // 成功响应
-    if (data.code === 200 || data.success) {
+    if (data.code === 200 || data.success === true) {
       return response;
     }
     
