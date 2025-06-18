@@ -3,7 +3,7 @@
  * 支持AES-256-CBC加密算法
  * 用于API请求响应数据的加密解密
  * 
- * @author Sun Wukong
+ * @author SEVENTEEN
  * @since 2025-06-17
  */
 

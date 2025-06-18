@@ -2,7 +2,7 @@
  * AES加密配置管理面板
  * 用于动态管理和监控AES加密配置
  * 
- * @author Sun Wukong
+ * @author SEVENTEEN
  * @since 2025-06-17
  */
 

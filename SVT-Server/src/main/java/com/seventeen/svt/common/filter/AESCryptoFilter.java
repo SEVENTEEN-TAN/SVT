@@ -29,7 +29,7 @@ import java.util.Map;
  * 2. 请求解密：检查请求头X-Encrypted，解密请求体
  * 3. 响应加密：检查是否需要加密响应
  * 
- * @author Sun Wukong
+ * @author SEVENTEEN
  * @since 2025-06-17
  */
 @Slf4j

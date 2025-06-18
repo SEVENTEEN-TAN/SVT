@@ -2,7 +2,7 @@
  * 前端加密配置管理
  * 统一管理AES加密相关配置和开关
  * 
- * @author Sun Wukong
+ * @author SEVENTEEN
  * @since 2025-06-17
  */
 

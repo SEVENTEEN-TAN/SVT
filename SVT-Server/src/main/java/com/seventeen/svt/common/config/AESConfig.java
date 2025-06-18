@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
  * AES加密配置类
  * 统一管理AES加密相关配置
  * 
- * @author Sun Wukong
+ * @author SEVENTEEN
  * @since 2025-06-17
  */
 @Slf4j

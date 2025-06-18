@@ -17,7 +17,7 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
  * 1. 运行测试生成所需的加密值
  * 2. 将结果复制到配置文件中
  * 
- * @author Sun Wukong
+ * @author SEVENTEEN
  * @since 2025-06-18
  */
 public class PasswordSecurityUpgradeTest {

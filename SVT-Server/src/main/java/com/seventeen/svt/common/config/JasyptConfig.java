@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
  * 环境变量：
  * - JASYPT_ENCRYPTOR_PASSWORD: 加密密钥
  * 
- * @author Sun Wukong
+ * @author SEVENTEEN
  * @since 2025-06-18
  */
 @Configuration

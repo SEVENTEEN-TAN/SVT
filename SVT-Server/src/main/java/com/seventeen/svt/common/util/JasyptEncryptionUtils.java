@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * 2. 调用 encryptProperty() 方法获取密文
  * 3. 在配置文件中使用 ENC(密文)
  * 
- * @author Sun Wukong
+ * @author SEVENTEEN
  * @since 2025-06-18
  */
 @Component
