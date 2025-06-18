@@ -7,8 +7,9 @@
 2. [用户认证流程 (JWT)](#2-用户认证流程-jwt)
 3. [授权与访问控制 (RBAC)](#3-授权与访问控制-rbac)
 4. [密码学策略](#4-密码学策略)
-    - [SM4密码加密](#41-sm4密码加密)
-    - [AES API加密](#42-aes-api加密)
+    - [Argon2密码哈希](#41-argon2密码哈希)
+    - [Jasypt配置文件加密](#42-jasypt配置文件加密)
+    - [AES API加密](#43-aes-api加密)
 5. [会话与缓存管理](#5-会话与缓存管理)
     - [双层缓存架构](#51-双层缓存架构)
     - [Token黑名单机制](#52-token黑名单机制)
@@ -52,8 +53,8 @@ graph TD
 系统采用 **JSON Web Tokens (JWT)** 作为无状态认证的核心机制。
 
 ### 2.1 登录流程
-1.  用户提交用户名和**SM4加密的密码**。
-2.  后端`AuthService`验证凭据。
+1.  用户提交用户名和**明文密码**。
+2.  后端`AuthService`使用**Argon2密码哈希**验证凭据。
 3.  验证成功后，`JwtUtils`生成一个包含用户ID、用户名、角色等信息的JWT。
 4.  `JwtCacheUtils`将生成的Token与用户信息存入Redis缓存，并设置有效期（如10小时）。
 5.  将JWT返回给客户端。
@@ -106,13 +107,75 @@ public Result<?> deleteUserAndRoles() { ... }
 
 ## 4. 密码学策略
 
-### 4.1 SM4密码加密
+### 4.1 Argon2密码哈希
 
-- **算法**: 国密SM4算法。
-- **用途**: 用于加密存储在数据库中的用户密码。
-- **实现**: `Sm4PasswordEncoder`实现了Spring Security的`PasswordEncoder`接口，在用户注册和登录时自动对密码进行加密和比对。
+- **算法**: Argon2id (2019年密码哈希竞赛获胜者)
+- **用途**: 用于安全存储数据库中的用户密码哈希
+- **安全参数**:
+  - `saltLength`: 16字节 (128位随机盐)
+  - `hashLength`: 32字节 (256位哈希输出)
+  - `parallelism`: 1 (并行度)
+  - `memory`: 4096KB (内存使用量)
+  - `iterations`: 3 (迭代次数)
+- **实现**: `SVTArgon2PasswordEncoder`实现了Spring Security的`PasswordEncoder`接口
+- **安全特性**:
+  - **不可逆**: 单向哈希，无法从哈希值推导出原始密码
+  - **抗彩虹表**: 每个密码使用唯一随机盐
+  - **抗暴力破解**: 计算成本高，减缓攻击速度
+  - **内存困难**: 需要大量内存，抵御ASIC攻击
 
-### 4.2 AES API加密
+**使用示例:**
+```java
+@Autowired
+private PasswordEncoder passwordEncoder;
+
+// 密码哈希 (注册时)
+String hashedPassword = passwordEncoder.encode("plainPassword");
+// 输出格式: $argon2id$v=19$m=4096,t=3,p=1$saltBase64$hashBase64
+
+// 密码验证 (登录时)
+boolean matches = passwordEncoder.matches("plainPassword", hashedPassword);
+```
+
+### 4.2 Jasypt配置文件加密
+
+- **算法**: PBEWITHHMACSHA512ANDAES_256 (PBKDF2 + HMAC-SHA512 + AES-256)
+- **用途**: 加密配置文件中的敏感信息（数据库密码、Redis密码、密钥等）
+- **密钥管理**: 通过环境变量`JASYPT_ENCRYPTOR_PASSWORD`提供加密密钥
+- **实现**: `JasyptConfig`配置类 + `JasyptEncryptionUtils`工具类
+
+**配置文件使用:**
+```yaml
+# application.yml
+spring:
+  datasource:
+    password: ENC(encrypted_password_here)  # 加密后的密码
+  data:
+    redis:
+      password: ENC(encrypted_redis_password)  # 加密后的Redis密码
+```
+
+**加密工具使用:**
+```java
+// 通过测试类获取加密值
+@Test
+void testJasyptConfigEncryption() {
+    String plainText = "mySecretPassword";
+    String encrypted = JasyptEncryptionUtils.encrypt(plainText);
+    System.out.println("加密值: " + encrypted);
+    
+    String decrypted = JasyptEncryptionUtils.decrypt(encrypted);
+    System.out.println("解密值: " + decrypted);
+}
+```
+
+**安全特性:**
+- **分离存储**: 加密密钥与配置文件分离存储
+- **环境隔离**: 不同环境使用不同的加密密钥
+- **透明解密**: 应用启动时自动解密，业务代码无感知
+- **防泄露**: 配置文件泄露不会直接暴露敏感信息
+
+### 4.3 AES API加密
 
 - **算法**: AES-256-CBC。
 - **用途**: 对客户端与服务器之间的API请求和响应体进行端到端加密。
@@ -145,5 +208,7 @@ public Result<?> deleteUserAndRoles() { ... }
 - **`PermissionAspect`**: AOP切面，负责权限校验。
 - **`JwtUtils`**: JWT生成与解析的工具类。
 - **`JwtCacheUtils`**: 用户会话缓存管理工具类。
-- **`Sm4PasswordEncoder`**: SM4密码编码器。
+- **`SVTArgon2PasswordEncoder`**: Argon2密码哈希编码器。
+- **`JasyptConfig`**: Jasypt配置文件加密配置类。
+- **`JasyptEncryptionUtils`**: Jasypt加密解密工具类。
 - **`AESCryptoFilter`**: API加解密过滤器。 

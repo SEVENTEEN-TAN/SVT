@@ -20,15 +20,39 @@
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        
+        <!-- 数据库相关版本 -->
         <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
-        <springdoc-openapi.version>2.6.0</springdoc-openapi.version>
-        <jjwt.version>0.11.5</jjwt.version>
+        <mybatis-flex.version>1.10.9</mybatis-flex.version>
+        <druid.version>1.2.24</druid.version>
+        
+        <!-- 缓存相关版本 -->
         <commons-pool2.version>2.12.0</commons-pool2.version>
         <caffeine.version>3.1.8</caffeine.version>
-        <druid.version>1.2.24</druid.version>
-        <mybatis-flex.version>1.10.9</mybatis-flex.version>
+        
+        <!-- 安全相关版本 -->
+        <jjwt.version>0.11.5</jjwt.version>
+        <jasypt.version>3.0.5</jasypt.version>
+        <bouncycastle.version>1.69</bouncycastle.version>
+        
+        <!-- 工具类版本 -->
+        <hutool.version>5.8.16</hutool.version>
+        <guava.version>32.1.3-jre</guava.version>
         <lombok.version>1.18.34</lombok.version>
-        <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
+        
+        <!-- 文档相关版本 -->
+        <springdoc-openapi.version>2.6.0</springdoc-openapi.version>
+        <knife4j.version>4.5.0</knife4j.version>
+        
+        <!-- 日志相关版本 -->
+        <disruptor.version>3.4.4</disruptor.version>
+        
+        <!-- Jakarta版本 -->
+        <jakarta-servlet.version>6.0.0</jakarta-servlet.version>
+        
+        <!-- Maven插件版本 -->
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <spring-boot-maven-plugin.version>3.3.2</spring-boot-maven-plugin.version>
     </properties>
 
 
@@ -63,7 +87,7 @@
         <dependency>
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
-            <version>3.4.4</version>
+            <version>${disruptor.version}</version>
         </dependency>
         
         <!-- Spring Boot 数据库依赖 -->
@@ -167,27 +191,45 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.0.0</version>
+            <version>${jakarta-servlet.version}</version>
             <scope>provided</scope>
         </dependency>
         
-        <!-- 添加hutool-all依赖 -->
+        <!-- 工具类依赖 -->
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-            <version>5.8.16</version>
+            <version>${hutool.version}</version>
         </dependency>
-        <!-- 添加bouncycastle依赖 -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15to18</artifactId>
-            <version>1.69</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
-        <!-- 添加guava依赖 -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>32.1.3-jre</version>
+            <version>${guava.version}</version>
+        </dependency>
+        
+        <!-- Jasypt 配置文件加密 -->
+        <dependency>
+            <groupId>com.github.ulisesbocchio</groupId>
+            <artifactId>jasypt-spring-boot-starter</artifactId>
+            <version>${jasypt.version}</version>
+        </dependency>
+        
+        <!-- Spring Security Crypto for Argon2 -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+        
+        <!-- BouncyCastle for Argon2 implementation -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15to18</artifactId>
+            <version>${bouncycastle.version}</version>
         </dependency>
     </dependencies>
     
@@ -196,7 +238,7 @@
             <dependency>
                 <groupId>com.github.xiaoymin</groupId>
                 <artifactId>knife4j-dependencies</artifactId>
-                <version>4.5.0</version>
+                <version>${knife4j.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -204,23 +246,20 @@
     </dependencyManagement>
     <build>
         <plugins>
+            <!-- Maven编译插件 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
-                        </path>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok-mapstruct-binding</artifactId>
-                            <version>${lombok-mapstruct.version}</version>
                         </path>
                         <path>
                             <groupId>com.mybatis-flex</groupId>
@@ -231,6 +270,21 @@
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                     </compilerArgs>
+                </configuration>
+            </plugin>
+            
+            <!-- Spring Boot Maven插件 -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot-maven-plugin.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

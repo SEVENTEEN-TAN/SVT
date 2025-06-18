@@ -1,7 +1,6 @@
 package com.seventeen.svt.frame.security.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.seventeen.svt.common.config.Sm4PasswordEncoder;
 import com.seventeen.svt.common.exception.BusinessException;
 import com.seventeen.svt.common.response.Result;
 import com.seventeen.svt.common.util.MessageUtils;
@@ -19,6 +18,7 @@ import com.seventeen.svt.modules.system.entity.UserInfo;
 import com.seventeen.svt.modules.system.service.UserInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,7 +30,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserInfoService userInfoService;
     private final JwtUtils jwtUtils;
-    private final Sm4PasswordEncoder sm4PasswordEncoder;
+    private final PasswordEncoder passwordEncoder;
     private final JwtCacheUtils jwtCacheUtils;
     private final UserDetailCacheUtils userDetailCacheUtils;
 
@@ -51,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
         CustomAuthentication customAuthentication = new CustomAuthentication(userInfo.getUserId(), userInfo.getUserNameZh(), userInfo.getPassword());
 
         // 验证密码
-        if (!sm4PasswordEncoder.matches(loginRequest.getPassword(), customAuthentication.getPassword())) {
+        if (!passwordEncoder.matches(loginRequest.getPassword(), customAuthentication.getPassword())) {
             throw new BusinessException(MessageUtils.getMessage("auth.login.wrongcredentials"));
         }
 

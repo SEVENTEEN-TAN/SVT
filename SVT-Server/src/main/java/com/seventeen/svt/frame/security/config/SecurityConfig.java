@@ -1,7 +1,7 @@
 package com.seventeen.svt.frame.security.config;
 
 import com.seventeen.svt.common.config.SecurityPathConfig;
-import com.seventeen.svt.common.config.Sm4PasswordEncoder;
+import com.seventeen.svt.common.config.SVTArgon2PasswordEncoder;
 import com.seventeen.svt.frame.security.filter.JwtAuthenticationFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -27,13 +27,13 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final Sm4PasswordEncoder sm4PasswordEncoder;
+    private final SVTArgon2PasswordEncoder argon2PasswordEncoder;
 
     public SecurityConfig(
             @Lazy JwtAuthenticationFilter jwtAuthenticationFilter,
-            Sm4PasswordEncoder sm4PasswordEncoder) {
+            SVTArgon2PasswordEncoder argon2PasswordEncoder) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.sm4PasswordEncoder = sm4PasswordEncoder;
+        this.argon2PasswordEncoder = argon2PasswordEncoder;
     }
 
     /**
@@ -67,9 +67,10 @@ public class SecurityConfig {
 
     /**
      * 配置密码编码器
+     * 使用Argon2替代SM4，提供更高的安全性
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return sm4PasswordEncoder;
+        return argon2PasswordEncoder;
     }
 } 
