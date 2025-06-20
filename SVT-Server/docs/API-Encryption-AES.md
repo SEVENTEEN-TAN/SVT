@@ -11,9 +11,11 @@
 ## 2. 加密方案
 - **算法**: AES-256-CBC
 - **密钥长度**: 256位 (32字节)
-- **IV (初始化向量)**: 128位 (16字节)，每个请求动态生成。
-- **填充模式**: PKCS7
-- **编码**: 密钥、IV和密文均使用Base64编码进行传输。
+- **IV (初始化向量)**: 128位 (16字节)，每个请求动态生成
+- **填充模式**: PKCS5Padding
+- **编码**: 密钥、IV和密文均使用Base64编码进行传输
+
+> **实际实现说明**: 当前项目使用AES-CBC模式，提供可靠的数据机密性保护。
 
 ## 3. 实现架构
 
@@ -86,17 +88,19 @@ graph TD
 在`application.yml`中可以配置AES加密的相关参数。
 
 ```yaml
-crypto:
-  aes:
-    # 全局开关
-    enabled: true
-    # Base64编码的32字节密钥
-    key: "your-32-byte-base64-encoded-aes-key-here"
-    # 需要排除加密的URL路径 (Ant-style)
-    exclude-urls:
-      - /actuator/**
-      - /swagger-ui/**
-      - /v3/api-docs/**
+# 实际配置格式 (基于AESConfig.java)
+svt:
+  security:
+    aes:
+      enabled: true                      # 启用AES加密
+      debug: false                       # 生产环境关闭调试
+      algorithm: "AES/CBC/PKCS5Padding"  # CBC模式 + PKCS5填充
+      key: ${AES_SECRET_KEY:}            # Base64编码的32字节密钥
+      max-data-size: 10485760            # 最大数据大小 (10MB)
+      exclude-urls:                      # 排除加密的路径
+        - /actuator/**
+        - /swagger-ui/**
+        - /v3/api-docs/**
 ```
 
 ## 7. 注意事项

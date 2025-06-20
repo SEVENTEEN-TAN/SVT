@@ -42,12 +42,18 @@ graph TD
 ### 3.1 `@Audit`
 此注解是启用审计功能的核心，可配置在方法上。
 
-- `description`: 操作的文字描述，例如 "创建用户"。
-- `recordParams`: 是否记录请求参数，默认为`true`。
-- `recordResult`: 是否记录响应结果，默认为`true`。
-- `recordException`: 是否记录异常信息，默认为`true`。
+- `description`: 操作的文字描述，例如 "创建用户"
+- `recordParams`: 是否记录请求参数，默认为`true`
+- `recordResult`: 是否记录响应结果，默认为`false`
+- `recordException`: 是否记录异常信息，默认为`true`
+- `sensitive`: 是否进行脱敏处理，默认为`true`
 
 ```java
+// 实际的使用示例
+@Audit(description = "用户登录", recordResult = true, sensitive = true)
+@PostMapping("/login")
+public Result<?> login() { ... }
+
 @Audit(description = "查询用户列表", recordResult = false)
 @GetMapping("/list")
 public Result<?> listUsers() { ... }

@@ -177,9 +177,10 @@ void testJasyptConfigEncryption() {
 
 ### 4.3 AES API加密
 
-- **算法**: AES-256-CBC。
-- **用途**: 对客户端与服务器之间的API请求和响应体进行端到端加密。
-- **实现**: 详见`API-Encryption-AES.md`文档。
+- **算法**: AES-256-CBC + PKCS5Padding
+- **用途**: 对客户端与服务器之间的API请求和响应体进行端到端加密
+- **IV长度**: 16字节 (128位)
+- **实现**: 详见`API-Encryption-AES.md`文档
 
 ---
 

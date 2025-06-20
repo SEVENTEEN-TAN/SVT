@@ -81,34 +81,41 @@ public class JasyptConfig {
 ### 2.2 JasyptEncryptionUtils 工具类
 
 ```java
+// 实际的JasyptEncryptionUtils.java实现
 @Component
 public class JasyptEncryptionUtils {
-    
-    private static StringEncryptor encryptor;
-    
-    @Autowired
-    public void setEncryptor(@Qualifier("jasyptStringEncryptor") StringEncryptor encryptor) {
-        JasyptEncryptionUtils.encryptor = encryptor;
+
+    private final PooledPBEStringEncryptor encryptor;
+
+    public JasyptEncryptionUtils() {
+        this.encryptor = createEncryptor();
     }
-    
+
     /**
-     * 加密文本
+     * 加密配置属性
      */
-    public static String encrypt(String plainText) {
+    public String encryptProperty(String plainText) {
         if (plainText == null || plainText.trim().isEmpty()) {
-            throw new IllegalArgumentException("待加密文本不能为空");
+            throw new IllegalArgumentException("待加密的文本不能为空");
         }
         return encryptor.encrypt(plainText);
     }
-    
+
     /**
-     * 解密文本
+     * 解密配置属性
      */
-    public static String decrypt(String encryptedText) {
+    public String decryptProperty(String encryptedText) {
         if (encryptedText == null || encryptedText.trim().isEmpty()) {
-            throw new IllegalArgumentException("待解密文本不能为空");
+            throw new IllegalArgumentException("待解密的文本不能为空");
         }
         return encryptor.decrypt(encryptedText);
+    }
+
+    /**
+     * 获取用于配置文件的完整格式
+     */
+    public String getEncryptedConfigValue(String plainText) {
+        return "ENC(" + encryptProperty(plainText) + ")";
     }
 }
 ```

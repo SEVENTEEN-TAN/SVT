@@ -34,11 +34,12 @@ Argon2是2015年密码哈希竞赛(Password Hashing Competition)的获胜者，�
 ### 1.2 SVT项目配置
 
 ```java
-// SVTArgon2PasswordEncoder.java
-private static final int SALT_LENGTH = 16;      // 128位盐值
-private static final int HASH_LENGTH = 32;      // 256位哈希输出
+// SVTArgon2PasswordEncoder.java 实际参数配置
+// new Argon2PasswordEncoder(16, 32, 1, 4096, 3)
+private static final int SALT_LENGTH = 16;      // 盐值长度(字节)
+private static final int HASH_LENGTH = 32;      // 哈希长度(字节)
 private static final int PARALLELISM = 1;       // 并行度
-private static final int MEMORY = 4096;         // 4MB内存使用
+private static final int MEMORY = 4096;         // 内存使用(KB)
 private static final int ITERATIONS = 3;        // 迭代次数
 ```
 
@@ -62,82 +63,39 @@ private static final int ITERATIONS = 3;        // 迭代次数
 ### 2.1 SVTArgon2PasswordEncoder
 
 ```java
+// 实际的SVTArgon2PasswordEncoder.java实现
 @Component
 public class SVTArgon2PasswordEncoder implements PasswordEncoder {
-    
-    private static final Logger logger = LoggerFactory.getLogger(SVTArgon2PasswordEncoder.class);
-    
-    // OWASP推荐的安全参数
-    private static final int SALT_LENGTH = 16;      // 盐值长度(字节)
-    private static final int HASH_LENGTH = 32;      // 哈希长度(字节)
-    private static final int PARALLELISM = 1;       // 并行度
-    private static final int MEMORY = 4096;         // 内存使用(KB)
-    private static final int ITERATIONS = 3;        // 迭代次数
-    
-    private final Argon2PasswordEncoder argon2Encoder;
-    
+
+    private final Argon2PasswordEncoder argon2PasswordEncoder;
+
     public SVTArgon2PasswordEncoder() {
-        // 创建Argon2id编码器，平衡安全性和性能
-        this.argon2Encoder = new Argon2PasswordEncoder(
-            SALT_LENGTH,
-            HASH_LENGTH, 
-            PARALLELISM,
-            MEMORY,
-            ITERATIONS
-        );
-        
-        logger.info("SVT Argon2 密码编码器初始化完成 - 参数: salt={}, hash={}, parallel={}, memory={}KB, iterations={}", 
-                   SALT_LENGTH, HASH_LENGTH, PARALLELISM, MEMORY, ITERATIONS);
+        // 参数：saltLength=16, hashLength=32, parallelism=1, memory=4096, iterations=3
+        this.argon2PasswordEncoder = new Argon2PasswordEncoder(16, 32, 1, 4096, 3);
     }
-    
-    /**
-     * 对明文密码进行Argon2哈希
-     * @param rawPassword 明文密码
-     * @return Argon2哈希值，格式: $argon2id$v=19$m=4096,t=3,p=1$saltBase64$hashBase64
-     */
+
     @Override
     public String encode(CharSequence rawPassword) {
         if (rawPassword == null) {
-            throw new IllegalArgumentException("密码不能为空");
+            throw new IllegalArgumentException("rawPassword cannot be null");
         }
-        
-        long startTime = System.currentTimeMillis();
-        String encoded = argon2Encoder.encode(rawPassword);
-        long endTime = System.currentTimeMillis();
-        
-        logger.debug("Argon2密码哈希完成，耗时: {}ms", endTime - startTime);
-        return encoded;
+        return argon2PasswordEncoder.encode(rawPassword);
     }
-    
-    /**
-     * 验证明文密码与哈希值是否匹配
-     * @param rawPassword 明文密码
-     * @param encodedPassword 存储的哈希值
-     * @return 是否匹配
-     */
+
     @Override
     public boolean matches(CharSequence rawPassword, String encodedPassword) {
-        if (rawPassword == null || encodedPassword == null) {
+        if (rawPassword == null) {
+            throw new IllegalArgumentException("rawPassword cannot be null");
+        }
+        if (encodedPassword == null || encodedPassword.length() == 0) {
             return false;
         }
-        
-        long startTime = System.currentTimeMillis();
-        boolean matches = argon2Encoder.matches(rawPassword, encodedPassword);
-        long endTime = System.currentTimeMillis();
-        
-        logger.debug("Argon2密码验证完成，耗时: {}ms, 结果: {}", endTime - startTime, matches);
-        return matches;
+        return argon2PasswordEncoder.matches(rawPassword, encodedPassword);
     }
-    
-    /**
-     * 检查哈希值是否需要重新编码（参数升级）
-     * @param encodedPassword 现有哈希值
-     * @return 是否需要重新编码
-     */
+
     @Override
     public boolean upgradeEncoding(String encodedPassword) {
-        // 检查是否使用了当前的安全参数
-        return argon2Encoder.upgradeEncoding(encodedPassword);
+        return argon2PasswordEncoder.upgradeEncoding(encodedPassword);
     }
 }
 ```
