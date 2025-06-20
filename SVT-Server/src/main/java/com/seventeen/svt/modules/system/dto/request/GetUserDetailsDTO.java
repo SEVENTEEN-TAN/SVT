@@ -7,12 +7,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "获取用详情")
-public class GetUserDetailsDTO {
+public class GetUserDetailsDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Schema(description = "机构ID", example = "000000", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "机构ID不能为空")

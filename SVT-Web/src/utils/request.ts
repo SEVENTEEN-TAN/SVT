@@ -5,8 +5,9 @@ import type {
   AxiosError,
   InternalAxiosRequestConfig
 } from 'axios';
-import { message } from 'antd';
 import { AESCryptoUtils, isEncryptedData } from '@/utils/crypto';
+import { useAuthStore } from '@/stores/authStore';
+import { messageManager } from '@/utils/messageManager';
 
 // 定义响应数据结构
 export interface ApiResponse<T = unknown> {
@@ -121,8 +122,22 @@ request.interceptors.response.use(
     }
     
     // 业务错误
-    message.error(data.message || '操作失败');
-    return Promise.reject(new Error(data.message || '操作失败'));
+    const errorMessage = data.message || '操作失败';
+
+    // 关键修复：检查业务错误消息是否和认证相关
+    const authErrorKeywords = ['JWT', '认证失败', 'Token', '过期', '登录'];
+    const isAuthError = authErrorKeywords.some(keyword => errorMessage.includes(keyword));
+
+    if (isAuthError) {
+      // 如果是认证相关错误，则触发登出逻辑
+      console.warn(`检测到业务层面的认证错误: ${errorMessage}`);
+      useAuthStore.getState().logout({ message: errorMessage });
+      return Promise.reject(new Error(errorMessage));
+    }
+
+    // 对于其他普通业务错误，只显示消息
+    messageManager.error(errorMessage);
+    return Promise.reject(new Error(errorMessage));
   },
   (error: AxiosError) => {
     // 网络错误或HTTP状态码错误
@@ -131,41 +146,49 @@ request.interceptors.response.use(
       
       switch (status) {
         case 401:
-          // 未授权，清除token并跳转登录
-          // 注意：这里不直接操作localStorage，而是通过authStore统一处理
-          // 避免与TokenManager的处理逻辑冲突
           console.warn('API请求返回401，Token可能已过期');
           
-          // 延迟执行，避免与TokenManager的处理冲突
-          setTimeout(() => {
-            const currentPath = window.location.pathname;
-            if (currentPath !== '/login') {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-              localStorage.removeItem('expiryDate');
-              message.warning('您已超过5分钟未操作，请重新登录');
-          window.location.href = '/login';
-            }
-          }, 100);
+          // 🔧 关键优化：检查是否为verify-user-status请求
+          const isVerifyUserStatus = error.config?.url?.includes('/verify-user-status');
+          
+          if (isVerifyUserStatus) {
+            // verify-user-status返回401时，后端已将token加入黑名单
+            // 只需清理前端状态，不再调用logout API
+            console.log('🔧 verify-user-status返回401，直接清理前端状态（后端已处理token黑名单）');
+            useAuthStore.getState().clearAuthState(); // 直接清理状态，不调用logout API
+            
+            // 显示一次消息即可
+            const errorMsg = (data as ApiResponse)?.message || '登录已过期，请重新登录';
+            setTimeout(() => {
+              messageManager.warning(errorMsg);
+            }, 100);
+          } else {
+            // 其他API的401，正常处理
+            const errorMsg = (data as ApiResponse)?.message || '登录已过期，请重新登录';
+            useAuthStore.getState().logout();
+            setTimeout(() => {
+              messageManager.warning(errorMsg);
+            }, 100);
+          }
           break;
         case 403:
-          message.error('没有权限访问该资源');
+          messageManager.error('没有权限访问该资源');
           break;
         case 404:
-          message.error('请求的资源不存在');
+          messageManager.error('请求的资源不存在');
           break;
         case 500:
-          message.error('服务器内部错误');
+          messageManager.error('服务器内部错误');
           break;
         default:
-          message.error((data as ApiResponse)?.message || `请求失败(${status})`);
+          messageManager.error((data as ApiResponse)?.message || `请求失败(${status})`);
       }
     } else if (error.request) {
       // 请求发出但没有收到响应
-      message.error('网络连接失败，请检查网络');
+      messageManager.error('网络连接失败，请检查网络');
     } else {
       // 其他错误
-      message.error(error.message || '请求失败');
+      messageManager.error(error.message || '请求失败');
     }
     
     return Promise.reject(error);
@@ -173,6 +196,8 @@ request.interceptors.response.use(
 );
 
 // 封装常用请求方法
+export { request };
+
 export const api = {
   get: <T = unknown>(url: string, config?: InternalAxiosRequestConfig): Promise<T> => {
     return request.get<ApiResponse<T>>(url, config).then(res => res.data.data);
@@ -199,6 +224,4 @@ export const api = {
       },
     }).then(res => res.data.data);
   },
-};
-
-export default request; 
+}; 

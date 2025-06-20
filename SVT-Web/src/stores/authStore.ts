@@ -5,6 +5,7 @@ import * as authApi from '@/api/auth';
 import type { User, LoginRequest } from '@/types/user';
 import type { UserDetailCache } from '@/types/org-role';
 import { cleanupLegacyStorage } from '@/utils/storageCleanup';
+import { message } from 'antd';
 
 // 认证状态接口
 interface AuthState {
@@ -18,7 +19,8 @@ interface AuthState {
   
   // 操作
   login: (credentials: LoginRequest) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (options?: { message?: string }) => Promise<void>;
+  clearAuthState: () => void; // 🔧 新增：直接清理状态，不调用API
   refreshUserInfo: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
   completeOrgRoleSelection: (userDetails: UserDetailCache) => void;
@@ -83,15 +85,39 @@ export const useAuthStore = create<AuthState>()(
       },
 
       // 退出登录
-      logout: async () => {
+      logout: async (options?: { message?: string }) => {
+        const state = get();
+        
+        // 🔧 防止重复调用logout
+        if (state.loading || !state.isAuthenticated) {
+          console.log('登出已在进行中或用户未认证，跳过重复执行');
+          return;
+        }
+
+        const initialMessage = options?.message;
+
+        // 只有在被动强制登出时（即有错误消息传入时）才显示提示
+        if (initialMessage) {
+          message.warning(initialMessage);
+        }
+
         set({ loading: true });
         
         try {
-          // 调用后端退出登录接口
-          await authApi.logout();
-        } catch (error) {
-          console.warn('后端退出登录失败:', error);
-          // 即使后端失败，前端也要清除本地状态
+          // 🔧 优化：只有在token有效时才调用后端logout
+          if (state.token && state.isAuthenticated) {
+            try {
+              await authApi.logout();
+            } catch (error: any) {
+              // 如果是401错误，说明token已失效，不需要显示错误
+              if (error.response?.status !== 401) {
+                console.warn('调用后端logout接口失败:', error);
+                if (!initialMessage) {
+                  message.error('退出登录失败，请稍后重试');
+                }
+              }
+            }
+          }
         } finally {
           // 停止Token管理器
           tokenManager.stop();
@@ -111,6 +137,28 @@ export const useAuthStore = create<AuthState>()(
             hasSelectedOrgRole: false,
           });
         }
+      },
+
+      // 🔧 直接清理认证状态，不调用logout API（用于verify-user-status 401的情况）
+      clearAuthState: () => {
+        console.log('🔧 直接清理认证状态（不调用logout API）');
+        
+        // 停止Token管理器
+        tokenManager.stop();
+        
+        // 清除localStorage
+        localStorage.removeItem('expiryDate');
+        cleanupLegacyStorage();
+        
+        // 重置状态
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          loading: false,
+          expiryDate: null,
+          hasSelectedOrgRole: false,
+        });
       },
 
       // 刷新用户信息

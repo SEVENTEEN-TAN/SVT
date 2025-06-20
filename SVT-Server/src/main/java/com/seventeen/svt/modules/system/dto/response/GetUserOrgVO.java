@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
@@ -13,7 +14,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "用户机构列表")
-public class GetUserOrgVO {
+public class GetUserOrgVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Schema(description = "机构列表")
     private List<UserOrgInfo> orgInfos;
@@ -21,7 +24,9 @@ public class GetUserOrgVO {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class UserOrgInfo{
+    public static class UserOrgInfo implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         @Schema(description = "机构ID")
         private String orgId;

@@ -1,7 +1,7 @@
 /**
  * 认证相关API接口
  */
-import { api } from '@/utils/request';
+import { api, request } from '@/utils/request';
 import type { LoginRequest, LoginResponse, User } from '@/types/user';
 import type { 
   GetUserOrgResponse, 
@@ -94,4 +94,47 @@ export const getUserRoleList = async (): Promise<GetUserRoleResponse> => {
 export const getUserDetails = async (params: GetUserDetailsRequest): Promise<UserDetailCache> => {
   const response = await api.post<UserDetailCache>('/login/get-user-details', params);
   return response;
+};
+
+/**
+ * 验证用户状态
+ * 用于Dashboard页面验证用户当前状态，包括用户是否被禁用、Token是否有效等
+ * @returns 用户状态验证结果
+ */
+export interface UserStatusVerificationResult {
+  isValid: boolean;
+  message: string;
+}
+
+// 后端标准响应格式
+interface ApiResponse {
+  code: number;
+  message: string;
+  data: any;
+  success: boolean;
+  timestamp: number;
+  traceId: string;
+}
+
+export const verifyUserStatus = async (): Promise<UserStatusVerificationResult> => {
+  try {
+    // 关键修复：使用我们自定义的、带拦截器的 request 实例
+    const response = await request.post<ApiResponse>('/login/verify-user-status');
+    const data = response.data; // 这里是完整的响应体 { code, message, data, success, ... }
+    
+    if (data.success) {
+      return {
+        isValid: true,
+        message: data.message || '用户状态正常'
+      };
+    } else {
+      // 对于业务逻辑上的失败（例如，code不是200但HTTP是200），也向上抛出错误
+      throw new Error(data.message || '用户状态异常');
+    }
+  } catch (error: any) {
+    // 这个catch现在能捕获到所有来自拦截器的错误
+    // 拦截器已经处理了message.error的显示和跳转，这里只需要继续抛出，让useUserStatus的逻辑能感知到错误即可
+    const errorMessage = error.response?.data?.message || error.message || '用户状态验证失败';
+    throw new Error(errorMessage);
+  }
 }; 

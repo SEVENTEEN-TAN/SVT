@@ -5,13 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Data
 @Builder
 @NoArgsConstructor  // 添加无参构造函数
 @AllArgsConstructor // 如果使用了@Builder,需要添加全参构造函数
-public class JwtCache {
+public class JwtCache implements Serializable {
+
+    private static final long serialVersionUID = 1L;
     /**
      * 当前Token
      */

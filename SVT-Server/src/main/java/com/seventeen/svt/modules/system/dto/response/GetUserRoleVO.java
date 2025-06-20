@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
@@ -13,7 +14,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "用户权限列表")
-public class GetUserRoleVO {
+public class GetUserRoleVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Schema(description = "权限列表")
     private List<UserRoleInfo> userRoleInfos;
@@ -21,7 +24,9 @@ public class GetUserRoleVO {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class UserRoleInfo{
+    public static class UserRoleInfo implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         @Schema(description = "角色ID")
         private String roleId;

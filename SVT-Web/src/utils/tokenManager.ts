@@ -126,22 +126,43 @@ class TokenManager {
   private async handleTokenExpired() {
     const authStore = useAuthStore.getState();
     
-    // 停止所有定时器
+    // 🔧 关键修复：立即停止所有定时器，防止重复调用
     this.stop();
     
-    try {
-      // 执行登出
-      await authStore.logout();
-    } catch (error) {
-      console.warn('自动登出失败:', error);
+    // 🔧 检查是否已经在处理过期流程，防止重复执行
+    if (this.isHandlingExpired) {
+      console.log('Token过期处理已在进行中，跳过重复执行');
+      return;
     }
+    this.isHandlingExpired = true;
     
-    // 显示过期提示
-    message.warning('您已超过5分钟未操作，系统已自动登出');
-    
-    // 跳转到登录页
-    window.location.href = '/login';
+    try {
+      // 显示过期提示
+      message.warning('您已超过5分钟未操作，系统已自动登出');
+      
+      // 🔧 直接清除本地状态，不调用后端logout API（因为token已失效）
+      authStore.token = null;
+      authStore.user = null;
+      authStore.isAuthenticated = false;
+      authStore.hasSelectedOrgRole = false;
+      
+      // 清除localStorage
+      localStorage.removeItem('expiryDate');
+      localStorage.removeItem('auth-storage');
+      
+      // 跳转到登录页
+      window.location.href = '/login';
+    } catch (error) {
+      console.warn('处理Token过期失败:', error);
+    } finally {
+      // 重置处理标志
+      setTimeout(() => {
+        this.isHandlingExpired = false;
+      }, 1000);
+    }
   }
+
+  private isHandlingExpired = false;
 
   /**
    * 显示Token即将过期警告

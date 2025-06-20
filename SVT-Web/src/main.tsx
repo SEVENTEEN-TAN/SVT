@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { RouterProvider } from 'react-router-dom';
-import { App, ConfigProvider } from 'antd';
-import router from './router';
+import { App as AntdApp, ConfigProvider } from 'antd';
+import App from './App';
 import './index.css';
 
 // 抑制Antd相关警告
@@ -57,9 +56,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         strict: false, // 禁用严格模式警告
       }}
     >
-      <App>
-        <RouterProvider router={router} />
-      </App>
+      <AntdApp>
+        <App />
+      </AntdApp>
     </ConfigProvider>
   </React.StrictMode>,
 );

@@ -49,6 +49,7 @@
         
         <!-- Jakarta版本 -->
         <jakarta-servlet.version>6.0.0</jakarta-servlet.version>
+        <jakarta-annotation.version>2.1.1</jakarta-annotation.version>
         
         <!-- Maven插件版本 -->
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
@@ -198,6 +199,13 @@
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
             <version>${jakarta-servlet.version}</version>
+        </dependency>
+        
+        <!-- Jakarta Annotation API -->
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <version>${jakarta-annotation.version}</version>
             <scope>provided</scope>
         </dependency>
         

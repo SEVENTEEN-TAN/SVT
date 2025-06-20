@@ -2,35 +2,33 @@ package com.seventeen.svt.frame.cache.util;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.seventeen.svt.common.util.RedisUtils;
+
 import com.seventeen.svt.frame.cache.entity.JwtCache;
 import com.seventeen.svt.frame.security.utils.JwtUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ObjectUtils;
 
+import jakarta.annotation.PostConstruct;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Jwt的缓存工具
- * 此处采用二级缓存: Caffeine + Redis
- * 注意: Caffeine的初始化有固定大小本地没有会尝试从云端同步
- * - 最大容量80
- * - 过期时间5分钟
+ * JWT缓存工具 - 本地缓存版本
+ * 采用Caffeine本地缓存，配合Session Sticky负载均衡策略
  * 
- * 优化说明：
- * - 添加了Redis异常处理机制
- * - 实现了优雅降级策略
- * - 缓存操作失败不会影响主业务流程
+ * 设计说明：
+ * - 使用纯本地缓存，避免分布式一致性问题
+ * - 配合Session Sticky确保用户请求固定路由到同一实例
+ * - 最大容量200，过期时间与JWT token一致
+ * - 服务重启时用户需要重新登录（这是合理的安全策略）
  */
 @Slf4j
 @Component
 public class JwtCacheUtils {
 
     private final JwtUtils jwtUtils;
-    private final RedisUtils redisUtils;
-    private final Cache<String, JwtCache> userLocalCache;
+    private Cache<String, JwtCache> userLocalCache;
+    private Cache<String, String> blacklistCache;
 
     @Value("${jwt.expiration}")
     private long expirationSeconds;
@@ -38,36 +36,41 @@ public class JwtCacheUtils {
     @Value("${jwt.refresh-threshold-seconds}")
     private long refreshThresholdSeconds;
 
-    private static final String JWT_KEY_PREFIX = "les:jwt:";
-    private static final String JWT_BLACKLIST_KEY = JWT_KEY_PREFIX + "blacklist:";
-
-    public JwtCacheUtils(JwtUtils jwtUtils, RedisUtils redisUtils) {
+    public JwtCacheUtils(JwtUtils jwtUtils) {
         this.jwtUtils = jwtUtils;
-        this.redisUtils = redisUtils;
+    }
+    
+    @PostConstruct
+    private void initCaches() {
+        log.info("Initializing JWT caches with expiration: {} seconds, refresh threshold: {} seconds", 
+                 expirationSeconds, refreshThresholdSeconds);
+        
+        // JWT用户缓存 - 无大小限制，仅按时间过期
         this.userLocalCache = Caffeine.newBuilder()
-                .maximumSize(80)
-                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .expireAfterWrite(expirationSeconds, TimeUnit.SECONDS)
                 .removalListener((key, value, cause) ->
-                        log.info("Key {} was removed from Caffeine cache, cause: {}", key, cause))
+                        log.debug("JWT cache removed for user: {}, cause: {}", key, cause))
                 .recordStats()
                 .build();
+        
+        // JWT黑名单缓存 - 无大小限制，仅按时间过期
+        this.blacklistCache = Caffeine.newBuilder()
+                .expireAfterWrite(expirationSeconds, TimeUnit.SECONDS)
+                .removalListener((key, value, cause) ->
+                        log.debug("Blacklist token removed: {}, cause: {}", key, cause))
+                .build();
+        
+        log.info("JWT caches initialized successfully");
     }
 
-    private void safeRedisOperation(Runnable operation, String operationName) {
-        try {
-            operation.run();
-        } catch (Exception e) {
-            log.warn("Redis operation [{}] failed, degrading to local cache only. Error: {}", operationName, e.getMessage());
-        }
-    }
-
-    private <T> T safeRedisGet(java.util.function.Supplier<T> operation, String operationName) {
-        try {
-            return operation.get();
-        } catch (Exception e) {
-            log.warn("Redis get operation [{}] failed, using local cache only. Error: {}", operationName, e.getMessage());
-            return null;
-        }
+    /**
+     * 获取缓存统计信息
+     */
+    public String getCacheStats() {
+        return String.format("JWT Cache Stats - Size: %d, Hit Rate: %.2f%%, Blacklist Size: %d",
+                userLocalCache.estimatedSize(),
+                userLocalCache.stats().hitRate() * 100,
+                blacklistCache.estimatedSize());
     }
     
     public JwtCache createJwtCache(String token, String userId, String ipAddress) {
@@ -83,59 +86,63 @@ public class JwtCacheUtils {
     
     public JwtCache getJwt(String userId) {
         JwtCache jwtCache = userLocalCache.getIfPresent(userId);
-        if (ObjectUtils.isEmpty(jwtCache)) {
-            jwtCache = safeRedisGet(() -> (JwtCache) redisUtils.get(JWT_KEY_PREFIX + userId), "getJwt");
-            if (!ObjectUtils.isEmpty(jwtCache)) {
-                userLocalCache.put(userId, jwtCache);
-            }
+        if (jwtCache != null) {
+            log.debug("JWT found in local cache for user: {}", userId);
+        } else {
+            log.debug("JWT not found in local cache for user: {}", userId);
         }
         return jwtCache;
     }
     
     public void putJwt(String userId, JwtCache jwtCache) {
         userLocalCache.put(userId, jwtCache);
-        safeRedisOperation(() -> redisUtils.set(JWT_KEY_PREFIX + userId, jwtCache, expirationSeconds), "putJwt");
+        log.debug("JWT cached for user: {}, expires at: {}", userId, jwtCache.getExpirationTime());
     }
     
     public void removeJwt(String userId) {
         JwtCache jwt = getJwt(userId);
-        if (!ObjectUtils.isEmpty(jwt)) {
-            safeRedisOperation(() -> invalidJwt(jwt.getToken()), "invalidJwt");
+        if (jwt != null) {
+            // 将token加入黑名单
+            invalidJwt(jwt.getToken());
         }
         userLocalCache.invalidate(userId);
-        safeRedisOperation(() -> redisUtils.del(JWT_KEY_PREFIX + userId), "removeJwt");
         log.debug("Successfully removed JWT cache for user: {}", userId);
     }
     
     public void invalidJwt(String token) {
-        safeRedisOperation(() -> redisUtils.set(JWT_BLACKLIST_KEY + token, "1", expirationSeconds), "invalidJwt");
+        blacklistCache.put(token, "INVALID");
+        log.debug("Token added to blacklist: {}", token.substring(0, Math.min(10, token.length())) + "...");
     }
     
     public boolean isBlackToken(String token) {
-        Boolean result = safeRedisGet(() -> redisUtils.hasKey(JWT_BLACKLIST_KEY + token), "isBlackToken");
-        return result != null && result;
+        boolean isBlacklisted = blacklistCache.getIfPresent(token) != null;
+        if (isBlacklisted) {
+            log.debug("Token found in blacklist");
+        }
+        return isBlacklisted;
     }
     
     public boolean checkIpChange(String userId, String currentIp) {
         JwtCache jwt = getJwt(userId);
-        return !ObjectUtils.isEmpty(jwt) && !currentIp.equals(jwt.getLoginIp());
+        return jwt != null && !currentIp.equals(jwt.getLoginIp());
     }
 
     public boolean checkTokenChange(String userId, String token) {
         JwtCache jwt = getJwt(userId);
-        return !ObjectUtils.isEmpty(jwt) && token != null && !token.equals(jwt.getToken());
+        return jwt != null && token != null && !token.equals(jwt.getToken());
     }
     
     public boolean needsRefresh(String userId) {
         JwtCache jwt = getJwt(userId);
-        return !ObjectUtils.isEmpty(jwt) && System.currentTimeMillis() > jwt.getRefreshTime();
+        return jwt != null && System.currentTimeMillis() > jwt.getRefreshTime();
     }
     
     public void renewJwt(String userId) {
         JwtCache jwt = getJwt(userId);
-        if (!ObjectUtils.isEmpty(jwt)) {
+        if (jwt != null) {
             jwt.setRefreshTime(System.currentTimeMillis() + refreshThresholdSeconds * 1000);
             putJwt(userId, jwt);
+            log.debug("JWT refreshed for user: {}", userId);
         }
     }
 } 

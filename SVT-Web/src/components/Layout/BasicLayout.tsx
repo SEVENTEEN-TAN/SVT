@@ -10,6 +10,7 @@ import {
   Breadcrumb,
   Tabs,
   Space,
+  Spin,
 } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -28,6 +29,7 @@ import {
   MenuOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
+import { useUserStatus } from '@/hooks/useUserStatus';
 import Footer from './Footer';
 
 const { Header, Sider, Content } = Layout;
@@ -75,6 +77,7 @@ const BasicLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const { loading } = useUserStatus(); // 🔧 只使用loading状态
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -306,7 +309,6 @@ const BasicLayout: React.FC = () => {
               {user?.roleNameZh || '未知角色'}
             </span>
           </div>
-
         </div>
         
         {/* 退出按钮 */}
@@ -387,6 +389,26 @@ const BasicLayout: React.FC = () => {
     ) : tab.label,
     closable: false, // 禁用默认的关闭按钮，使用自定义的
   }));
+
+  // 用户状态验证加载中
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column'
+      }}>
+        <Spin size="large" />
+        <Text style={{ marginTop: 16, color: '#666' }}>正在验证用户状态...</Text>
+      </div>
+    );
+  }
+
+  // 🔧 用户状态验证失败时不显示全屏错误页面
+  // 错误处理已由request拦截器统一处理（跳转+顶部消息）
+  // BasicLayout只负责loading状态，不显示error页面
 
   return (
     <Layout style={{ height: '100vh', overflow: 'hidden' }}>

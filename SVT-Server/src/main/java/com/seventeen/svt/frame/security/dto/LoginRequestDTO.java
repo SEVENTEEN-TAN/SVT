@@ -6,12 +6,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * 登录请求参数
  */
 @Data
 @Schema(description = "登录请求参数")
-public class LoginRequestDTO {
+public class LoginRequestDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Schema(description = "登录ID", example = "admin", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "登录ID不能为空")

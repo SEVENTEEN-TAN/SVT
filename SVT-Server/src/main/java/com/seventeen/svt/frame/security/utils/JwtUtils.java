@@ -117,6 +117,50 @@ public class JwtUtils {
         }
     }
 
+    /**
+     * 验证Token是否为系统颁发的合法Token
+     * 注意：此方法只验证签名和格式，不验证过期时间
+     * 用于在将Token加入黑名单前，确保Token确实是系统颁发的
+     * 
+     * @param token JWT Token
+     * @return true: 是系统颁发的合法Token (可以安全加入黑名单)
+     *         false: 不是系统颁发的Token (恶意Token，不应加入黑名单)
+     */
+    public boolean isValidSystemToken(String token) {
+        try {
+            // 验证Token签名和格式
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token) // 这里会验证签名
+                    .getBody();
+            
+            // 验证必要的声明是否存在
+            String userId = claims.get("userId", String.class);
+            String userName = claims.get("userName", String.class);
+            String issuerClaim = claims.getIssuer();
+            
+            // 检查必要字段和签发者
+            if (userId == null || userName == null || !issuer.equals(issuerClaim)) {
+                log.warn("Token missing required claims or issuer mismatch");
+                return false;
+            }
+            
+            log.debug("Token signature and format validation passed for user: {}", userId);
+            return true;
+            
+        } catch (io.jsonwebtoken.security.SignatureException e) {
+            log.warn("Token signature validation failed: {}", e.getMessage());
+            return false;
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            log.warn("Malformed token: {}", e.getMessage());
+            return false;
+        } catch (Exception e) {
+            log.warn("Token validation failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
     private String doGenerateToken(Map<String, Object> claims, String subject) {
         final Date createdDate = new Date();
         final Date expirationDate = new Date(createdDate.getTime() + expiration * 1000);

@@ -60,37 +60,73 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                // 🔧 安全改进：首先验证Token是否为系统颁发的合法Token
+                boolean isValidSystemToken = jwtUtils.isValidSystemToken(tokenStr);
+
+                // 恶意Token或格式错误的Token，不加入黑名单，直接拒绝
+                if (!isValidSystemToken) {
+                    log.warn("Invalid or malformed token detected, rejecting without blacklisting");
+                    throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("system.unauthorized"));
+                }
+                
+                // Token签名验证通过，继续业务验证
                 String loginId = jwtUtils.getUserIdFromToken(tokenStr);
                 
                 if (loginId != null && !jwtUtils.isTokenExpired(tokenStr)) {
+                    // 1. 检查黑名单
                     if (jwtCacheUtils.isBlackToken(tokenStr)) {
                         log.debug(MessageUtils.getMessage("log.token.blacklist"));
                         throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.tokeninvalid"));
                     }
 
-                    if (jwtCacheUtils.needsRefresh(loginId)) {
-                        jwtCacheUtils.renewJwt(loginId);
+                    // 2. 检查JWT缓存是否存在 - 不存在则认证失败（服务重启后安全策略）
+                    JwtCache existingCache = jwtCacheUtils.getJwt(loginId);
+                    if (existingCache == null) {
+                        log.debug("JWT cache not found for user: {}, authentication failed (server restart requires re-login)", loginId);
+                        // 🔧 安全改进：系统颁发的Token认证失败时，加入黑名单
+                        jwtCacheUtils.invalidJwt(tokenStr);
+                        throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.expired"));
                     }
-                    
+
+                    // 3. 缓存存在，执行正常的安全检查
                     String currentIp = RequestContextUtils.getIpAddress();
+                    
+                    // 检查IP变化
                     if (jwtCacheUtils.checkIpChange(loginId, currentIp)) {
                         log.debug(MessageUtils.getMessage("log.user.ipchange"));
                         jwtCacheUtils.removeJwt(loginId);
                         throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.ipchange"));
                     }
 
+                    // 检查Token变化
                     if (jwtCacheUtils.checkTokenChange(loginId, tokenStr)) {
                         log.debug(MessageUtils.getMessage("log.token.mismatch"));
+                        jwtCacheUtils.removeJwt(loginId);
                         throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.tokeninvalid"));
                     }
 
+                    // 检查是否需要续期
+                    if (jwtCacheUtils.needsRefresh(loginId)) {
+                        jwtCacheUtils.renewJwt(loginId);
+                    }
+
+                    // 4. 设置认证上下文
                     String username = jwtUtils.getUsernameFromToken(tokenStr);
                     CustomAuthentication customAuthentication = new CustomAuthentication(loginId, username);
                     SecurityContextHolder.getContext().setAuthentication(customAuthentication);
                     TraceIdUtils.setUserId(loginId);
                     log.debug(MessageUtils.getMessage("log.auth.success", loginId));
                 } else {
-                    log.debug(MessageUtils.getMessage("log.token.expired", loginId));
+                    // Token过期或用户ID为空
+                    if (loginId != null) {
+                        log.debug(MessageUtils.getMessage("log.token.expired", loginId));
+                        // 🔧 安全改进：系统颁发的过期Token，加入黑名单
+                        jwtCacheUtils.invalidJwt(tokenStr);
+                    } else {
+                        log.debug("Token parsing failed for system-issued token");
+                        // Token解析失败但签名有效，可能是内部错误，加入黑名单
+                        jwtCacheUtils.invalidJwt(tokenStr);
+                    }
                     throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.expired"));
                 }
             }

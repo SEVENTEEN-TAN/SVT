@@ -51,6 +51,9 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
 
     @Override
     public UserInfo getUserById(String loginId) {
+        if (StrUtil.isBlank(loginId)) {
+            return  null;
+        }
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .select(USER_INFO.ALL_COLUMNS)
                 .from(USER_INFO)

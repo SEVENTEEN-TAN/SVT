@@ -3,9 +3,11 @@ package com.seventeen.svt.modules.system.controller;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.seventeen.svt.common.annotation.audit.Audit;
 import com.seventeen.svt.common.response.Result;
+import com.seventeen.svt.common.util.MessageUtils;
 import com.seventeen.svt.common.util.RequestContextUtils;
 import com.seventeen.svt.frame.cache.entity.UserDetailCache;
 import com.seventeen.svt.modules.system.dto.request.GetUserDetailsDTO;
+import com.seventeen.svt.modules.system.entity.UserInfo;
 import com.seventeen.svt.modules.system.service.UserInfoService;
 import com.seventeen.svt.modules.system.service.UserOrgService;
 import com.seventeen.svt.modules.system.service.UserRoleService;
@@ -76,4 +78,34 @@ public class SystemLoginController {
         UserDetailCache userDetailCache = userInfoServiceImpl.getUserDetails(userDetailsDTO);
         return Result.success(userDetailCache);
     }
+
+    /**
+     * 验证用户状态
+     * 用于Dashboard页面验证用户当前状态
+     */
+    @PostMapping("/verify-user-status")
+    @Operation(summary = "验证用户状态", description = "验证用户状态，包括用户是否被禁用、Token是否有效等")
+    public Result<?> verifyUserStatus() {
+        // 1. 获取当前用户信息
+        String currentUserId = RequestContextUtils.getRequestUserId();
+        log.debug("验证用户状态，用户ID: {}", currentUserId);
+
+        // 2. 查询用户信息
+        UserInfo userInfo = userInfoServiceImpl.getUserById(currentUserId);
+        if (userInfo == null) {
+            log.warn("用户不存在: {}", currentUserId);
+            return Result.fail(401, MessageUtils.getMessage("user.notfound"));
+        }
+
+        // 3. 检查用户状态
+        if ("1".equals(userInfo.getStatus())) {
+            log.warn("用户已被禁用: {}", currentUserId);
+            return Result.fail(403, MessageUtils.getMessage("user.status.deactivate"));
+        }
+
+        log.debug("用户状态验证成功: {}", currentUserId);
+        return Result.success();
+
+    }
+
 }
