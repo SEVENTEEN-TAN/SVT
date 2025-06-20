@@ -43,6 +43,15 @@ SVT是一个采用现代化前后端分离架构的企业级Web应用系统，�
 - **令牌刷新**: 自动续期机制
 - **权限集成**: 与RBAC权限系统深度集成
 
+#### 5. 敏感数据脱敏 (v3.0)
+- **统一配置开关**: 支持环境差异化控制（dev关闭/prod启用）
+- **多格式支持**: String/Number/Collection/Map等数据类型脱敏
+- **注解驱动**: 基于@SensitiveLog注解的精确字段级控制
+- **7种脱敏策略**: DEFAULT(保留首尾)/PHONE/PASSWORD/EMAIL/ID_CARD/BANK_CARD/NAME
+- **JSON字符串脱敏**: 自动处理请求体中的敏感信息
+- **审计日志保护**: 数据库审计记录自动脱敏存储
+- **兜底机制**: 未匹配策略自动使用DEFAULT策略确保安全
+
 ### 📁 项目结构
 
 ```
@@ -97,31 +106,70 @@ SVT/
    # 默认端口: 5173
    ```
 
-### 🔧 AES加密配置
+### 🔧 安全配置
 
 #### 后端配置 (application-dev.yml)
 ```yaml
 svt:
   security:
+    # AES加密配置
     aes:
       enabled: true           # 启用AES加密
       debug: true             # 调试模式（开发环境）
       key: ENC(...)          # Jasypt加密的AES密钥
+    # 敏感数据脱敏配置 (v3.0)
+    sensitive:
+      enabled: false          # 开发环境关闭脱敏，便于调试
 ```
 
 #### 前端配置 (.env.development)
 ```bash
+# AES加密配置
 VITE_AES_ENABLED=false        # 开发环境可禁用加密
 VITE_AES_KEY=your-aes-key     # AES密钥（与后端一致）
 ```
 
+### 🛡️ 敏感数据脱敏配置 (v3.0)
+
+#### 实体类配置示例
+```java
+@Entity
+public class UserInfo {
+    @SensitiveLog(strategy = SensitiveStrategy.DEFAULT)
+    private String userId;          // ID类字段: 保留首尾
+    
+    @SensitiveLog(strategy = SensitiveStrategy.PHONE)
+    private String loginId;         // 手机号: 138****5678
+    
+    @SensitiveLog(strategy = SensitiveStrategy.PASSWORD)
+    private String password;        // 密码: ********
+    
+    @SensitiveLog(strategy = SensitiveStrategy.NAME)
+    private String userNameZh;      // 姓名: 张**
+    
+    @SensitiveLog(strategy = SensitiveStrategy.EMAIL)
+    private String email;           // 邮箱: te***@example.com
+}
+```
+
+#### 支持的脱敏策略
+| 策略 | 适用场景 | 脱敏效果 | 示例 |
+|------|----------|----------|------|
+| `DEFAULT` | ID、Key等通用字段 | 保留首尾字符 | `user123456` → `us****56` |
+| `PHONE` | 手机号码 | 保留前3后4位 | `13812345678` → `138****5678` |
+| `PASSWORD` | 密码字段 | 完全隐藏 | `password123` → `********` |
+| `EMAIL` | 邮箱地址 | 保留首字符和域名 | `test@example.com` → `te***@example.com` |
+| `ID_CARD` | 身份证号 | 保留前6后4位 | `110101199001011234` → `110101********1234` |
+| `BANK_CARD` | 银行卡号 | 保留前4后4位 | `6222021234567890` → `6222********7890` |
+| `NAME` | 真实姓名 | 保留姓氏 | `张三丰` → `张**` |
+
 ### 🌍 多环境支持
 
-| 环境 | 后端端口 | AES加密 | 调试模式 | 配置文件 |
-|------|----------|---------|----------|----------|
-| **开发** | 8080 | 可选 | 启用 | application-dev.yml |
-| **UAT** | 8080 | 启用 | 禁用 | application-uat.yml |
-| **生产** | 8080 | 启用 | 禁用 | application-prod.yml |
+| 环境 | 后端端口 | AES加密 | 调试模式 | 数据脱敏 | 配置文件 |
+|------|----------|---------|----------|----------|----------|
+| **开发** | 8080 | 可选 | 启用 | 禁用 | application-dev.yml |
+| **UAT** | 8080 | 启用 | 禁用 | 启用 | application-uat.yml |
+| **生产** | 8080 | 启用 | 禁用 | 启用 | application-prod.yml |
 
 ### 📚 详细文档导航
 
@@ -139,6 +187,7 @@ VITE_AES_KEY=your-aes-key     # AES密钥（与后端一致）
 #### 📋 项目文档
 - **[架构设计](./project_document/architecture/)** - 系统架构文档
 - **[项目状态](./project_document/)** - 项目进展和状态
+- **[日志脱敏方案](./project_document/SVT_日志脱敏方案_2025-06-18.md)** - 敏感数据脱敏实施方案
 
 ### ⚡ 性能特性
 
@@ -153,12 +202,13 @@ VITE_AES_KEY=your-aes-key     # AES密钥（与后端一致）
 - **存储安全**: Argon2密码哈希 + Jasypt配置加密
 - **访问控制**: JWT + RBAC权限管理
 - **攻击防护**: 时间戳防重放，数据大小限制，SQL注入防护
+- **数据脱敏**: 敏感信息自动脱敏，支持日志和审计记录保护
 
 ### 🔍 监控与调试
 
 - **开发工具**: Swagger UI, Knife4j, 浏览器DevTools
-- **日志系统**: Log4j2分级日志，敏感信息脱敏
-- **调试模式**: AES加密可选，详细错误信息
+- **日志系统**: Log4j2分级日志，敏感信息脱敏 (v3.0增强)
+- **调试模式**: AES加密可选，脱敏功能可选，详细错误信息
 - **性能监控**: Druid数据库监控，JVM指标
 
 ### 🤝 开发规范
@@ -176,6 +226,50 @@ VITE_AES_KEY=your-aes-key     # AES密钥（与后端一致）
 
 ---
 
-**最后更新**: 2025-06-18 18:58:17 +08:00  
-**版本**: v1.0.0  
+## 🔄 最新更新
+
+### v3.0 敏感数据脱敏方案 (2025-06-19~2025-06-20)
+- ✅ **统一配置开关**: 新增`SensitiveConfig`配置类，支持环境差异化控制
+- ✅ **多格式脱敏**: 扩展`SensitiveUtil`支持Number/Collection/Map等数据类型
+- ✅ **JSON字符串脱敏**: 新增`desensitizeJsonString`方法处理请求体脱敏
+- ✅ **实体类注解**: 为UserInfo/OrgInfo等关键实体添加@SensitiveLog注解
+- ✅ **安全风险修复**: 修复RequestLogUtils中的敏感信息泄露问题
+- ✅ **环境配置**: dev环境关闭脱敏便于调试，prod环境强制脱敏保护数据
+- 🔧 **[2025-06-20] 脱敏策略修复**: 添加`SensitiveStrategy.DEFAULT`策略，修复编译错误
+- 🔧 **[2025-06-20] 兜底机制**: 完善未匹配策略的默认处理逻辑，确保数据安全
+
+#### 脱敏效果示例
+```java
+// 实体类配置
+@SensitiveLog(strategy = SensitiveStrategy.DEFAULT)
+private String userId;          // "user123456" → "us****56"
+
+@SensitiveLog(strategy = SensitiveStrategy.PHONE)
+private String loginId;         // "13812345678" → "138****5678"
+
+@SensitiveLog(strategy = SensitiveStrategy.PASSWORD)
+private String password;        // "password123" → "********"
+
+@SensitiveLog(strategy = SensitiveStrategy.NAME)
+private String userNameZh;      // "张三丰" → "张**"
+```
+
+#### 验证步骤
+```bash
+# 1. 编译验证
+cd SVT-Server && mvn clean compile
+
+# 2. 开发环境测试 (脱敏关闭)
+mvn spring-boot:run -Dspring.profiles.active=dev
+# 日志应显示: "⚠️ 敏感数据脱敏功能已禁用"
+
+# 3. 生产环境测试 (脱敏启用)  
+mvn spring-boot:run -Dspring.profiles.active=prod
+# 日志应显示: "✅ 敏感数据脱敏功能已启用"
+```
+
+---
+
+**最后更新**: 2025-06-19 17:48:40 +08:00  
+**版本**: v3.0 (敏感数据脱敏)  
 **作者**: SEVENTEEN & Development Team 
