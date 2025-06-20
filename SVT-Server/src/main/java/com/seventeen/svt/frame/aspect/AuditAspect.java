@@ -37,24 +37,13 @@ public class AuditAspect {
     public Object around(ProceedingJoinPoint point, Audit audit) throws Throwable {
         // 获取原始参数
         Object[] args = point.getArgs();
-
-        // 创建审计日志对象
+        
+        // 创建审计日志对象 - 先记录基本信息
         AuditLog auditLog = new AuditLog();
         auditLog.setOperationTime(LocalDateTime.now());
         auditLog.setOperationDesc(audit.description());
-
-        // 获取请求信息
         auditLog.setOperationIp(RequestContextUtils.getIpAddress());
         auditLog.setOperationUrl(RequestContextUtils.getRequestUrl());
-
-        // 获取当前用户信息
-        String requestUserId = RequestContextUtils.getRequestUserId();
-        UserDetailCache userDetail = userDetailCacheUtils.getUserDetail(requestUserId);
-        if (ObjectUtil.isNotEmpty(userDetail)) {
-            auditLog.setOperatorId(userDetail.getUserId());
-            auditLog.setOperatorOrgId(userDetail.getOrgId());
-            auditLog.setRoleId(userDetail.getRoleId());
-        }
 
         // 记录请求参数
         if (audit.recordParams() && args != null && args.length > 0) {
@@ -69,9 +58,13 @@ public class AuditAspect {
             auditLog.setRequestParams(JSONUtil.toJsonStr(logArgs));
         }
 
+        Object result = null;
         try {
-            // 执行目标方法
-            Object result = point.proceed();
+            // 先执行目标方法
+            result = point.proceed();
+            
+            // 方法执行成功后，尝试获取用户信息
+            populateUserInfo(auditLog, result, point.getSignature().getName());
 
             // 记录响应结果
             if (audit.recordResult() && result != null) {
@@ -88,6 +81,9 @@ public class AuditAspect {
             return result;
 
         } catch (Exception e) {
+            // 方法执行失败，尝试获取用户信息（但不会从结果中获取）
+            populateUserInfo(auditLog, null, point.getSignature().getName());
+            
             // 记录异常信息
             auditLog.setOperationResult("1");
             if (audit.recordException()) {
@@ -96,8 +92,33 @@ public class AuditAspect {
             throw e;
 
         } finally {
-            // 异步保存审计日志,传递已设置好的创建人信息
+            // 异步保存审计日志
             auditLogService.asyncSave(auditLog);
+        }
+    }
+
+    /**
+     * 填充用户信息到审计日志
+     * @param auditLog 审计日志对象
+     * @param result 方法执行结果
+     * @param methodName 方法名称
+     */
+    private void populateUserInfo(AuditLog auditLog, Object result, String methodName) {
+        try {
+            // 其他方法，尝试从当前上下文获取用户信息
+            String requestUserId = RequestContextUtils.getRequestUserId();
+            UserDetailCache userDetail = userDetailCacheUtils.getUserDetail(requestUserId);
+            if (ObjectUtil.isNotEmpty(userDetail)) {
+                auditLog.setOperatorId(userDetail.getUserId());
+                auditLog.setOperatorOrgId(userDetail.getOrgId());
+                auditLog.setRoleId(userDetail.getRoleId());
+            }
+        } catch (Exception e) {
+            // 无法获取用户信息的情况，记录为UNKNOWN
+            log.debug("无法获取用户信息，记录为UNKNOWN: {}", e.getMessage());
+            auditLog.setOperatorId("UNKNOWN");
+            auditLog.setOperatorOrgId("UNKNOWN");
+            auditLog.setRoleId("UNKNOWN");
         }
     }
 }

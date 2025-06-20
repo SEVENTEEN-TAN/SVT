@@ -1,6 +1,7 @@
 package com.seventeen.svt.modules.system.controller;
 
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
+import com.seventeen.svt.common.annotation.audit.Audit;
 import com.seventeen.svt.common.response.Result;
 import com.seventeen.svt.common.util.RequestContextUtils;
 import com.seventeen.svt.frame.cache.entity.UserDetailCache;
@@ -70,6 +71,7 @@ public class SystemLoginController {
     @Operation(summary = "获取当前用户详情", description = "根据当前登录的用户(token+org+role)获取当前用户的详情")
     @PostMapping("/get-user-details")
     @ApiOperationSupport(order = 3)
+    @Audit(description="用户登录",recordParams = false,sensitive=true)
     public Result<UserDetailCache> getUserDetails(@RequestBody GetUserDetailsDTO userDetailsDTO) {
         UserDetailCache userDetailCache = userInfoServiceImpl.getUserDetails(userDetailsDTO);
         return Result.success(userDetailCache);
