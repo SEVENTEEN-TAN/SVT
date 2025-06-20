@@ -1,5 +1,7 @@
 package com.seventeen.svt.frame.security.dto;
 
+import com.seventeen.svt.common.annotation.audit.SensitiveLog;
+import com.seventeen.svt.common.annotation.audit.SensitiveStrategy;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -17,5 +19,6 @@ public class LoginRequestDTO {
 
     @Schema(description = "密码", example = "123456", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "密码不能为空")
+    @SensitiveLog(strategy = SensitiveStrategy.PASSWORD)
     private String password;
 } 

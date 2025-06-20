@@ -2,6 +2,8 @@ package com.seventeen.svt.modules.system.entity;
 
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Table;
+import com.seventeen.svt.common.annotation.audit.SensitiveLog;
+import com.seventeen.svt.common.annotation.audit.SensitiveStrategy;
 import com.seventeen.svt.common.annotation.dbkey.DistributedId;
 import com.seventeen.svt.common.annotation.field.AutoFill;
 import com.seventeen.svt.common.annotation.field.FillType;
@@ -33,6 +35,7 @@ public class UserInfo implements Serializable {
     private String loginId;
 
     @Column(value = "password", comment = "密码")
+    @SensitiveLog(strategy = SensitiveStrategy.PASSWORD)
     private String password;
 
     @Column(value = "user_name_zh", comment = "中文名")

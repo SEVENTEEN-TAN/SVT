@@ -54,6 +54,9 @@ svt:
       enabled: true           # 生产环境启用AES加密
       debug: false             # 生产环境启用调试模式,调试模式下返回明文
       key: ENC(DTSJxXmkJ+nrfdRRcTQhezXFylSFaq4l+9cXbSIFf1Onu+9Umq0S/Lhi4Hul5x5UaEZ1VQGx59U6IdI88YilHi+UWaMuHc5JPKqmj/fNp+4=) # AES API密钥(Base64, 32-byte)
+    # 生产环境脱敏配置：强制启用脱敏功能，保护数据安全
+    sensitive:
+      enabled: true           # 生产环境强制启用脱敏
 
 # 生产环境JWT配置
 jwt:

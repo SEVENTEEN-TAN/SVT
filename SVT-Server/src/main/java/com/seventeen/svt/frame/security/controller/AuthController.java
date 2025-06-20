@@ -31,7 +31,7 @@ public class AuthController {
     }
 
 
-    @Operation(summary = "登出", description = "用户登录获取token")
+    @Operation(summary = "登出", description = "用户登出")
     @GetMapping("/logout")
     public Result<?> logout() {
         String requestUserId = RequestContextUtils.getRequestUserId();

@@ -64,6 +64,9 @@ svt:
       enabled: true           # 开发环境启用AES加密
       debug: true             # 开发环境启用调试模式
       key: ENC(DTSJxXmkJ+nrfdRRcTQhezXFylSFaq4l+9cXbSIFf1Onu+9Umq0S/Lhi4Hul5x5UaEZ1VQGx59U6IdI88YilHi+UWaMuHc5JPKqmj/fNp+4=) # AES API密钥(Base64, 32-byte)
+    # 开发环境脱敏配置：关闭脱敏功能，便于调试
+    sensitive:
+      enabled: false          # 开发环境关闭脱敏
 
 # 开发环境JWT配置
 jwt:

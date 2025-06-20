@@ -156,8 +156,9 @@ svt:
   security:
     aes:
       key: ${SVT_AES_KEY}
-    sm4:
-      key: ${SVT_SM4_KEY}
+      enabled: true
+    sensitive:
+      enabled: ${SENSITIVE_ENABLED:true}
 
 # JWT 令牌配置
 # secret 和 expiration 必须在特定环境的 application-{profile}.yml 文件中提供

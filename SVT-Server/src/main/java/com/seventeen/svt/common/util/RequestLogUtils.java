@@ -70,14 +70,17 @@ public class RequestLogUtils {
                 RequestWrapper wrapper = (RequestWrapper) request;
                 String body = wrapper.getBody();
                 if (body != null && !body.isEmpty()) {
+                    // 先进行脱敏处理
+                    String desensitizedBody = SensitiveUtil.desensitizeJsonString(body);
+                    
                     logBuilder.append("Request Body   : ");
                     // 尝试格式化JSON
                     try {
-                        Object json = objectMapper.readValue(body, Object.class);
+                        Object json = objectMapper.readValue(desensitizedBody, Object.class);
                         logBuilder.append(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(json));
                     } catch (Exception e) {
-                        // 如果不是JSON格式,直接输出
-                        logBuilder.append(body);
+                        // 如果不是JSON格式,直接输出脱敏后的内容
+                        logBuilder.append(desensitizedBody);
                     }
                     logBuilder.append("\n");
                 }

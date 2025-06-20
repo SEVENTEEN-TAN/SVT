@@ -5,6 +5,12 @@ package com.seventeen.svt.common.annotation.audit;
  */
 public enum SensitiveStrategy {
     /**
+     * 默认策略：保留首尾字符，中间用*替换
+     * 适用于ID、Key等通用敏感字段
+     */
+    DEFAULT,
+    
+    /**
      * 身份证号
      */
     ID_CARD,
