@@ -29,5 +29,5 @@ public @interface Audit {
     /**
      * 是否进行脱敏处理
      */
-    boolean sensitive() default false;
+    boolean sensitive() default true;
 }
