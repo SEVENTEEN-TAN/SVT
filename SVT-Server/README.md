@@ -2,24 +2,24 @@
 
 ## 📋 项目概述
 
-SVT-Server是一个基于Spring Boot 3的现代化企业级后端服务，采用分层架构设计，集成了多层安全防护、高性能缓存和智能认证系统。项目历经JWT安全黑名单机制重大升级，实现了生产级的Token验证流程。
+SVT-Server是一个基于Spring Boot 3的现代化企业级后端服务，专为保密性要求较高的企业环境设计。系统采用分层架构，集成了多层安全防护、高性能缓存和智能认证系统。项目历经JWT安全黑名单机制重大升级，实现了生产级的Token验证流程。
 
 ### 🏗️ 核心架构
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     SVT-Server 技术架构                      │
-├─────────────────────────────────────────────────────────────┤
-│  安全层          │ JWT智能黑名单 + AES端到端加密 + 防重放    │
-├─────────────────────────────────────────────────────────────┤
-│  Web层           │ Controller + 认证过滤器链 + 统一异常处理  │
-├─────────────────────────────────────────────────────────────┤
-│  业务层          │ Service + AOP增强 + 事务管理             │
-├─────────────────────────────────────────────────────────────┤
-│  数据访问层      │ MyBatis-Flex + 分布式ID + 审计日志       │
-├─────────────────────────────────────────────────────────────┤
-│  缓存层          │ Caffeine本地缓存 + Redis分布式缓存       │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "SVT-Server 技术架构"
+        A["安全层<br/>JWT智能黑名单 + AES端到端加密 + 防重放"]
+        B["Web层<br/>Controller + 认证过滤器链 + 统一异常处理"]
+        C["业务层<br/>Service + AOP增强 + 事务管理"]
+        D["数据访问层<br/>MyBatis-Flex + 分布式ID + 审计日志"]
+        E["缓存层<br/>Caffeine本地缓存 + Redis分布式缓存"]
+    end
+
+    A --> B
+    B --> C
+    C --> D
+    C --> E
 ```
 
 ## 🔒 多层安全防护体系 (2025-06-20 重大升级)
@@ -32,7 +32,7 @@ SVT-Server是一个基于Spring Boot 3的现代化企业级后端服务，采用
 - **高性能缓存**: Caffeine本地缓存 + 1分钟TTL，支持高并发场景
 - **分布式支持**: 支持Session Sticky + Redis分布式缓存双重部署模式
 
-### 2. AES-256-GCM API加密系统
+### 2. AES-256-CBC API加密系统
 - **端到端加密**: 所有API请求/响应数据自动加密
 - **调试模式**: 开发环境支持明文传输便于调试
 - **防重放攻击**: 时间戳验证机制，10分钟容差窗口
@@ -61,7 +61,7 @@ SVT-Server是一个基于Spring Boot 3的现代化企业级后端服务，采用
 | **安全** | Spring Security | 6.2+ | 安全框架 + JWT |
 | **ORM** | MyBatis-Flex | 1.10.9 | 高性能数据访问层 |
 | **缓存** | Caffeine + Redis | 3.1.8 | 多级缓存策略 |
-| **加密** | BouncyCastle | 1.69 | AES-256-GCM + SM4国密 |
+| **加密** | BouncyCastle | 1.69 | AES-256-CBC + SM4国密 |
 | **密码** | Argon2 | - | 现代化密码哈希 |
 | **配置** | Jasypt | 3.0+ | 配置文件加密 |
 | **数据库** | SQL Server | 2022 | 主数据库 |
@@ -69,50 +69,52 @@ SVT-Server是一个基于Spring Boot 3的现代化企业级后端服务，采用
 
 ## 📁 项目结构详解
 
+```mermaid
+graph TB
+    subgraph "src/main/java/com/seventeen/svt/"
+        subgraph "common/ - 公共基础组件"
+            A1["annotation/<br/>自定义注解体系"]
+            A2["config/<br/>系统配置类"]
+            A3["filter/<br/>过滤器链"]
+            A4["util/<br/>工具类库"]
+            A5["exception/<br/>统一异常处理"]
+        end
+
+        subgraph "frame/ - 框架核心层"
+            B1["aspect/<br/>AOP切面编程"]
+            B2["cache/<br/>缓存管理层 ⭐"]
+            B3["security/<br/>安全认证模块 ⭐"]
+            B4["listener/<br/>系统监听器"]
+        end
+
+        subgraph "modules/ - 业务功能模块"
+            C1["system/<br/>系统管理模块"]
+        end
+    end
+
+    A1 --> B1
+    A2 --> B3
+    A3 --> B3
+    A4 --> B2
+    B1 --> C1
+    B2 --> C1
+    B3 --> C1
 ```
-src/main/java/com/seventeen/svt/
-├── common/                          # 公共基础组件
-│   ├── annotation/                  # 自定义注解体系
-│   │   ├── audit/                  # 审计日志注解
-│   │   ├── dbkey/                  # 分布式ID生成注解
-│   │   ├── field/                  # 字段自动填充注解
-│   │   ├── permission/             # 权限控制注解
-│   │   └── transaction/            # 事务管理注解
-│   ├── config/                     # 系统配置类
-│   │   ├── AESConfig.java          # AES加密配置
-│   │   ├── JasyptConfig.java       # 配置文件加密
-│   │   ├── SVTArgon2PasswordEncoder.java # 密码编码器
-│   │   └── WebMvcConfig.java       # Web配置(CORS支持)
-│   ├── filter/                     # 过滤器链
-│   │   ├── AESCryptoFilter.java    # AES加密过滤器 @Order(10)
-│   │   └── RequestWrapperFilter.java # 请求包装过滤器 @Order(50)
-│   ├── util/                       # 工具类库
-│   │   ├── AESUtils.java           # AES加密解密工具
-│   │   └── JasyptEncryptionUtils.java # Jasypt加密工具
-│   └── exception/                  # 统一异常处理
-├── frame/                          # 框架核心层
-│   ├── aspect/                     # AOP切面编程
-│   │   ├── AuditAspect.java        # 审计日志切面
-│   │   ├── PermissionAspect.java   # 权限检查切面
-│   │   └── TransactionMonitorAspect.java # 事务监控切面
-│   ├── cache/                      # 缓存管理层 (⭐ 核心优化)
-│   │   ├── util/JwtCacheUtils.java # JWT黑名单缓存工具
-│   │   └── util/UserDetailCacheUtils.java # 用户详情缓存
-│   ├── security/                   # 安全认证模块 (⭐ 重大升级)
-│   │   ├── config/SecurityConfig.java # Spring Security配置
-│   │   ├── filter/JwtAuthenticationFilter.java # JWT认证过滤器 @Order(70)
-│   │   ├── utils/JwtUtils.java     # JWT工具类 (⭐ 安全增强)
-│   │   └── service/AuthService.java # 认证业务服务
-│   └── listener/                   # 系统监听器
-│       └── SystemStartupListener.java # 启动时配置验证
-└── modules/                        # 业务功能模块
-    └── system/                     # 系统管理模块
-        ├── controller/             # REST API控制器
-        │   └── AuthController.java # 认证控制器 (⭐ verify-user-status)
-        ├── service/                # 业务逻辑服务
-        ├── entity/                 # 数据实体类
-        └── dto/                    # 数据传输对象
-```
+
+### 🔑 关键组件说明
+
+#### 安全认证模块 (⭐ 重大升级)
+- `SecurityConfig.java` - Spring Security配置
+- `JwtAuthenticationFilter.java` - JWT认证过滤器 @Order(70)
+- `JwtUtils.java` - JWT工具类 (⭐ 安全增强)
+- `AuthService.java` - 认证业务服务
+
+#### 缓存管理层 (⭐ 核心优化)
+- `JwtCacheUtils.java` - JWT黑名单缓存工具
+- `UserDetailCacheUtils.java` - 用户详情缓存
+
+#### 业务控制器
+- `AuthController.java` - 认证控制器 (⭐ verify-user-status)
 
 ## 🔑 JWT黑名单机制详解 (2025-06-20)
 
@@ -498,15 +500,15 @@ svt:
 
 ### 安全检查清单
 - [x] JWT密钥使用Jasypt加密存储
-- [x] Token包含系统颁发者标识  
+- [x] Token包含系统颁发者标识
 - [x] 黑名单机制防止恶意Token攻击
 - [x] Argon2密码哈希抗GPU攻击
 - [x] 配置文件敏感信息Jasypt加密
-- [x] AES-256-GCM端到端数据加密
+- [x] AES-256-CBC端到端数据加密
 - [x] 敏感数据自动脱敏处理
 - [x] 所有API端点启用认证
 - [x] 敏感操作需要重新验证
-- [x] 定期轮换JWT密钥
+- [x] JWT Token活跃时间检验和自动续期机制
 
 ## 📚 技术文档导航
 
@@ -531,7 +533,7 @@ svt:
 ### 安全性 (A+级别)
 1. **JWT智能黑名单**: 区分合法Token vs 恶意Token，防攻击
 2. **多层认证验证**: 签名→黑名单→用户状态→IP检查  
-3. **端到端加密**: AES-256-GCM全链路数据保护
+3. **端到端加密**: AES-256-CBC全链路数据保护
 4. **现代密码哈希**: Argon2抗GPU攻击，OWASP推荐参数
 5. **配置安全**: Jasypt AES-256加密所有敏感配置
 6. **数据脱敏**: 自动识别并脱敏日志中的敏感信息
@@ -553,9 +555,26 @@ svt:
 5. **测试覆盖**: 单元测试+集成测试+安全测试
 6. **标准化开发**: 统一编码规范和架构模式
 
+## 📚 相关文档
+
+### 🔐 安全设计
+- **[安全设计原理](./docs/Security-Design-Principles.md)** - 完整的安全架构设计原理 (新增)
+- [AES加密实现详解](./docs/API-Encryption-AES.md)
+- [JWT认证与安全机制](./docs/Authentication-and-Security.md)
+- [Argon2密码哈希](./docs/Argon2-Password-Hashing.md)
+- [配置文件加密](./docs/Jasypt-Configuration-Encryption.md)
+
+### 🛠️ 技术实现
+- [审计日志系统](./docs/Audit-Logging.md)
+- [分布式ID生成](./docs/Distributed-ID-Generation.md)
+- [自动化事务管理](./docs/Automated-Transaction-Management.md)
+
+### 🏗️ 架构设计
+- [架构设计决策记录 (ADR)](../docs/architecture/ADR.md) - 关键架构决策的背景和理由
+
 ---
 
-**最后更新**: 2025-06-20 18:46:54 +08:00  
-**架构状态**: 生产就绪 🚀  
-**安全等级**: A+ 🛡️  
+**最后更新**: 2025-06-21 (补充设计文档链接)
+**架构状态**: 生产就绪 🚀
+**安全等级**: A+ 🛡️
 **性能等级**: A ⚡

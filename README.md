@@ -2,33 +2,34 @@
 
 ## 📋 项目概述
 
-SVT是一个采用现代化前后端分离架构的企业级Web应用系统，集成了完整的安全加密体系、JWT认证和权限管理功能。项目经过多轮安全优化和用户体验改进，实现了生产级的安全认证流程。
+SVT是一个采用现代化前后端分离架构的企业级Web应用系统，专为保密性要求较高的企业内部使用而设计。系统集成了完整的安全加密体系、JWT认证和权限管理功能，经过多轮安全优化和用户体验改进，实现了生产级的安全认证流程。
 
 ### 🏗️ 系统架构
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   SVT-Web       │    │   AES加密通道     │    │  SVT-Server     │
-│  (React 19)     │◄──►│  (端到端加密)     │◄──►│ (Spring Boot)   │
-│                 │    │                  │    │                 │
-│ • React Router  │    │ • AES-256-GCM    │    │ • Spring Security│
-│ • Ant Design    │    │ • JWT黑名单      │    │ • Mybatis-Flex  │
-│ • Zustand       │    │ • 防重放攻击     │    │ • Redis缓存     │
-│ • CryptoJS      │    │ • 消息管理器     │    │ • Argon2哈希    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+```Mermaid
+graph LR
+    A["SVT-Web (React 19)<br/>• React Router<br/>• Ant Design<br/>• Zustand<br/>• CryptoJS"]
+    B["AES加密通道 (端到端加密)<br/>• AES-256-CBC<br/>• JWT黑名单<br/>• 防重放攻击<br/>• 消息管理器"]
+    C["SVT-Server (Spring Boot)<br/>• Spring Security<br/>• Mybatis-Flex<br/>• Redis缓存<br/>• Argon2哈希"]
+
+    A <--> B
+    B <--> C
 ```
 
-## 🔒 核心安全特性 (2025-06-20 最新版)
+
+
+## 🔒 核心安全特性
 
 ### 1. JWT认证 + 安全黑名单机制 ⭐ 
 **重大设计亮点**: 智能区分系统颁发Token vs 恶意Token
+
 - **多层验证**: Token签名→黑名单→IP检查→Token一致性
 - **安全黑名单**: 仅对系统合法Token进行黑名单管理，防止恶意Token无限膨胀
 - **Token失效流程**: verify-user-status(401) → 直接清理状态 → 跳转login → 顶部toast消息
 - **防重复调用**: BasicLayout统一验证，避免多次API调用
 - **本地缓存**: Caffeine高性能缓存 + Session Sticky负载均衡
 
-### 2. AES-256-GCM端到端加密
+### 2. AES-256-CBC端到端加密
 - **完整的API加密**: 请求响应数据全程加密传输
 - **调试模式支持**: 开发环境可选择明文传输，便于调试
 - **智能配置检测**: 前端自动检测密钥配置，智能启用加密
@@ -62,7 +63,7 @@ SVT是一个采用现代化前后端分离架构的企业级Web应用系统，�
 | Spring Security | 6.2+ | 安全框架 + JWT认证 |
 | MyBatis-Flex | 1.10.9 | 高性能数据访问层 |
 | Caffeine + Redis | 3.1.8 | 多级缓存策略 |
-| BouncyCastle | 1.69 | AES-256-GCM加密 |
+| BouncyCastle | 1.69 | AES-256-CBC加密 |
 | Argon2 | - | 现代化密码哈希 |
 | Jasypt | 3.0+ | 配置文件加密 |
 
@@ -75,38 +76,68 @@ SVT是一个采用现代化前后端分离架构的企业级Web应用系统，�
 | Ant Design | 5.x | 企业级UI组件 |
 | Zustand | 5.x | 轻量状态管理 |
 | React Router | 7.x | 声明式路由 |
-| CryptoJS | 4.x | AES-256-GCM |
+| CryptoJS | 4.x | AES-256-CBC |
 
 ## 📁 项目结构
 
-```
-SVT/
-├── README.md                    # 项目总览（本文件）
-├── SVT-Server/                  # 后端服务
-│   ├── README.md               # 后端完整操作手册
-│   ├── docs/                   # 技术文档
-│   │   ├── API-Encryption-AES.md
-│   │   ├── Argon2-Password-Hashing.md
-│   │   ├── Jasypt-Configuration-Encryption.md
-│   │   └── Authentication-and-Security.md
-│   └── src/                    # 源代码
-│       ├── main/java/com/seventeen/svt/
-│       │   ├── common/         # 公共基础组件
-│       │   ├── frame/          # 框架核心层
-│       │   └── modules/        # 业务功能模块
-│       └── main/resources/     # 配置文件
-├── SVT-Web/                    # 前端应用
-│   ├── README.md               # 前端完整开发指南
-│   ├── docs/                   # 前端文档
-│   └── src/                    # 源代码
-│       ├── api/                # API接口层
-│       ├── components/         # 组件库
-│       ├── pages/              # 页面组件
-│       ├── stores/             # 状态管理
-│       └── utils/              # 工具函数
-└── project_document/           # 项目文档
-    ├── architecture/           # 架构设计文档
-    └── *.md                   # 各类项目文档和修复记录
+```mermaid
+graph TB
+    subgraph "SVT 项目结构"
+        ROOT["SVT/<br/>📄 README.md - 项目总览"]
+
+        subgraph "后端服务"
+            SERVER["SVT-Server/<br/>📄 README.md - 后端操作手册"]
+            SERVER_DOCS["docs/<br/>📚 技术文档"]
+            SERVER_SRC["src/<br/>💻 源代码"]
+
+            subgraph "后端源码结构"
+                COMMON["common/<br/>🔧 公共基础组件"]
+                FRAME["frame/<br/>🏗️ 框架核心层"]
+                MODULES["modules/<br/>📦 业务功能模块"]
+                RESOURCES["resources/<br/>⚙️ 配置文件"]
+            end
+        end
+
+        subgraph "前端应用"
+            WEB["SVT-Web/<br/>📄 README.md - 前端开发指南"]
+            WEB_DOCS["docs/<br/>📚 前端文档"]
+            WEB_SRC["src/<br/>💻 源代码"]
+
+            subgraph "前端源码结构"
+                API["api/<br/>🌐 API接口层"]
+                COMPONENTS["components/<br/>🧩 组件库"]
+                PAGES["pages/<br/>📱 页面组件"]
+                STORES["stores/<br/>🗃️ 状态管理"]
+                UTILS["utils/<br/>🛠️ 工具函数"]
+            end
+        end
+
+        subgraph "项目文档"
+            DOCS["project_document/<br/>📋 项目文档"]
+            ARCH["architecture/<br/>🏛️ 架构设计文档"]
+        end
+    end
+
+    ROOT --> SERVER
+    ROOT --> WEB
+    ROOT --> DOCS
+
+    SERVER --> SERVER_DOCS
+    SERVER --> SERVER_SRC
+    SERVER_SRC --> COMMON
+    SERVER_SRC --> FRAME
+    SERVER_SRC --> MODULES
+    SERVER_SRC --> RESOURCES
+
+    WEB --> WEB_DOCS
+    WEB --> WEB_SRC
+    WEB_SRC --> API
+    WEB_SRC --> COMPONENTS
+    WEB_SRC --> PAGES
+    WEB_SRC --> STORES
+    WEB_SRC --> UTILS
+
+    DOCS --> ARCH
 ```
 
 ## 🚀 快速开始
@@ -144,13 +175,13 @@ SVT/
 ## 🔧 Token失效验证流程 (2025-06-20)
 
 ### 正常验证流程
-```
-用户访问 /dashboard
-  ↓
-BasicLayout.useUserStatus() 调用 verify-user-status (1次)
-  ↓
-Token有效 → 正常展示页面
-Token无效 → 返回401 → messageManager显示顶部提示 → 跳转/login
+
+```mermaid
+graph TD
+    A["用户访问 /dashboard"] --> B["BasicLayout.useUserStatus()<br/>调用 verify-user-status (1次)"]
+    B --> C{Token验证}
+    C -->|有效| D["正常展示页面"]
+    C -->|无效| E["返回401"] --> F["messageManager显示顶部提示"] --> G["跳转/login"]
 ```
 
 ### 关键修复点
@@ -205,14 +236,20 @@ class MessageManager {
 ```typescript
 // useUserStatus.ts - 防重复调用机制
 export const useUserStatus = () => {
-  const hasVerified = useRef(false); // 关键：使用useRef避免循环依赖
-  
+  const hasVerifiedRef = useRef(false); // 关键：使用useRef避免循环依赖
+
   useEffect(() => {
-    if (!hasVerified.current) {
-      hasVerified.current = true;
-      verifyUserStatus();
+    // 只在已认证且有token的情况下才进行验证
+    if (!isAuthenticated || !token) {
+      setLoading(false);
+      return;
     }
-  }, []); // 空依赖数组，只执行一次
+
+    if (isAuthenticated && token && !hasVerifiedRef.current) {
+      hasVerifiedRef.current = true;
+      verifyStatus();
+    }
+  }, [isAuthenticated, token, logout, navigate]); // 依赖认证状态
 };
 ```
 
@@ -226,20 +263,30 @@ export const useUserStatus = () => {
 
 ## 📚 详细文档导航
 
+### 🏗️ 架构设计
+- **[核心架构设计文档](./project_document/SVT_核心架构设计文档_2025-06-20.md)** - 整体架构概览
+- **[架构设计决策记录 (ADR)](./docs/architecture/ADR.md)** - 关键架构决策的背景和理由
+
 ### 🔙 后端文档
 - **[后端操作手册](./SVT-Server/README.md)** - 完整的部署和开发文档
+- **[后端安全设计原理](./SVT-Server/docs/Security-Design-Principles.md)** - 完整的安全架构设计原理
 - **[AES加密实现](./SVT-Server/docs/API-Encryption-AES.md)** - 后端加密详细设计
 - **[JWT认证系统](./SVT-Server/docs/Authentication-and-Security.md)** - 认证和安全机制
 
 ### 🔜 前端文档
 - **[前端开发指南](./SVT-Web/README.md)** - 完整的前端开发文档
-- **[AES加密配置](./SVT-Web/docs/AES加密配置说明.md)** - 前端加密配置
+- **[前端设计原理](./SVT-Web/docs/Frontend-Design-Principles.md)** - 前端架构和安全机制
 - **[状态管理说明](./SVT-Web/docs/State-Management.md)** - Zustand状态管理
 
-### 📋 项目文档
-- **[核心架构设计](./project_document/SVT_核心架构设计文档_2025-06-20.md)** - 最新架构设计
+### 📋 项目沟通记录
 - **[JWT安全修复](./project_document/SVT_JWT安全黑名单修复任务_2025-06-20.md)** - 黑名单机制设计
 - **[用户状态验证修复](./project_document/SVT_用户状态验证修复任务_2025-06-20.md)** - Token失效问题解决方案
+
+### 💡 设计说明
+新增的设计文档补充了原有文档中缺失的设计思想和决策过程：
+- **ADR文档**: 记录了5个关键架构决策的完整背景和理由
+- **安全设计原理**: 详细阐述了金融级安全设计的完整原理
+- **前端设计原理**: 说明了前端架构设计和用户体验优化策略
 
 ## ⚡ 性能特性
 
@@ -253,7 +300,7 @@ export const useUserStatus = () => {
 ### 安全性 (A+级别)
 1. **多层认证防护**: JWT + 黑名单 + 签名验证 + IP检查
 2. **恶意Token防护**: 智能区分系统Token vs 恶意Token，防止黑名单攻击
-3. **端到端加密**: AES-256-GCM全链路数据保护
+3. **端到端加密**: AES-256-CBC全链路数据保护
 4. **现代密码哈希**: Argon2抗GPU攻击
 
 ### 用户体验 (A级别)
@@ -294,5 +341,5 @@ export const useUserStatus = () => {
 ---
 
 **最后更新**: 2025-06-20 18:46:54 +08:00  
-**项目状态**: 生产就绪 ��  
+**项目状态**: 生产就绪  
 **安全等级**: A+ 🛡️ 
