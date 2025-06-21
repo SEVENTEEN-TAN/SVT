@@ -73,7 +73,7 @@ export const validateToken = async (): Promise<boolean> => {
  * @returns 机构列表
  */
 export const getUserOrgList = async (): Promise<GetUserOrgResponse> => {
-  const response = await api.get<GetUserOrgResponse>('/login/get-user-org-list');
+  const response = await api.get<GetUserOrgResponse>('/auth/get-user-org-list');
   return response;
 };
 
@@ -82,7 +82,7 @@ export const getUserOrgList = async (): Promise<GetUserOrgResponse> => {
  * @returns 角色列表
  */
 export const getUserRoleList = async (): Promise<GetUserRoleResponse> => {
-  const response = await api.get<GetUserRoleResponse>('/login/get-user-role');
+  const response = await api.get<GetUserRoleResponse>('/auth/get-user-role');
   return response;
 };
 
@@ -92,7 +92,7 @@ export const getUserRoleList = async (): Promise<GetUserRoleResponse> => {
  * @returns 用户详情
  */
 export const getUserDetails = async (params: GetUserDetailsRequest): Promise<UserDetailCache> => {
-  const response = await api.post<UserDetailCache>('/login/get-user-details', params);
+  const response = await api.post<UserDetailCache>('/auth/get-user-details', params);
   return response;
 };
 
@@ -119,7 +119,7 @@ interface ApiResponse {
 export const verifyUserStatus = async (): Promise<UserStatusVerificationResult> => {
   try {
     // 关键修复：使用我们自定义的、带拦截器的 request 实例
-    const response = await request.post<ApiResponse>('/login/verify-user-status');
+    const response = await request.post<ApiResponse>('/auth/verify-user-status');
     const data = response.data; // 这里是完整的响应体 { code, message, data, success, ... }
     
     if (data.success) {

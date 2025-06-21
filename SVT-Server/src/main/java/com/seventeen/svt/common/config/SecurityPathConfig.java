@@ -33,14 +33,17 @@ public class SecurityPathConfig {
         // 定义基础路径数组（不包含上下文路径）
         String[] basePaths = {
             "/auth/login",           // 认证相关接口
-            "/doc.html",          // Knife4j接口文档
-            "/webjars/**",        // Swagger相关资源
-            "/v3/api-docs/**",    // OpenAPI文档
+            "/doc.html",             // Knife4j接口文档
+            "/doc.html/**",          // Knife4j相关资源
+            "/swagger-ui.html",      // Swagger UI
+            "/swagger-ui/**",        // Swagger UI资源
+            "/webjars/**",           // Swagger相关资源
+            "/v3/api-docs/**",       // OpenAPI文档
             "/swagger-resources/**", // Swagger资源
-            "/druid/**",          // Druid监控
-            "/actuator/**",       // Spring Boot Actuator监控
-            "/error",             // 错误页面
-            "/favicon.ico"        // 网站图标
+            "/druid/**",             // Druid监控
+            "/actuator/**",          // Spring Boot Actuator监控
+            "/error",                // 错误页面
+            "/favicon.ico"           // 网站图标
         };
         
         // 保存不含上下文路径的原始配置

@@ -22,10 +22,10 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 用户角色控制
  */
-@Tag(name = "角色管理", description = "只要用于系统角色的管理")
+@Tag(name = "认证管理", description = "认证相关接口")
 @RestController
 @Slf4j
-@RequestMapping("/login")
+@RequestMapping("/auth")
 public class SystemLoginController {
 
     private final UserOrgService userOrgServiceImpl;
@@ -45,7 +45,7 @@ public class SystemLoginController {
      */
     @Operation(summary = "获取当前用户的机构列表", description = "根据当前登录的用户(token)获取当前用户的机构列表")
     @GetMapping("/get-user-org-list")
-    @ApiOperationSupport(order = 1)
+    @ApiOperationSupport(order = 2)
     public Result<GetUserOrgVO> getUserOrgList() {
         String requestUserId = RequestContextUtils.getRequestUserId();
         GetUserOrgVO  getUserOrgVO = userOrgServiceImpl.getUserOrgListByUserId(requestUserId);
@@ -58,7 +58,7 @@ public class SystemLoginController {
      */
     @Operation(summary = "获取当前用户的角色列表", description = "根据当前登录的用户(token)获取当前用户的角色列表")
     @GetMapping("/get-user-role")
-    @ApiOperationSupport(order = 2)
+    @ApiOperationSupport(order = 3)
     public Result<GetUserRoleVO> getUserRole() {
         String requestUserId = RequestContextUtils.getRequestUserId();
         GetUserRoleVO  getUserRoleVO = userRoleServiceImpl.getUserRoleListByUserId(requestUserId);
@@ -72,7 +72,7 @@ public class SystemLoginController {
      */
     @Operation(summary = "获取当前用户详情", description = "根据当前登录的用户(token+org+role)获取当前用户的详情")
     @PostMapping("/get-user-details")
-    @ApiOperationSupport(order = 3)
+    @ApiOperationSupport(order = 4)
     @Audit(description="用户登录",recordResult=true,sensitive=true)
     public Result<UserDetailCache> getUserDetails(@RequestBody GetUserDetailsDTO userDetailsDTO) {
         UserDetailCache userDetailCache = userInfoServiceImpl.getUserDetails(userDetailsDTO);
@@ -85,6 +85,7 @@ public class SystemLoginController {
      */
     @PostMapping("/verify-user-status")
     @Operation(summary = "验证用户状态", description = "验证用户状态，包括用户是否被禁用、Token是否有效等")
+    @ApiOperationSupport(order = 5)
     public Result<?> verifyUserStatus() {
         // 1. 获取当前用户信息
         String currentUserId = RequestContextUtils.getRequestUserId();

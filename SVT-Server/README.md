@@ -378,20 +378,20 @@ curl -X POST http://localhost:8080/api/auth/login \
 # 期望: 返回包含JWT token的成功响应
 
 # 2. 用户状态验证
-curl -X GET http://localhost:8080/api/auth/verify-user-status \
+curl -X POST http://localhost:8080/api/auth/verify-user-status \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # 期望: 返回用户状态信息
 
 # 3. Token失效验证
 # 手动让Token失效后再次验证
-curl -X GET http://localhost:8080/api/auth/verify-user-status \
+curl -X POST http://localhost:8080/api/auth/verify-user-status \
   -H "Authorization: Bearer INVALID_TOKEN"
 
 # 期望: 返回401状态码和错误信息
 
 # 4. 恶意Token测试
-curl -X GET http://localhost:8080/api/auth/verify-user-status \
+curl -X POST http://localhost:8080/api/auth/verify-user-status \
   -H "Authorization: Bearer random_malicious_token"
 
 # 期望: 返回401状态码，不应在日志中看到"加入黑名单"信息
