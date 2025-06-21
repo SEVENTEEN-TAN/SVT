@@ -26,14 +26,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @Slf4j
 @RequestMapping("/auth")
-public class SystemLoginController {
+public class SystemAuthController {
 
     private final UserOrgService userOrgServiceImpl;
     private final UserRoleService userRoleServiceImpl;
     private final UserInfoService userInfoServiceImpl;
 
     @Autowired
-    public SystemLoginController(UserOrgService userOrgServiceImpl, UserRoleService userRoleServiceImpl, UserInfoService userInfoServiceImpl) {
+    public SystemAuthController(UserOrgService userOrgServiceImpl, UserRoleService userRoleServiceImpl, UserInfoService userInfoServiceImpl) {
         this.userOrgServiceImpl = userOrgServiceImpl;
         this.userRoleServiceImpl = userRoleServiceImpl;
         this.userInfoServiceImpl = userInfoServiceImpl;
