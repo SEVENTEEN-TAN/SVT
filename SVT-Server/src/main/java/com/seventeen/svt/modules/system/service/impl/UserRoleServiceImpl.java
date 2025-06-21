@@ -6,7 +6,7 @@ import com.seventeen.svt.common.constant.SystemConstant;
 import com.seventeen.svt.modules.system.entity.UserRole;
 import com.seventeen.svt.modules.system.mapper.UserRoleMapper;
 import com.seventeen.svt.modules.system.service.UserRoleService;
-import com.seventeen.svt.modules.system.dto.response.GetUserRoleVO;
+import com.seventeen.svt.modules.system.dto.response.GetUserRoleDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,7 +22,7 @@ public class UserRoleServiceImpl extends ServiceImpl<UserRoleMapper, UserRole>
     implements UserRoleService{
 
     @Override
-    public GetUserRoleVO getUserRoleListByUserId(String userId) {
+    public GetUserRoleDTO getUserRoleListByUserId(String userId) {
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .select(ROLE_INFO.ALL_COLUMNS)
                 .from(USER_ROLE).as("ur")
@@ -31,8 +31,8 @@ public class UserRoleServiceImpl extends ServiceImpl<UserRoleMapper, UserRole>
                         .and(ROLE_INFO.STATUS.eq(SystemConstant.Status.NORMAL)))
                 .where(USER_ROLE.USER_ID.eq(userId))
                 .orderBy(ROLE_INFO.ROLE_SORT, true);
-        List<GetUserRoleVO.UserRoleInfo> userRoleInfos = mapper.selectListByQueryAs(queryWrapper, GetUserRoleVO.UserRoleInfo.class);
-        return GetUserRoleVO.builder().userRoleInfos(userRoleInfos).build();
+        List<GetUserRoleDTO.UserRoleInfo> userRoleInfos = mapper.selectListByQueryAs(queryWrapper, GetUserRoleDTO.UserRoleInfo.class);
+        return GetUserRoleDTO.builder().userRoleInfos(userRoleInfos).build();
     }
 }
 

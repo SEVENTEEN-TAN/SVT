@@ -1,4 +1,4 @@
-package com.seventeen.svt.frame.security.dto;
+package com.seventeen.svt.frame.security.dto.request;
 
 import com.seventeen.svt.common.annotation.audit.SensitiveLog;
 import com.seventeen.svt.common.annotation.audit.SensitiveStrategy;

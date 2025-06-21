@@ -5,11 +5,10 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.seventeen.svt.common.response.Result;
 import com.seventeen.svt.common.util.RequestContextUtils;
 import com.seventeen.svt.common.util.MessageUtils;
-import com.seventeen.svt.frame.security.dto.LoginRequestDTO;
+import com.seventeen.svt.frame.security.dto.request.LoginRequestDTO;
 import com.seventeen.svt.frame.security.service.AuthService;
-import com.seventeen.svt.frame.security.vo.TokenVO;
+import com.seventeen.svt.frame.security.dto.response.TokenDTO;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +28,7 @@ public class AuthController {
     @Operation(summary = "登录", description = "用户登录获取token", security = {})
     @PostMapping("/login")
     @ApiOperationSupport(order = 0)
-    public Result<TokenVO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+    public Result<TokenDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
         return Result.success(MessageUtils.getMessage("auth.login.success"), authService.login(loginRequest));
     }
 

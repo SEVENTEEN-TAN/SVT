@@ -2,7 +2,7 @@ package com.seventeen.svt.modules.system.service;
 
 import com.mybatisflex.core.service.IService;
 import com.seventeen.svt.modules.system.entity.UserOrg;
-import com.seventeen.svt.modules.system.dto.response.GetUserOrgVO;
+import com.seventeen.svt.modules.system.dto.response.GetUserOrgDTO;
 
 /**
 * 针对表【user_org(用户机构关联表)】的数据库操作Service
@@ -14,5 +14,5 @@ public interface UserOrgService extends IService<UserOrg> {
      * @param userId 用户ID
      * @return 用户机构列表
      */
-    GetUserOrgVO getUserOrgListByUserId(String userId);
+    GetUserOrgDTO getUserOrgListByUserId(String userId);
 }

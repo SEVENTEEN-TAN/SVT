@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "用户机构列表")
-public class GetUserOrgVO implements Serializable {
+public class GetUserOrgDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

@@ -10,10 +10,10 @@ import com.seventeen.svt.frame.cache.entity.UserDetailCache;
 import com.seventeen.svt.frame.cache.util.JwtCacheUtils;
 import com.seventeen.svt.frame.cache.util.UserDetailCacheUtils;
 import com.seventeen.svt.frame.security.config.CustomAuthentication;
-import com.seventeen.svt.frame.security.dto.LoginRequestDTO;
+import com.seventeen.svt.frame.security.dto.request.LoginRequestDTO;
 import com.seventeen.svt.frame.security.service.AuthService;
 import com.seventeen.svt.frame.security.utils.JwtUtils;
-import com.seventeen.svt.frame.security.vo.TokenVO;
+import com.seventeen.svt.frame.security.dto.response.TokenDTO;
 import com.seventeen.svt.modules.system.entity.UserInfo;
 import com.seventeen.svt.modules.system.service.UserInfoService;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserDetailCacheUtils userDetailCacheUtils;
 
     @Override
-    public TokenVO login(LoginRequestDTO loginRequest) {
+    public TokenDTO login(LoginRequestDTO loginRequest) {
         // 加载用户信息
         UserInfo userInfo = userInfoService.getUserById(loginRequest.getLoginId());
         if (ObjectUtil.isEmpty(userInfo)) {
@@ -75,7 +75,7 @@ public class AuthServiceImpl implements AuthService {
         userDetailCacheUtils.putUserDetail(userInfo.getUserId(),userDetailCache);
 
         // 构建并返回TokenDTO
-        return TokenVO.builder()
+        return TokenDTO.builder()
                 .accessToken(accessToken)
                 .accessTokenExpireIn(jwtUtils.getTokenRemainingTime(accessToken))
                 .build();

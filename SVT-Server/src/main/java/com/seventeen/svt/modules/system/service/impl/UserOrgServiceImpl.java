@@ -6,7 +6,7 @@ import com.seventeen.svt.common.constant.SystemConstant;
 import com.seventeen.svt.modules.system.entity.UserOrg;
 import com.seventeen.svt.modules.system.mapper.UserOrgMapper;
 import com.seventeen.svt.modules.system.service.UserOrgService;
-import com.seventeen.svt.modules.system.dto.response.GetUserOrgVO;
+import com.seventeen.svt.modules.system.dto.response.GetUserOrgDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,7 +22,7 @@ public class UserOrgServiceImpl extends ServiceImpl<UserOrgMapper, UserOrg>
     implements UserOrgService{
 
     @Override
-    public GetUserOrgVO getUserOrgListByUserId(String userId) {
+    public GetUserOrgDTO getUserOrgListByUserId(String userId) {
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .select(ORG_INFO.ALL_COLUMNS)
                 .from(USER_ORG).as("uo")
@@ -31,8 +31,8 @@ public class UserOrgServiceImpl extends ServiceImpl<UserOrgMapper, UserOrg>
                         .and(ORG_INFO.STATUS.eq(SystemConstant.Status.NORMAL)))
                 .where(USER_ORG.USER_ID.eq(userId))
                 .orderBy(ORG_INFO.ORG_SORT, true);
-        List<GetUserOrgVO.UserOrgInfo> userOrgInfos = mapper.selectListByQueryAs(queryWrapper, GetUserOrgVO.UserOrgInfo.class);
-        return  GetUserOrgVO.builder().orgInfos(userOrgInfos).build();
+        List<GetUserOrgDTO.UserOrgInfo> userOrgInfos = mapper.selectListByQueryAs(queryWrapper, GetUserOrgDTO.UserOrgInfo.class);
+        return  GetUserOrgDTO.builder().orgInfos(userOrgInfos).build();
     }
 }
 

@@ -116,6 +116,11 @@ graph TB
 #### 业务控制器
 - `AuthController.java` - 认证控制器 (⭐ verify-user-status)
 
+#### DTO结构 (⭐ 重构优化)
+- `dto/request/` - 请求参数DTO
+- `dto/response/` - 响应数据DTO
+- 移除了VO包，统一使用DTO的request/response结构
+
 ## 🔑 JWT黑名单机制详解 (2025-06-20)
 
 ### 核心设计理念

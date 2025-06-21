@@ -11,8 +11,8 @@ import com.seventeen.svt.modules.system.entity.UserInfo;
 import com.seventeen.svt.modules.system.service.UserInfoService;
 import com.seventeen.svt.modules.system.service.UserOrgService;
 import com.seventeen.svt.modules.system.service.UserRoleService;
-import com.seventeen.svt.modules.system.dto.response.GetUserOrgVO;
-import com.seventeen.svt.modules.system.dto.response.GetUserRoleVO;
+import com.seventeen.svt.modules.system.dto.response.GetUserOrgDTO;
+import com.seventeen.svt.modules.system.dto.response.GetUserRoleDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -46,10 +46,10 @@ public class SystemLoginController {
     @Operation(summary = "获取当前用户的机构列表", description = "根据当前登录的用户(token)获取当前用户的机构列表")
     @GetMapping("/get-user-org-list")
     @ApiOperationSupport(order = 2)
-    public Result<GetUserOrgVO> getUserOrgList() {
+    public Result<GetUserOrgDTO> getUserOrgList() {
         String requestUserId = RequestContextUtils.getRequestUserId();
-        GetUserOrgVO  getUserOrgVO = userOrgServiceImpl.getUserOrgListByUserId(requestUserId);
-        return Result.success(getUserOrgVO);
+        GetUserOrgDTO getUserOrgDTO = userOrgServiceImpl.getUserOrgListByUserId(requestUserId);
+        return Result.success(getUserOrgDTO);
     }
 
     /**
@@ -59,10 +59,10 @@ public class SystemLoginController {
     @Operation(summary = "获取当前用户的角色列表", description = "根据当前登录的用户(token)获取当前用户的角色列表")
     @GetMapping("/get-user-role")
     @ApiOperationSupport(order = 3)
-    public Result<GetUserRoleVO> getUserRole() {
+    public Result<GetUserRoleDTO> getUserRole() {
         String requestUserId = RequestContextUtils.getRequestUserId();
-        GetUserRoleVO  getUserRoleVO = userRoleServiceImpl.getUserRoleListByUserId(requestUserId);
-        return Result.success(getUserRoleVO);
+        GetUserRoleDTO getUserRoleDTO = userRoleServiceImpl.getUserRoleListByUserId(requestUserId);
+        return Result.success(getUserRoleDTO);
     }
 
     /**

@@ -182,8 +182,7 @@ src/
 │   │       │   │   ├── dto/
 │   │       │   │   │   ├── request/
 │   │       │   │   │   └── response/
-│   │       │   │   ├── bo/
-│   │       │   │   └── vo/
+│   │       │   │   └── bo/
 │   │       │   └── risk/              # 风险管理模块
 │   │       │       ├── controller/
 │   │       │       ├── service/

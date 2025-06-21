@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "用户权限列表")
-public class GetUserRoleVO implements Serializable {
+public class GetUserRoleDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

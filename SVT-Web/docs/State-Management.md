@@ -51,14 +51,14 @@ export const useBearStore = create<BearState>((set) => ({
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { UserInfo } from '@/types/user'; // 假设的用户信息类型
-import { TokenVO } from '@/types/api';   // 假设的Token类型
+import { TokenResponse } from '@/types/api';   // Token响应类型
 
 interface AuthState {
-  token: TokenVO | null;
+  token: TokenResponse | null;
   userInfo: UserInfo | null;
   isLoggedIn: boolean;
   actions: {
-    setToken: (token: TokenVO) => void;
+    setToken: (token: TokenResponse) => void;
     setUserInfo: (userInfo: UserInfo) => void;
     logout: () => void;
   };

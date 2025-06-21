@@ -1,4 +1,4 @@
-package com.seventeen.svt.frame.security.vo;
+package com.seventeen.svt.frame.security.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Data
 @Builder
 @Schema(description = "Token响应DTO")
-public class TokenVO implements Serializable {
+public class TokenDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
     
