@@ -16,7 +16,9 @@ CREATE TABLE user_info (
    update_by NVARCHAR(32),
    update_org_id NVARCHAR(32),
    update_time DATETIME DEFAULT GETDATE(),
-   remark NVARCHAR(500)
+   remark NVARCHAR(500),
+   -- 添加唯一约束
+   CONSTRAINT uk_user_login_id UNIQUE (login_id)
 );
 
 -- 添加表注释
@@ -56,7 +58,9 @@ CREATE TABLE org_info (
       update_by NVARCHAR(32),
       update_org_id NVARCHAR(32),
       update_time DATETIME DEFAULT GETDATE(),
-      remark NVARCHAR(500)
+      remark NVARCHAR(500),
+      -- 添加唯一约束
+      CONSTRAINT uk_org_key UNIQUE (org_key)
 );
 
 -- 添加表注释
@@ -131,7 +135,9 @@ CREATE TABLE role_info (
     update_by NVARCHAR(32),
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
-    remark NVARCHAR(500)
+    remark NVARCHAR(500),
+    -- 添加唯一约束
+    CONSTRAINT uk_role_code UNIQUE (role_code)
 );
 
 -- 添加表注释
@@ -280,7 +286,9 @@ CREATE TABLE permission_info (
     update_by NVARCHAR(32),
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
-    remark NVARCHAR(500)
+    remark NVARCHAR(500),
+    -- 添加唯一约束
+    CONSTRAINT uk_permission_key UNIQUE (permission_key)
 );
 
 -- 添加表注释
@@ -452,4 +460,45 @@ EXEC sp_addextendedproperty N'MS_Description', N'当前日期', N'SCHEMA', N'dbo
 EXEC sp_addextendedproperty N'MS_Description', N'当前字母位置(用于扩展容量)', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'current_letter_position';
 EXEC sp_addextendedproperty N'MS_Description', N'最后更新时间', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'last_update_time';
 
+-- ========================================
+-- 创建性能索引
+-- ========================================
+
+-- 用户表索引
+CREATE INDEX idx_user_status_del ON user_info(status, del_flag);
+CREATE INDEX idx_user_login_status ON user_info(login_id, status, del_flag);
+
+-- 机构表索引
+CREATE INDEX idx_org_parent_status ON org_info(parent_id, status, del_flag);
+CREATE INDEX idx_org_type_status ON org_info(org_type, status, del_flag);
+
+-- 菜单表索引
+CREATE INDEX idx_menu_parent_status ON menu_info(parent_id, status, del_flag);
+CREATE INDEX idx_menu_path ON menu_info(menu_path);
+
+-- 角色表索引
+CREATE INDEX idx_role_status_del ON role_info(status, del_flag);
+
+-- 权限表索引
+CREATE INDEX idx_permission_group_status ON permission_info(permission_group, status, del_flag);
+CREATE INDEX idx_permission_key_status ON permission_info(permission_key, status, del_flag);
+
+-- 码值表索引
+CREATE INDEX idx_code_type_status ON code_library(code_type, status, del_flag);
+CREATE INDEX idx_code_type_value ON code_library(code_type, code_value, status, del_flag);
+
+-- 关联表索引
+CREATE INDEX idx_user_role_user ON user_role(user_id, status, del_flag);
+CREATE INDEX idx_user_role_role ON user_role(role_id, status, del_flag);
+CREATE INDEX idx_user_org_user ON user_org(user_id, status, del_flag);
+CREATE INDEX idx_user_org_org ON user_org(org_id, status, del_flag);
+CREATE INDEX idx_role_menu_role ON role_menu(role_id, status, del_flag);
+CREATE INDEX idx_role_menu_menu ON role_menu(menu_id, status, del_flag);
+CREATE INDEX idx_role_permission_role ON role_permission(role_id, status, del_flag);
+CREATE INDEX idx_role_permission_perm ON role_permission(permission_id, status, del_flag);
+
+-- 审计日志索引
+CREATE INDEX idx_audit_operator_time ON audit_log(operator_id, operation_time);
+CREATE INDEX idx_audit_time ON audit_log(operation_time);
+CREATE INDEX idx_audit_result ON audit_log(operation_result, operation_time);
 
