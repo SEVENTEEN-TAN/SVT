@@ -52,6 +52,14 @@ graph TB
 - **安全存储**: localStorage+sessionStorage双重存储
 - **过期清理**: Token过期时自动清理所有相关状态
 
+### 5. 多Tab页面管理系统 ⭐
+**2025-06-21 新增功能**: 类浏览器的多页面工作体验
+- **智能Tab管理**: 无数量限制，支持水平滚动，用户自由管理
+- **智能刷新机制**: 重复点击菜单时自动刷新页面内容，确保数据最新
+- **丰富右键菜单**: 刷新、关闭当前、关闭左边/右边/其他，批量管理Tab
+- **性能优化**: React Key机制强制重渲染，防重复操作，状态同步
+- **用户体验**: 仪表盘保护，智能切换，操作安全防误触
+
 ## 🚀 核心技术栈
 
 | 技术领域 | 技术选型 | 版本 | 说明 |
@@ -915,6 +923,7 @@ try {
 - **[消息管理器架构](./docs/Message-Manager.md)** - 全局消息管理方案
 - **[AES加密配置](./docs/AES-Encryption-Config.md)** - 前端加密配置
 - **[Token管理设计](./docs/Token-Management.md)** - Token生命周期管理
+- **[Tab系统设计](./docs/Tab-System-Design.md)** - 多Tab页面管理系统设计 ⭐
 
 ### 组件文档
 - **[BasicLayout组件](./docs/components/BasicLayout.md)** - 基础布局组件

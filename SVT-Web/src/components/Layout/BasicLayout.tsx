@@ -27,6 +27,10 @@ import {
   SearchOutlined,
   TeamOutlined,
   MenuOutlined,
+  ReloadOutlined,
+  CloseCircleOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserStatus } from '@/hooks/useUserStatus';
@@ -43,12 +47,21 @@ interface TabItem {
   closable: boolean;
 }
 
+// Tab右键菜单项类型
+interface TabContextMenuItem {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}
+
 // 🔧 动态路径映射生成函数
 const generatePathMaps = (menuTrees: unknown[]) => {
-  const tabMap: Record<string, string> = { 
+  const tabMap: Record<string, string> = {
     '/dashboard': '仪表盘'
   };
-  const breadcrumbMap: Record<string, string> = { 
+  const breadcrumbMap: Record<string, string> = {
     '/dashboard': '仪表盘'
   };
 
@@ -135,6 +148,18 @@ const BasicLayout: React.FC = () => {
     },
   ]);
 
+  // 右键菜单状态
+  const [contextMenuVisible, setContextMenuVisible] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [contextMenuTabKey, setContextMenuTabKey] = useState<string>('');
+
+  // 页面刷新key，用于强制重渲染
+  const [pageRefreshKey, setPageRefreshKey] = useState<number>(0);
+
+  // Tab管理配置（移除强制限制，改为滚动支持）
+  // const MAX_TABS = 10; // 移除最大Tab数量限制
+  // const TAB_CLOSE_WARNING_COUNT = 8; // 移除提示
+
   // 🔧 动态获取路径映射
   const pathMaps = useMemo(() => {
     return generatePathMaps(user?.menuTrees || []);
@@ -166,25 +191,40 @@ const BasicLayout: React.FC = () => {
     return menuLabel || '页面未找到';
   }, [pathMaps.tabMap, user?.menuTrees]);
 
-  // 添加新Tab
-  const addTab = useCallback((path: string) => {
+  // 添加新Tab（简化版本，无数量限制）
+  const addTab = useCallback((path: string, forceRefresh = false) => {
+    const isCurrentTab = activeTabKey === path;
+
+    // 先更新Tab列表
     setTabList(prev => {
       const existingTab = prev.find(tab => tab.key === path);
       if (!existingTab) {
+        // 直接添加新Tab，无数量限制
         const newTab: TabItem = {
           key: path,
           label: getTabName(path),
           path: path,
           closable: path !== '/dashboard', // 仪表盘不可关闭
         };
+
         return [...prev, newTab];
       }
       return prev;
     });
+
+    // 设置活跃Tab
     setActiveTabKey(path);
-    // 导航到对应路由
+
+    // 只在以下情况才刷新：
+    // 1. 强制刷新
+    // 2. 重复点击当前Tab（用户期望刷新）
+    if (forceRefresh || isCurrentTab) {
+      setPageRefreshKey(prev => prev + 1);
+    }
+
+    // 导航到目标路径
     navigate(path);
-  }, [getTabName, navigate]);
+  }, [getTabName, navigate, activeTabKey]);
 
   // 关闭Tab
   const removeTab = useCallback((targetKey: string) => {
@@ -230,22 +270,197 @@ const BasicLayout: React.FC = () => {
     });
   }, [navigate]);
 
-  // 切换Tab
+  // 切换Tab（只在需要时刷新）
   const switchTab = useCallback((targetKey: string) => {
     setActiveTabKey(targetKey);
+
+    // 导航到目标路径（不强制刷新，让页面自然切换）
     navigate(targetKey);
   }, [navigate]);
+
+  // Tab右键菜单功能
+  const refreshTab = useCallback((tabKey: string) => {
+    // 强制刷新指定Tab
+    setActiveTabKey(tabKey);
+
+    // 强制刷新页面内容：更新刷新key
+    setPageRefreshKey(prev => prev + 1);
+
+    // 导航到目标路径
+    navigate(tabKey);
+  }, [navigate]);
+
+  const closeCurrentTab = useCallback((tabKey: string) => {
+    removeTab(tabKey);
+  }, [removeTab]);
+
+  const closeLeftTabs = useCallback((tabKey: string) => {
+    const currentIndex = tabList.findIndex(tab => tab.key === tabKey);
+    if (currentIndex <= 0) return; // 没有左边的Tab或者是第一个Tab
+
+    // 获取左边所有可关闭的Tab（不包括仪表盘）
+    const tabsToClose = tabList.slice(0, currentIndex).filter(tab => tab.closable && tab.key !== '/dashboard');
+    if (tabsToClose.length === 0) return; // 没有可关闭的Tab
+
+    // 检查当前活跃的Tab是否在要关闭的Tab中
+    const isCurrentTabBeingClosed = tabsToClose.some(tab => tab.key === activeTabKey);
+
+    // 批量更新tabList
+    setTabList(prev => {
+      const newTabList = prev.filter(tab => !tabsToClose.some(closeTab => closeTab.key === tab.key));
+
+      // 如果当前活跃的Tab被关闭了，需要切换到合适的Tab
+      if (isCurrentTabBeingClosed) {
+        // 切换到指定的Tab（因为它在右边，没有被关闭）
+        setActiveTabKey(tabKey);
+        navigate(tabKey);
+      }
+
+      return newTabList;
+    });
+  }, [tabList, activeTabKey, navigate]);
+
+  const closeRightTabs = useCallback((tabKey: string) => {
+    const currentIndex = tabList.findIndex(tab => tab.key === tabKey);
+    if (currentIndex === -1 || currentIndex === tabList.length - 1) return; // 没有右边的Tab
+
+    // 获取右边所有可关闭的Tab（不包括仪表盘）
+    const tabsToClose = tabList.slice(currentIndex + 1).filter(tab => tab.closable && tab.key !== '/dashboard');
+    if (tabsToClose.length === 0) return; // 没有可关闭的Tab
+
+    // 检查当前活跃的Tab是否在要关闭的Tab中
+    const isCurrentTabBeingClosed = tabsToClose.some(tab => tab.key === activeTabKey);
+
+    // 批量更新tabList
+    setTabList(prev => {
+      const newTabList = prev.filter(tab => !tabsToClose.some(closeTab => closeTab.key === tab.key));
+
+      // 如果当前活跃的Tab被关闭了，需要切换到合适的Tab
+      if (isCurrentTabBeingClosed) {
+        // 切换到指定的Tab（因为它在左边，没有被关闭）
+        setActiveTabKey(tabKey);
+        navigate(tabKey);
+      }
+
+      return newTabList;
+    });
+  }, [tabList, activeTabKey, navigate]);
+
+  // 关闭其他Tab（保留当前Tab和仪表盘）
+  const closeOtherTabs = useCallback((tabKey: string) => {
+    setTabList(prev => prev.filter(tab =>
+      tab.key === tabKey ||
+      tab.key === '/dashboard' ||
+      !tab.closable
+    ));
+
+    // 如果当前活跃Tab被保留，不需要切换
+    if (activeTabKey !== tabKey && activeTabKey !== '/dashboard') {
+      setActiveTabKey(tabKey);
+      navigate(tabKey);
+    }
+  }, [activeTabKey, navigate]);
+
+  // 生成右键菜单项
+  const getContextMenuItems = useCallback((tabKey: string): TabContextMenuItem[] => {
+    const currentIndex = tabList.findIndex(tab => tab.key === tabKey);
+    const hasLeftTabs = currentIndex > 0 && tabList.slice(0, currentIndex).some(tab => tab.closable);
+    const hasRightTabs = currentIndex < tabList.length - 1 && tabList.slice(currentIndex + 1).some(tab => tab.closable);
+    const hasOtherTabs = tabList.some(tab => tab.closable && tab.key !== tabKey);
+    const isClosable = tabList.find(tab => tab.key === tabKey)?.closable;
+
+    return [
+      {
+        key: 'refresh',
+        label: '刷新',
+        icon: <ReloadOutlined />,
+        onClick: () => refreshTab(tabKey),
+      },
+      {
+        key: 'close',
+        label: '关闭当前页面',
+        icon: <CloseOutlined />,
+        disabled: !isClosable,
+        onClick: () => closeCurrentTab(tabKey),
+      },
+      {
+        key: 'closeLeft',
+        label: '关闭左边',
+        icon: <LeftOutlined />,
+        disabled: !hasLeftTabs,
+        onClick: () => closeLeftTabs(tabKey),
+      },
+      {
+        key: 'closeRight',
+        label: '关闭右边',
+        icon: <RightOutlined />,
+        disabled: !hasRightTabs,
+        onClick: () => closeRightTabs(tabKey),
+      },
+      {
+        key: 'closeOthers',
+        label: '关闭其他',
+        icon: <CloseCircleOutlined />,
+        disabled: !hasOtherTabs,
+        onClick: () => closeOtherTabs(tabKey),
+      },
+    ];
+  }, [tabList, refreshTab, closeCurrentTab, closeLeftTabs, closeRightTabs, closeOtherTabs]);
+
+  // 处理Tab右键点击
+  const handleTabContextMenu = useCallback((e: React.MouseEvent, tabKey: string) => {
+    e.preventDefault();
+    setContextMenuTabKey(tabKey);
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setContextMenuVisible(true);
+  }, []);
+
+  // 关闭右键菜单
+  const closeContextMenu = useCallback(() => {
+    setContextMenuVisible(false);
+    setContextMenuTabKey('');
+  }, []);
+
+  // 点击页面其他地方关闭右键菜单
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenuVisible) {
+        closeContextMenu();
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [contextMenuVisible, closeContextMenu]);
 
   // 监听路由变化，自动添加Tab
   useEffect(() => {
     const currentPath = location.pathname;
-    
+
     // 🔧 为所有路径添加Tab，包括无效路径
     // 这样无效路径会显示为菜单名称，但内容显示404
     if (currentPath !== '/login') {
-      addTab(currentPath);
+      // 使用函数式更新，避免依赖addTab
+      setTabList(prev => {
+        const existingTab = prev.find(tab => tab.key === currentPath);
+        if (!existingTab) {
+          const newTab: TabItem = {
+            key: currentPath,
+            label: getTabName(currentPath),
+            path: currentPath,
+            closable: currentPath !== '/dashboard',
+          };
+          return [...prev, newTab];
+        }
+        return prev;
+      });
+
+      // 设置活跃Tab
+      setActiveTabKey(currentPath);
     }
-  }, [location.pathname, addTab]);
+  }, [location.pathname, getTabName]); // 只依赖必要的值
 
   // 🔧 动态生成菜单项
   const menuItems: MenuProps['items'] = useMemo(() => {
@@ -262,10 +477,11 @@ const BasicLayout: React.FC = () => {
     return [dashboardItem, ...(userMenuItems || [])];
   }, [user?.menuTrees, convertMenuTrees]);
 
-  // 处理菜单点击
+  // 处理菜单点击（重复点击时刷新）
   const handleMenuClick = useCallback((e: { key: string }) => {
-    addTab(e.key);
-  }, [addTab]);
+    const isCurrentTab = activeTabKey === e.key;
+    addTab(e.key, isCurrentTab); // 重复点击当前Tab时刷新
+  }, [addTab, activeTabKey]);
 
   // 处理登出
   const handleLogout = useCallback(async () => {
@@ -350,13 +566,17 @@ const BasicLayout: React.FC = () => {
 
 
 
-  // 自定义Tab渲染，支持关闭按钮
+  // 自定义Tab渲染，支持关闭按钮和右键菜单
   const tabItems = tabList.map(tab => ({
     key: tab.key,
-    label: tab.closable ? (
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}>
+    label: (
+      <span
+        style={{ display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
+        onContextMenu={(e) => handleTabContextMenu(e, tab.key)}
+      >
         <span>{tab.label}</span>
-                  <CloseOutlined
+        {tab.closable && (
+          <CloseOutlined
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
               e.stopPropagation();
@@ -385,8 +605,9 @@ const BasicLayout: React.FC = () => {
               (e.currentTarget as HTMLElement).style.color = 'inherit';
             }}
           />
+        )}
       </span>
-    ) : tab.label,
+    ),
     closable: false, // 禁用默认的关闭按钮，使用自定义的
   }));
 
@@ -412,6 +633,58 @@ const BasicLayout: React.FC = () => {
 
   return (
     <Layout style={{ height: '100vh', overflow: 'hidden' }}>
+      {/* Tab右键菜单 */}
+      {contextMenuVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenuPosition.x,
+            top: contextMenuPosition.y,
+            zIndex: 1000,
+            background: '#fff',
+            border: '1px solid #d9d9d9',
+            borderRadius: '6px',
+            boxShadow: '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
+            padding: '4px 0',
+            minWidth: '140px',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {getContextMenuItems(contextMenuTabKey).map((item) => (
+            <div
+              key={item.key}
+              style={{
+                padding: '8px 16px',
+                cursor: item.disabled ? 'not-allowed' : 'pointer',
+                color: item.disabled ? '#bfbfbf' : '#262626',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (!item.disabled) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = '#f5f5f5';
+                }
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+              }}
+              onClick={() => {
+                if (!item.disabled) {
+                  item.onClick();
+                  closeContextMenu();
+                }
+              }}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* 侧边栏 */}
       <Sider
         trigger={null}
@@ -561,7 +834,7 @@ const BasicLayout: React.FC = () => {
             activeKey={activeTabKey}
             onChange={switchTab}
             items={tabItems}
-            style={{ 
+            style={{
               margin: '0 16px',
               width: 'calc(100% - 32px)',
             }}
@@ -569,7 +842,11 @@ const BasicLayout: React.FC = () => {
               marginBottom: 0,
               height: 34,
               minHeight: 34,
+              // 移除overflow hidden，让Antd自动处理滚动
             }}
+            // 启用Tab滚动功能
+            tabBarGutter={4}
+            // 移除数量显示，让用户自由管理Tab
           />
         </div>
 
@@ -605,7 +882,7 @@ const BasicLayout: React.FC = () => {
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
               }}
             >
-              <Outlet />
+              <Outlet key={pageRefreshKey} />
             </Content>
           </div>
 
