@@ -11,7 +11,7 @@ const BasicLayout = React.lazy(() => import('@/components/Layout/BasicLayout'));
 // 页面组件
 const LoginPage = React.lazy(() => import('@/pages/Auth/LoginPage'));
 const DashboardPage = React.lazy(() => import('@/pages/Dashboard/DashboardPage'));
-const NotFoundPage = React.lazy(() => import('@/pages/Error/NotFoundPage'));
+const DynamicPage = React.lazy(() => import('@/components/DynamicPage'));
 
 // 简单的加载组件
 const fallbackElement = (
@@ -66,7 +66,7 @@ export const router = createBrowserRouter([
         path: '*',
         element: (
           <Suspense fallback={fallbackElement}>
-            <NotFoundPage />
+            <DynamicPage />
           </Suspense>
         ),
       },

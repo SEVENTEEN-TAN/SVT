@@ -69,8 +69,8 @@ class TokenManager {
         if (remainingTime <= this.WARNING_THRESHOLD) {
           this.showExpiryWarning(Math.floor(remainingTime / 60000));
         }
-      } catch (error) {
-        console.debug('Token检查过程中的错误（可能是非JWT格式）:', error);
+      } catch {
+        console.debug('Token检查过程中的错误（可能是非JWT格式）');
       }
     }, this.TOKEN_CHECK_INTERVAL);
   }
@@ -152,8 +152,8 @@ class TokenManager {
       
       // 跳转到登录页
       window.location.href = '/login';
-    } catch (error) {
-      console.warn('处理Token过期失败:', error);
+    } catch {
+      console.warn('处理Token过期失败');
     } finally {
       // 重置处理标志
       setTimeout(() => {

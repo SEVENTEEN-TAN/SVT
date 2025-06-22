@@ -7,6 +7,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
+import '@/styles/PageContainer.css';
 
 const { Title, Text } = Typography;
 
@@ -14,7 +15,7 @@ const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
 
   return (
-    <div>
+    <div className="page-container-content">
       {/* 欢迎区域 */}
       <div style={{ marginBottom: 24 }}>
         <Title level={2}>欢迎回来，{user?.username}！</Title>

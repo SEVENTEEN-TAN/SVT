@@ -60,6 +60,30 @@ graph TB
 - **性能优化**: React Key机制强制重渲染，防重复操作，状态同步
 - **用户体验**: 仪表盘保护，智能切换，操作安全防误触
 
+### 6. 动态组件系统 ⭐
+**2025-06-22 重大功能**: 基于约定的自动组件映射系统
+- **自动路由映射**: 后端路径`/system/menu`自动映射到前端组件`/pages/System/Menu`
+- **错误边界处理**: 组件加载失败时统一显示404页面，避免技术性错误暴露
+- **权限验证集成**: 先检查用户权限，再尝试加载组件，确保安全性
+- **懒加载优化**: 使用React.lazy()按需加载，减少初始包大小
+- **DRY原则**: 移除硬编码组件映射，遵循约定优于配置
+
+### 7. 响应式布局系统 ⭐
+**2025-06-22 全面重构**: 三种页面容器类型，完全响应式设计
+- **内容容器**: `.page-container-content` - 自适应高度，适用于仪表盘等内容页面
+- **居中容器**: `.page-container-center` - 完美居中，适用于404、占位页面  
+- **管理容器**: `.page-container-management` - 固定高度+内部滚动，适用于表格管理页面
+- **全百分比设计**: 移除所有硬编码像素值，完全响应式适配
+- **A4滚动效果**: 内容不足时保持最小高度，超出时自然滚动
+
+### 8. Tab状态持久化系统 ⭐
+**2025-06-22 新增功能**: localStorage持久化，浏览器刷新保持状态
+- **完整状态恢复**: 浏览器刷新后完整恢复所有Tab状态和活跃Tab
+- **统一数据管理**: 简化的localStorage管理，基于"一台电脑一个用户"假设
+- **自动清理机制**: 登录、登出、Token失效时统一清理用户数据
+- **状态同步**: 所有Tab操作都自动保存到localStorage
+- **错误容错**: 所有localStorage操作都有try-catch保护
+
 ## 🚀 核心技术栈
 
 | 技术领域 | 技术选型 | 版本 | 说明 |
@@ -94,6 +118,7 @@ graph TB
             COMMON["Common/<br/>通用组件"]
             LAYOUT["Layout/<br/>布局组件"]
             BASIC_LAYOUT["BasicLayout.tsx<br/>⭐ 统一验证入口"]
+            DYNAMIC_PAGE["DynamicPage/<br/>⭐ 动态组件系统"]
             LOADING["Loading/<br/>加载组件"]
         end
 
@@ -101,6 +126,8 @@ graph TB
             PAGES["pages/<br/>📱 页面组件"]
             AUTH_PAGE["Auth/ - 认证页面"]
             DASHBOARD["Dashboard/ - 仪表盘"]
+            SYSTEM_PAGE["System/ - 系统管理页面"]
+            BUSINESS_PAGE["Business/ - 业务页面"]
             ERROR["Error/ - 错误页面"]
         end
 
@@ -123,12 +150,17 @@ graph TB
             REQUEST["request.ts<br/>⭐ 401优化处理"]
             TOKEN_MGR["tokenManager.ts<br/>⭐ 防重复退出"]
             MSG_MGR["messageManager.ts<br/>⭐ 消息管理器"]
+            LOCAL_STORAGE["localStorageManager.ts<br/>⭐ 统一存储管理"]
+        end
+
+        subgraph "样式层"
+            STYLES["styles/<br/>🎨 样式配置"]
+            PAGE_CONTAINER["PageContainer.css<br/>⭐ 响应式容器"]
         end
 
         subgraph "配置层"
             CONFIG["config/<br/>⚙️ 配置管理"]
             TYPES["types/<br/>📝 类型定义"]
-            STYLES["styles/<br/>🎨 样式配置"]
         end
     end
 
@@ -136,12 +168,15 @@ graph TB
     MAIN --> ROUTER
     COMP --> LAYOUT
     LAYOUT --> BASIC_LAYOUT
+    COMP --> DYNAMIC_PAGE
     COMP --> COMMON
     COMP --> LOADING
 
     ROUTER --> PAGES
     PAGES --> AUTH_PAGE
     PAGES --> DASHBOARD
+    PAGES --> SYSTEM_PAGE
+    PAGES --> BUSINESS_PAGE
     PAGES --> ERROR
 
     HOOKS --> USER_STATUS
@@ -152,6 +187,287 @@ graph TB
     UTILS --> REQUEST
     UTILS --> TOKEN_MGR
     UTILS --> MSG_MGR
+    UTILS --> LOCAL_STORAGE
+    
+    STYLES --> PAGE_CONTAINER
+```
+
+## 🔄 动态组件系统详解 (2025-06-22)
+
+### 核心设计理念
+**约定优于配置**: 基于路径约定自动映射组件，移除硬编码维护
+
+### 自动映射规则
+```typescript
+// 路径转换规则
+/system/menu → /pages/System/Menu
+/business/order → /pages/Business/Order
+/user/profile → /pages/User/Profile
+
+// pathToComponentPath函数实现
+const pathToComponentPath = (menuPath: string): string => {
+  const segments = menuPath.split('/').filter(Boolean);
+  if (segments.length < 2) return '';
+  
+  const [category, page] = segments;
+  return `/pages/${convertToPascalCase(category)}/${convertToPascalCase(page)}`;
+};
+```
+
+### 关键代码实现
+
+#### 1. 动态组件映射
+```typescript
+// DynamicPage/index.tsx - 核心组件
+const createDynamicPageMap = (menuTrees: any[]) => {
+  const pageMap: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {};
+
+  const processMenuTree = (menus: any[]) => {
+    menus.forEach(menu => {
+      if (menu.menuPath) {
+        const componentPath = pathToComponentPath(menu.menuPath);
+        
+        if (componentPath) {
+          try {
+            const Component = importComponent(componentPath);
+            if (Component) {
+              pageMap[menu.menuPath] = Component;
+            }
+          } catch (error) {
+            console.warn(`跳过无效组件路径: ${menu.menuPath} -> ${componentPath}`);
+          }
+        }
+      }
+
+      if (menu.children && menu.children.length > 0) {
+        processMenuTree(menu.children);
+      }
+    });
+  };
+
+  processMenuTree(menuTrees);
+  return pageMap;
+};
+```
+
+#### 2. 错误边界处理
+```typescript
+// 错误边界组件
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('组件加载错误:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <NotFoundPage />;
+    }
+    return this.props.children;
+  }
+}
+```
+
+#### 3. 权限验证集成
+```typescript
+// 权限检查
+const checkPermission = (menus: any[], targetPath: string): boolean => {
+  return menus.some(menu => {
+    if (menu.menuPath === targetPath) {
+      return true;
+    }
+    if (menu.children && menu.children.length > 0) {
+      return checkPermission(menu.children, targetPath);
+    }
+    return false;
+  });
+};
+
+// 如果没有权限，显示404
+if (!hasPermission) {
+  return <NotFoundPage />;
+}
+```
+
+### 组件加载流程
+```
+用户访问 /system/menu
+  ↓
+DynamicPage检查用户权限
+  ↓
+权限验证通过 → 转换路径: /pages/System/Menu
+  ↓
+动态导入: import('@/pages/System/Menu')
+  ↓
+组件加载成功 → 渲染页面
+  ↓
+组件加载失败 → ErrorBoundary → 显示404页面
+```
+
+## 📱 响应式布局系统详解 (2025-06-22)
+
+### 三种容器类型设计
+
+#### 1. 内容容器 (.page-container-content)
+```css
+.page-container-content {
+  width: 100%;
+  min-height: 100%;
+  background: transparent;
+  padding: 1.5%;
+  box-sizing: border-box;
+}
+```
+**适用场景**: 仪表盘、内容展示页面
+**特点**: 自适应高度，内容可自然扩展
+
+#### 2. 居中容器 (.page-container-center)
+```css
+.page-container-center {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  overflow: hidden;
+  box-sizing: border-box;
+  flex: 1;
+}
+```
+**适用场景**: 404页面、占位页面、登录页面
+**特点**: 完美居中显示，固定高度
+
+#### 3. 管理容器 (.page-container-management)
+```css
+.page-container-management {
+  height: 100%;
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  padding: 2%;
+  box-sizing: border-box;
+}
+```
+**适用场景**: 表格管理页面、数据列表页面
+**特点**: 固定高度，表格内部滚动（A4效果）
+
+### 响应式断点设计
+```css
+/* 1200px以下 - 平板设备 */
+@media (max-width: 1200px) {
+  .page-container-management { padding: 1.5%; }
+  .page-toolbar { flex-direction: column; }
+}
+
+/* 768px以下 - 移动设备 */
+@media (max-width: 768px) {
+  .page-container-management { padding: 1.2%; }
+  .page-header { margin-bottom: 1.5%; }
+}
+
+/* 480px以下 - 小屏手机 */
+@media (max-width: 480px) {
+  .page-container-management { padding: 1%; }
+  .page-header h1 { font-size: 1.125rem; }
+}
+```
+
+## 💾 Tab状态持久化详解 (2025-06-22)
+
+### localStorage管理架构
+```typescript
+// localStorageManager.ts - 统一管理工具
+export const STORAGE_KEYS = {
+  AUTH_STORAGE: 'auth-storage',
+  TAB_STATE: 'svt-tab-state',
+  ACTIVE_TAB: 'svt-active-tab',
+} as const;
+
+export const tabStorage = {
+  save: (tabs: unknown[], activeTab: string): void => {
+    localStorage.setItem(STORAGE_KEYS.TAB_STATE, JSON.stringify(tabs));
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, activeTab);
+  },
+  
+  load: (): { tabs: unknown[], activeTab: string } => {
+    const savedTabs = localStorage.getItem(STORAGE_KEYS.TAB_STATE);
+    const savedActiveTab = localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB);
+    
+    if (savedTabs && savedActiveTab) {
+      return { tabs: JSON.parse(savedTabs), activeTab: savedActiveTab };
+    }
+    
+    return {
+      tabs: [{ key: '/dashboard', label: '仪表盘', path: '/dashboard', closable: false }],
+      activeTab: '/dashboard'
+    };
+  },
+  
+  clear: (): void => {
+    localStorage.removeItem(STORAGE_KEYS.TAB_STATE);
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_TAB);
+  }
+};
+```
+
+### 统一刷新机制
+```typescript
+// BasicLayout.tsx - 统一刷新逻辑
+const addTab = useCallback((path: string, forceRefresh = false) => {
+  // 菜单点击: forceRefresh = true，强制刷新
+  if (forceRefresh || isCurrentTab) {
+    setIsPageRefreshing(true);
+    setPageRefreshKey(prev => prev + 1); // 关键：强制重渲染
+    
+    setTimeout(() => {
+      setIsPageRefreshing(false);
+    }, 300);
+  }
+}, []);
+
+const switchTab = useCallback((targetKey: string) => {
+  // Tab切换: 也强制刷新，确保数据最新
+  setIsPageRefreshing(true);
+  setPageRefreshKey(prev => prev + 1); // 关键：强制重渲染
+  
+  setTimeout(() => {
+    setIsPageRefreshing(false);
+  }, 300);
+}, []);
+```
+
+### 数据清理机制
+```typescript
+// 登录时清理
+export const initializeStorageOnLogin = (): void => {
+  clearAllUserData();
+  console.log('[LocalStorage] 登录时存储初始化完成');
+};
+
+// 登出时清理
+export const clearStorageOnLogout = (): void => {
+  clearAllUserData();
+  console.log('[LocalStorage] 登出时存储清理完成');
+};
+
+// Token失效时清理
+export const clearStorageOnTokenExpired = (): void => {
+  clearAllUserData();
+  console.log('[LocalStorage] Token失效时存储清理完成');
+};
 ```
 
 ## 🔑 用户状态验证系统详解 (2025-06-20)
@@ -964,7 +1280,10 @@ try {
 ## 📚 相关文档
 
 ### 🎨 前端设计
-- **[前端设计原理](./docs/Frontend-Design-Principles.md)** - 前端架构和安全机制设计原理 (新增)
+- **[前端设计原理](./docs/Frontend-Design-Principles.md)** - 前端架构和安全机制设计原理
+- **[动态组件系统](./docs/Dynamic-Component-System.md)** - 自动组件映射和错误边界处理 ⭐
+- **[响应式布局系统](./docs/Responsive-Layout-System.md)** - 三种容器类型和响应式设计 ⭐
+- **[Tab状态持久化](./docs/Tab-State-Persistence.md)** - localStorage管理和状态恢复 ⭐
 - [组件结构说明](./docs/Component-Structure.md)
 - [状态管理指南](./docs/State-Management.md)
 - [环境变量配置说明](./docs/环境变量配置说明.md)
@@ -979,7 +1298,8 @@ try {
 
 ---
 
-**最后更新**: 2025-06-21 (补充设计文档链接)
+**最后更新**: 2025-06-22 (动态组件系统重构优化)
 **架构状态**: 生产就绪 🚀
 **用户体验**: A级别 ✨
 **安全等级**: A级别 🛡️
+**自动化程度**: A级别 🤖

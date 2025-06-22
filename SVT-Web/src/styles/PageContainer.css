@@ -1,0 +1,205 @@
+/* 页面容器通用样式 */
+
+/* 
+  统一页面容器设计原则:
+  1. 最小高度保证，避免页面太小
+  2. 内容不足时以最小高度为准
+  3. 内容过多时自然扩展，超出视口时外层滚动（A4效果）
+*/
+.page-container {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+/* 内容类页面容器 - 自适应高度，内容可自然扩展 */
+.page-container-content {
+  width: 100%;
+  min-height: 100%;
+  background: transparent;
+  padding: 1.5%;
+  box-sizing: border-box;
+}
+
+/* 居中类页面容器 - 确保在内容区域内完全居中 */
+.page-container-center {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  overflow: hidden;
+  box-sizing: border-box;
+  /* 确保能够正确继承父容器高度 */
+  flex: 1;
+}
+
+/* 管理类页面容器 - 固定高度，表格内部滚动 */
+.page-container-management {
+  height: 100%;
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  padding: 2%;
+  box-sizing: border-box;
+}
+
+/* 页面头部区域 */
+.page-header {
+  flex-shrink: 0;
+  padding-bottom: 1.5%; /* 使用百分比 */
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 2%; /* 使用百分比 */
+}
+
+.page-header h1,
+.page-header h2 {
+  margin: 0 0 0.5% 0; /* 使用百分比 */
+  font-size: 1.25rem; /* 使用rem单位 */
+  font-weight: 600;
+  color: #262626;
+}
+
+.page-header p {
+  margin: 0;
+  color: #8c8c8c;
+  font-size: 0.875rem; /* 使用rem单位 */
+}
+
+/* 页面工具栏区域 */
+.page-toolbar {
+  flex-shrink: 0;
+  margin-bottom: 1.5%; /* 使用百分比 */
+  padding: 1.5%; /* 使用百分比 */
+  background: #fafafa;
+  border-radius: 0.5rem; /* 使用rem单位 */
+  border: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 表格容器 */
+.page-table-container {
+  flex: 1;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-table-container .ant-table-wrapper {
+  flex: 1;
+  overflow: hidden;
+}
+
+.page-table-container .ant-table {
+  height: 100%;
+}
+
+.page-table-container .ant-table-container {
+  height: 100%;
+  overflow: auto;
+}
+
+/* 表格内部滚动优化 */
+.page-table-container .ant-table-body {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+/* 工具提示 */
+.page-selection-info {
+  color: #1890ff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.page-selection-count {
+  font-weight: 600;
+  color: #1890ff;
+}
+
+/* 自定义滚动条样式 */
+.page-table-container .ant-table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.page-table-container .ant-table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.page-table-container .ant-table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.page-table-container .ant-table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 响应式调整 - 固定高度原则不变，只调整内间距 */
+@media (max-width: 1200px) {
+  .page-container-management {
+    padding: 1.5%;
+  }
+
+  .page-container-content {
+    padding: 1.2%;
+  }
+
+  .page-toolbar {
+    flex-direction: column;
+    gap: 1.5%;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-container-management {
+    padding: 1.2%;
+  }
+
+  .page-container-content {
+    padding: 1%;
+  }
+
+  .page-header {
+    margin-bottom: 1.5%;
+  }
+
+  .page-toolbar {
+    padding: 1.2%;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container-management {
+    padding: 1%;
+  }
+
+  .page-container-content {
+    padding: 0.8%;
+  }
+
+  .page-header h1,
+  .page-header h2 {
+    font-size: 1.125rem;
+  }
+
+  .page-toolbar {
+    padding: 1%;
+  }
+}

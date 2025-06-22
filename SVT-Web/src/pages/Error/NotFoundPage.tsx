@@ -1,18 +1,13 @@
 import React from 'react';
 import { Result, Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import '@/styles/PageContainer.css';
 
 const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: 'calc(100vh - 120px)', // 适配内容区域高度
-      padding: '40px 24px'
-    }}>
+    <div className="page-container-center">
       <Result
         status="404"
         title="404"

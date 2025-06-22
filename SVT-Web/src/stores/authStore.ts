@@ -4,7 +4,13 @@ import { tokenManager } from '@/utils/tokenManager';
 import * as authApi from '@/api/auth';
 import type { User, LoginRequest } from '@/types/user';
 import type { UserDetailCache } from '@/types/org-role';
-import { cleanupLegacyStorage } from '@/utils/storageCleanup';
+import { 
+  initializeStorageOnLogin, 
+  clearStorageOnLogout, 
+  clearStorageOnTokenExpired,
+  cleanupLegacyStorage,
+  STORAGE_KEYS 
+} from '@/utils/localStorageManager';
 import { message } from 'antd';
 
 // 认证状态接口
@@ -43,6 +49,9 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true });
         
         try {
+          // 登录时初始化localStorage
+          initializeStorageOnLogin();
+          
           // 调用登录API
           const response = await authApi.login(credentials);
           
@@ -59,9 +68,9 @@ export const useAuthStore = create<AuthState>()(
 
           // 🔧 token通过Zustand persist自动存储，无需单独存储到localStorage
           if (calculatedExpiryDate) {
-            localStorage.setItem('expiryDate', calculatedExpiryDate);
+            localStorage.setItem(STORAGE_KEYS.EXPIRY_DATE, calculatedExpiryDate);
           } else {
-            localStorage.removeItem('expiryDate'); // 如果不记住，确保清除旧的有效期
+            localStorage.removeItem(STORAGE_KEYS.EXPIRY_DATE); // 如果不记住，确保清除旧的有效期
           }
           
           // 更新状态 - 暂时不设置用户信息，需要额外获取
@@ -108,9 +117,10 @@ export const useAuthStore = create<AuthState>()(
           if (state.token && state.isAuthenticated) {
             try {
               await authApi.logout();
-            } catch (error: any) {
+            } catch (error: unknown) {
               // 如果是401错误，说明token已失效，不需要显示错误
-              if (error.response?.status !== 401) {
+              const axiosError = error as { response?: { status?: number } };
+              if (axiosError.response?.status !== 401) {
                 console.warn('调用后端logout接口失败:', error);
                 if (!initialMessage) {
                   message.error('退出登录失败，请稍后重试');
@@ -122,10 +132,8 @@ export const useAuthStore = create<AuthState>()(
           // 停止Token管理器
           tokenManager.stop();
           
-          // 清除localStorage（token和user通过Zustand persist自动管理）
-          localStorage.removeItem('expiryDate');
-          // 🔧 清理可能的遗留数据
-          cleanupLegacyStorage();
+          // 清理localStorage
+          clearStorageOnLogout();
           
           // 重置状态
           set({
@@ -146,9 +154,8 @@ export const useAuthStore = create<AuthState>()(
         // 停止Token管理器
         tokenManager.stop();
         
-        // 清除localStorage
-        localStorage.removeItem('expiryDate');
-        cleanupLegacyStorage();
+        // 清理localStorage
+        clearStorageOnTokenExpired();
         
         // 重置状态
         set({

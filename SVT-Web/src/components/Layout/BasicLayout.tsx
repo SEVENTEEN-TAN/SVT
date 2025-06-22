@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserStatus } from '@/hooks/useUserStatus';
+import { tabStorage } from '@/utils/localStorageManager';
 import Footer from './Footer';
 
 const { Header, Sider, Content } = Layout;
@@ -137,16 +138,54 @@ const BasicLayout: React.FC = () => {
   // 防重复操作的ref
   const isOperatingRef = useRef(false);
 
-  // Tab状态管理
-  const [activeTabKey, setActiveTabKey] = useState<string>('/dashboard');
-  const [tabList, setTabList] = useState<TabItem[]>([
-    {
-      key: '/dashboard',
-      label: '仪表盘',
-      path: '/dashboard',
-      closable: false, // 仪表盘不可关闭
-    },
-  ]);
+  // 使用统一的localStorage管理工具
+
+  // 从本地存储恢复Tab状态 - 简化版本
+  const loadTabsFromStorage = (): { tabs: TabItem[], activeTab: string } => {
+    const result = tabStorage.load();
+    
+    // 确保返回正确的类型和仪表盘始终存在
+    const tabs = (result.tabs as TabItem[]) || [];
+    const homeIndex = tabs.findIndex(tab => tab.key === '/dashboard');
+    if (homeIndex >= 0) {
+      tabs[homeIndex] = { key: '/dashboard', label: '仪表盘', path: '/dashboard', closable: false };
+    } else {
+      tabs.unshift({ key: '/dashboard', label: '仪表盘', path: '/dashboard', closable: false });
+    }
+    
+    return {
+      tabs,
+      activeTab: result.activeTab
+    };
+  };
+
+  // 保存Tab状态到本地存储 - 简化版本
+  const saveTabsToStorage = useCallback((tabs: TabItem[], activeTab: string) => {
+    tabStorage.save(tabs, activeTab);
+  }, []);
+
+  // Tab状态管理 - 从本地存储初始化
+  const [activeTabKey, setActiveTabKey] = useState<string>(() => {
+    const { activeTab } = loadTabsFromStorage();
+    return activeTab;
+  });
+  const [tabList, setTabList] = useState<TabItem[]>(() => {
+    const { tabs } = loadTabsFromStorage();
+    return tabs;
+  });
+
+  // 简化：不再需要监听用户变化，因为一台电脑只有一个用户
+
+  // 页面初次加载时同步路由和Tab状态
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const { activeTab } = loadTabsFromStorage();
+    
+    // 如果当前URL与保存的活跃Tab不一致，需要导航到保存的Tab
+    if (currentPath !== '/login' && currentPath !== activeTab && activeTab !== '/') {
+      navigate(activeTab, { replace: true });
+    }
+  }, [navigate]); // 只在初次加载时执行
 
   // 右键菜单状态
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -155,6 +194,9 @@ const BasicLayout: React.FC = () => {
 
   // 页面刷新key，用于强制重渲染
   const [pageRefreshKey, setPageRefreshKey] = useState<number>(0);
+  
+  // 页面刷新加载状态
+  const [isPageRefreshing, setIsPageRefreshing] = useState<boolean>(false);
 
   // Tab管理配置（移除强制限制，改为滚动支持）
   // const MAX_TABS = 10; // 移除最大Tab数量限制
@@ -207,19 +249,43 @@ const BasicLayout: React.FC = () => {
           closable: path !== '/dashboard', // 仪表盘不可关闭
         };
 
-        return [...prev, newTab];
+        const newTabList = [...prev, newTab];
+        // 保存到本地存储
+        saveTabsToStorage(newTabList, path);
+        return newTabList;
+      } else {
+        // Tab已存在，只需保存活跃Tab
+        saveTabsToStorage(prev, path);
+        return prev;
       }
-      return prev;
     });
 
     // 设置活跃Tab
     setActiveTabKey(path);
 
-    // 只在以下情况才刷新：
-    // 1. 强制刷新
+    // 刷新策略：
+    // 1. 强制刷新（菜单点击、右键刷新等）
     // 2. 重复点击当前Tab（用户期望刷新）
     if (forceRefresh || isCurrentTab) {
+      // 显示刷新加载状态
+      setIsPageRefreshing(true);
+      
       setPageRefreshKey(prev => prev + 1);
+      
+      // 刷新后重置滚动位置和关闭加载状态
+      setTimeout(() => {
+        // 查找可滚动的内容容器并重置滚动位置
+        const contentContainer = document.querySelector('div[style*="overflow: auto"]');
+        if (contentContainer) {
+          contentContainer.scrollTop = 0;
+          contentContainer.scrollLeft = 0;
+        }
+        
+        // 关闭刷新加载状态 - 延长时间确保动态组件完全加载
+        setTimeout(() => {
+          setIsPageRefreshing(false);
+        }, 200); // 增加时间，确保懒加载组件完成
+      }, 100);
     }
 
     // 导航到目标路径
@@ -253,12 +319,17 @@ const BasicLayout: React.FC = () => {
       setActiveTabKey(currentActive => {
         if (currentActive === targetKey) {
           const newActiveTab = newTabList[newTabList.length - 1];
+          // 保存到本地存储
+          saveTabsToStorage(newTabList, newActiveTab.key);
           // 延迟导航，避免状态冲突
           setTimeout(() => {
             navigate(newActiveTab.path);
             isOperatingRef.current = false;
           }, 0);
           return newActiveTab.key;
+        } else {
+          // 保存到本地存储
+          saveTabsToStorage(newTabList, currentActive);
         }
         setTimeout(() => {
           isOperatingRef.current = false;
@@ -268,27 +339,72 @@ const BasicLayout: React.FC = () => {
 
       return newTabList;
     });
-  }, [navigate]);
+  }, [navigate, saveTabsToStorage]);
 
-  // 切换Tab（只在需要时刷新）
+  // 切换Tab（刷新页面内容确保数据最新）
   const switchTab = useCallback((targetKey: string) => {
     setActiveTabKey(targetKey);
 
-    // 导航到目标路径（不强制刷新，让页面自然切换）
+    // 保存活跃Tab到本地存储
+    saveTabsToStorage(tabList, targetKey);
+
+    // 显示刷新加载状态
+    setIsPageRefreshing(true);
+
+    // 强制刷新页面内容：更新刷新key，确保获取最新数据
+    setPageRefreshKey(prev => prev + 1);
+
+    // 导航到目标路径
     navigate(targetKey);
-  }, [navigate]);
+
+    // 刷新后重置滚动位置和关闭加载状态
+    setTimeout(() => {
+      // 查找可滚动的内容容器并重置滚动位置
+      const contentContainer = document.querySelector('div[style*="overflow: auto"]');
+      if (contentContainer) {
+        contentContainer.scrollTop = 0;
+        contentContainer.scrollLeft = 0;
+      }
+      
+      // 关闭刷新加载状态 - 确保动态组件完全加载
+      setTimeout(() => {
+        setIsPageRefreshing(false);
+      }, 200); // 与菜单点击保持一致的时间
+    }, 100);
+  }, [navigate, tabList, saveTabsToStorage]);
 
   // Tab右键菜单功能
   const refreshTab = useCallback((tabKey: string) => {
     // 强制刷新指定Tab
     setActiveTabKey(tabKey);
 
+    // 保存活跃Tab到本地存储
+    saveTabsToStorage(tabList, tabKey);
+
+    // 显示刷新加载状态
+    setIsPageRefreshing(true);
+
     // 强制刷新页面内容：更新刷新key
     setPageRefreshKey(prev => prev + 1);
 
+    // 刷新后重置滚动位置和关闭加载状态
+    setTimeout(() => {
+      // 查找可滚动的内容容器并重置滚动位置
+      const contentContainer = document.querySelector('div[style*="overflow: auto"]');
+      if (contentContainer) {
+        contentContainer.scrollTop = 0;
+        contentContainer.scrollLeft = 0;
+      }
+      
+      // 关闭刷新加载状态 - 延长时间确保动态组件完全加载
+      setTimeout(() => {
+        setIsPageRefreshing(false);  
+      }, 200); // 增加时间，确保懒加载组件完成
+    }, 100);
+
     // 导航到目标路径
     navigate(tabKey);
-  }, [navigate]);
+  }, [navigate, tabList, saveTabsToStorage]);
 
   const closeCurrentTab = useCallback((tabKey: string) => {
     removeTab(tabKey);
@@ -313,12 +429,16 @@ const BasicLayout: React.FC = () => {
       if (isCurrentTabBeingClosed) {
         // 切换到指定的Tab（因为它在右边，没有被关闭）
         setActiveTabKey(tabKey);
+        saveTabsToStorage(newTabList, tabKey);
         navigate(tabKey);
+      } else {
+        // 保存到本地存储
+        saveTabsToStorage(newTabList, activeTabKey);
       }
 
       return newTabList;
     });
-  }, [tabList, activeTabKey, navigate]);
+  }, [tabList, activeTabKey, navigate, saveTabsToStorage]);
 
   const closeRightTabs = useCallback((tabKey: string) => {
     const currentIndex = tabList.findIndex(tab => tab.key === tabKey);
@@ -339,27 +459,39 @@ const BasicLayout: React.FC = () => {
       if (isCurrentTabBeingClosed) {
         // 切换到指定的Tab（因为它在左边，没有被关闭）
         setActiveTabKey(tabKey);
+        saveTabsToStorage(newTabList, tabKey);
         navigate(tabKey);
+      } else {
+        // 保存到本地存储
+        saveTabsToStorage(newTabList, activeTabKey);
       }
 
       return newTabList;
     });
-  }, [tabList, activeTabKey, navigate]);
+  }, [tabList, activeTabKey, navigate, saveTabsToStorage]);
 
   // 关闭其他Tab（保留当前Tab和仪表盘）
   const closeOtherTabs = useCallback((tabKey: string) => {
-    setTabList(prev => prev.filter(tab =>
-      tab.key === tabKey ||
-      tab.key === '/dashboard' ||
-      !tab.closable
-    ));
+    setTabList(prev => {
+      const newTabList = prev.filter(tab =>
+        tab.key === tabKey ||
+        tab.key === '/dashboard' ||
+        !tab.closable
+      );
+      
+      // 保存到本地存储
+      const finalActiveTab = activeTabKey !== tabKey && activeTabKey !== '/dashboard' ? tabKey : activeTabKey;
+      saveTabsToStorage(newTabList, finalActiveTab);
+      
+      return newTabList;
+    });
 
     // 如果当前活跃Tab被保留，不需要切换
     if (activeTabKey !== tabKey && activeTabKey !== '/dashboard') {
       setActiveTabKey(tabKey);
       navigate(tabKey);
     }
-  }, [activeTabKey, navigate]);
+  }, [activeTabKey, navigate, saveTabsToStorage]);
 
   // 生成右键菜单项
   const getContextMenuItems = useCallback((tabKey: string): TabContextMenuItem[] => {
@@ -452,15 +584,21 @@ const BasicLayout: React.FC = () => {
             path: currentPath,
             closable: currentPath !== '/dashboard',
           };
-          return [...prev, newTab];
+          const newTabList = [...prev, newTab];
+          // 保存到本地存储
+          saveTabsToStorage(newTabList, currentPath);
+          return newTabList;
+        } else {
+          // Tab已存在，只需更新活跃状态
+          saveTabsToStorage(prev, currentPath);
+          return prev;
         }
-        return prev;
       });
 
       // 设置活跃Tab
       setActiveTabKey(currentPath);
     }
-  }, [location.pathname, getTabName]); // 只依赖必要的值
+  }, [location.pathname, getTabName, saveTabsToStorage]); // 只依赖必要的值
 
   // 🔧 动态生成菜单项
   const menuItems: MenuProps['items'] = useMemo(() => {
@@ -477,15 +615,15 @@ const BasicLayout: React.FC = () => {
     return [dashboardItem, ...(userMenuItems || [])];
   }, [user?.menuTrees, convertMenuTrees]);
 
-  // 处理菜单点击（重复点击时刷新）
+  // 处理菜单点击（每次点击都刷新页面内容）
   const handleMenuClick = useCallback((e: { key: string }) => {
-    const isCurrentTab = activeTabKey === e.key;
-    addTab(e.key, isCurrentTab); // 重复点击当前Tab时刷新
-  }, [addTab, activeTabKey]);
+    addTab(e.key, true); // 每次点击菜单都强制刷新页面内容
+  }, [addTab]);
 
-  // 处理登出
+  // 处理登出 - 简化版本
   const handleLogout = useCallback(async () => {
     try {
+      // localStorage清理由AuthStore统一处理
       await logout();
       navigate('/login');
     } catch (error) {
@@ -563,6 +701,9 @@ const BasicLayout: React.FC = () => {
       title: <span>{pathMaps.breadcrumbMap[currentPath]}</span>,
     });
   }
+
+  // 移除硬编码的页面类型判断，改为动态判断
+  // 所有页面都使用统一的响应式布局，让组件自己决定如何填充空间
 
 
 
@@ -860,29 +1001,64 @@ const BasicLayout: React.FC = () => {
             transition: 'all 0.2s',
             zIndex: 1,
             background: '#f0f2f5',
+            overflow: 'hidden',
           }}
         >
-          {/* 可滚动内容容器 */}
+          {/* 可滚动内容容器 - 支持A4效果滚动 */}
           <div
             style={{
               flex: 1,
-              overflow: 'auto',
+              overflow: 'auto', // 当内容超出时允许滚动
               padding: 0,
               margin: 0,
             }}
           >
-            {/* 主内容区域 */}
+            {/* 主内容区域 - 最小高度保证，内容可自然扩展 */}
             <Content
               style={{
-                padding: '24px',
+                padding: '1.5%',
                 background: colorBgContainer,
                 borderRadius: borderRadiusLG,
-                margin: '16px',
-                minHeight: 'calc(100vh - 64px - 46px - 48px - 32px)', // 调整高度计算
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                margin: '1%',
+                minHeight: 'calc(100vh - 19vh)', // 最小高度保证不会太小
+                boxShadow: '0 0.2vh 0.8vh rgba(0, 0, 0, 0.04)',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              <Outlet key={pageRefreshKey} />
+              <div style={{ 
+                flex: 1, 
+                display: 'flex', 
+                flexDirection: 'column',
+                height: '100%',
+                width: '100%',
+                minHeight: 0, // 确保flex子项可以正确收缩
+                position: 'relative' // 为加载状态定位
+              }}>
+                {isPageRefreshing ? (
+                  // 页面刷新加载状态 - 在内容区域居中显示
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    zIndex: 10
+                  }}>
+                    <Spin size="large" />
+                    <Text style={{ marginTop: 16, color: '#666', fontSize: '16px' }}>
+                      页面刷新中...
+                    </Text>
+                  </div>
+                ) : (
+                  <Outlet key={pageRefreshKey} />
+                )}
+              </div>
             </Content>
           </div>
 

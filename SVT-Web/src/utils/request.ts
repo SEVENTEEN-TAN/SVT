@@ -8,6 +8,7 @@ import type {
 import { AESCryptoUtils, isEncryptedData } from '@/utils/crypto';
 import { useAuthStore } from '@/stores/authStore';
 import { messageManager } from '@/utils/messageManager';
+import { clearStorageOnTokenExpired } from '@/utils/localStorageManager';
 
 // 定义响应数据结构
 export interface ApiResponse<T = unknown> {
@@ -131,6 +132,10 @@ request.interceptors.response.use(
     if (isAuthError) {
       // 如果是认证相关错误，则触发登出逻辑
       console.warn(`检测到业务层面的认证错误: ${errorMessage}`);
+      
+      // 清理localStorage
+      clearStorageOnTokenExpired();
+      
       useAuthStore.getState().logout({ message: errorMessage });
       return Promise.reject(new Error(errorMessage));
     }
@@ -145,7 +150,7 @@ request.interceptors.response.use(
       const { status, data } = error.response;
       
       switch (status) {
-        case 401:
+        case 401: {
           console.warn('API请求返回401，Token可能已过期');
           
           // 🔧 关键优化：检查是否为verify-user-status请求
@@ -155,6 +160,10 @@ request.interceptors.response.use(
             // verify-user-status返回401时，后端已将token加入黑名单
             // 只需清理前端状态，不再调用logout API
             console.log('🔧 verify-user-status返回401，直接清理前端状态（后端已处理token黑名单）');
+            
+            // 清理localStorage
+            clearStorageOnTokenExpired();
+            
             useAuthStore.getState().clearAuthState(); // 直接清理状态，不调用logout API
             
             // 显示一次消息即可
@@ -165,12 +174,17 @@ request.interceptors.response.use(
           } else {
             // 其他API的401，正常处理
             const errorMsg = (data as ApiResponse)?.message || '登录已过期，请重新登录';
+            
+            // 清理localStorage
+            clearStorageOnTokenExpired();
+            
             useAuthStore.getState().logout();
             setTimeout(() => {
               messageManager.warning(errorMsg);
             }, 100);
           }
           break;
+        }
         case 403:
           messageManager.error('没有权限访问该资源');
           break;
