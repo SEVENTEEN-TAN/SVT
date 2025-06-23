@@ -121,16 +121,16 @@ VALUES
 INSERT INTO menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)
 VALUES
 -- 系统管理
-(N'M001', null, N'系统管理', N'System Management', N'/system', N'setting', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001001', N'M001', N'用户管理', N'User Management', N'/system/user', N'user', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001002', N'M001', N'角色管理', N'Role Management', N'/system/role', N'team', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001003', N'M001', N'菜单管理', N'Menu Management', N'/system/menu', N'menu', N'3', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001004', N'M001', N'权限管理', N'Permission Management', N'/system/permission', N'safety', N'4', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001005', N'M001', N'机构管理', N'Organization Management', N'/system/org', N'apartment', N'5', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'M001', null, N'系统管理', N'System Management', N'/System', N'setting', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'M001001', N'M001', N'用户管理', N'User Management', N'/System/User', N'user', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'M001002', N'M001', N'角色管理', N'Role Management', N'/System/Role', N'team', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'M001003', N'M001', N'菜单管理', N'Menu Management', N'/System/Menu', N'menu', N'3', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'M001004', N'M001', N'权限管理', N'Permission Management', N'/System/Permission', N'safety', N'4', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'M001005', N'M001', N'机构管理', N'Organization Management', N'/System/Org', N'apartment', N'5', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
 -- 业务管理
-(N'M002', null, N'业务管理', N'Business Management', N'/business', N'shop', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M002001', N'M002', N'业务处理', N'Business Process', N'/business/process', N'form', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M002002', N'M002', N'业务查询', N'Business Query', N'/business/query', N'search', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null);
+(N'M002', null, N'业务管理', N'Business Management', N'/Business', N'shop', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'M002001', N'M002', N'业务处理', N'Business Process', N'/Business/Process', N'form', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'M002002', N'M002', N'业务查询', N'Business Query', N'/Business/Query', N'search', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null);
 
 -- 初始化权限数据
 INSERT INTO permission_info (permission_id, permission_key, permission_name_zh, permission_name_en, permission_group, permission_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)

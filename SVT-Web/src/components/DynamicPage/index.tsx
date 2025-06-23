@@ -32,6 +32,18 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   }
 }
 
+// 使用 import.meta.glob 预加载所有页面组件
+// 这种方式可以被 Vite 正确分析 (注意：不能使用@别名，需要使用相对路径)
+const pageModules = import.meta.glob('../../pages/**/index.tsx');
+
+// 创建组件缓存映射
+const componentCache = new Map<string, React.LazyExoticComponent<React.ComponentType<any>>>();
+
+// 路径标准化工具函数
+const normalizePath = (path: string): string => {
+  return path.toLowerCase().replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+};
+
 // 路径转换为组件路径的工具函数
 const pathToComponentPath = (menuPath: string): string => {
   // 移除开头的斜杠，分割路径
@@ -46,25 +58,30 @@ const pathToComponentPath = (menuPath: string): string => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // 构建组件路径：/system/menu -> /pages/System/Menu
+  // 构建组件路径：/system/menu -> ../../pages/System/Menu/index.tsx
   const [category, page] = segments;
-  return `/pages/${convertToPascalCase(category)}/${convertToPascalCase(page)}`;
+  return `../../pages/${convertToPascalCase(category)}/${convertToPascalCase(page)}/index.tsx`;
 };
 
-// 动态导入组件的函数
-const importComponent = (componentPath: string) => {
+// 动态加载组件的函数
+const loadComponent = (componentPath: string): React.LazyExoticComponent<React.ComponentType<any>> | null => {
   try {
-    // 移除开头的斜杠，构建相对路径
-    const relativePath = componentPath.startsWith('/') ? componentPath.substring(1) : componentPath;
-    
-    // 使用动态导入
-    return lazy(() => import(`@/${relativePath}`).catch(error => {
-      console.warn(`组件加载失败: @/${relativePath}`, error);
-      // 组件加载失败时，抛出错误，让上层处理
-      throw error;
-    }));
+    // 检查组件缓存
+    if (componentCache.has(componentPath)) {
+      return componentCache.get(componentPath)!;
+    }
+
+    // 检查模块是否存在
+    if (pageModules[componentPath]) {
+      const LazyComponent = lazy(() => pageModules[componentPath]() as Promise<{ default: React.ComponentType<any> }>);
+      componentCache.set(componentPath, LazyComponent);
+      return LazyComponent;
+    }
+
+
+    return null;
   } catch (error) {
-    console.error('动态导入失败:', error);
+
     return null;
   }
 };
@@ -81,25 +98,29 @@ interface MenuItem {
   children?: MenuItem[];
 }
 
-// 基于后端菜单数据的动态组件映射
+// 基于后端菜单数据创建动态组件映射
 const createDynamicPageMap = (menuTrees: MenuItem[]) => {
-  const pageMap: Record<string, React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>> = {};
+  const pageMap: Record<string, React.LazyExoticComponent<React.ComponentType<any>> | undefined> = {};
 
   const processMenuTree = (menus: MenuItem[]) => {
     menus.forEach(menu => {
       if (menu.menuPath) {
-        const path = menu.menuPath;
-        const componentPath = pathToComponentPath(path);
+        const originalPath = menu.menuPath;
+        const normalizedPath = normalizePath(originalPath);
+        const componentPath = pathToComponentPath(originalPath);
         
         if (componentPath) {
           try {
-            const Component = importComponent(componentPath);
+            const Component = loadComponent(componentPath);
             if (Component) {
-              pageMap[path] = Component;
+              // 同时支持原始路径和标准化路径
+              pageMap[originalPath] = Component;
+              pageMap[normalizedPath] = Component;
+              
+
             }
-          } catch {
-            // 组件导入失败时，不添加到pageMap中，这样会统一显示404页面
-            console.warn(`跳过无效组件路径: ${path} -> ${componentPath}`);
+          } catch (error) {
+            // 组件导入失败，跳过
           }
         }
       }
@@ -124,12 +145,18 @@ const DynamicPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuthStore();
   const currentPath = location.pathname;
+  const normalizedCurrentPath = normalizePath(currentPath);
 
-  // 递归检查用户是否有访问该路径的权限
+  // 递归检查用户是否有访问该路径的权限（支持大小写不敏感匹配）
   const checkPermission = (menus: MenuItem[], targetPath: string): boolean => {
+    const normalizedTargetPath = normalizePath(targetPath);
+    
     return menus.some(menu => {
-      if (menu.menuPath === targetPath) {
-        return true;
+      if (menu.menuPath) {
+        const normalizedMenuPath = normalizePath(menu.menuPath);
+        if (normalizedMenuPath === normalizedTargetPath) {
+          return true;
+        }
       }
       if (menu.children && menu.children.length > 0) {
         return checkPermission(menu.children, targetPath);
@@ -148,10 +175,10 @@ const DynamicPage: React.FC = () => {
   // 基于用户菜单数据创建动态页面映射
   const pageMap = user?.menuTrees ? createDynamicPageMap(user.menuTrees as MenuItem[]) : {};
 
-  // 获取对应的页面组件
-  const PageComponent = pageMap[currentPath];
+  // 获取对应的页面组件（支持原始路径和标准化路径）
+  const PageComponent = pageMap[currentPath] || pageMap[normalizedCurrentPath];
 
-  // 如果无法加载组件（组件不存在或加载失败），统一显示404页面
+  // 如果无法加载组件，统一显示404页面
   if (!PageComponent) {
     return <NotFoundPage />;
   }

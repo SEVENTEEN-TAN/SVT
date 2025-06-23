@@ -35,7 +35,6 @@ const DEFAULT_CONFIG: CryptoConfig = {
  */
 class CryptoConfigManager {
   private config: CryptoConfig;
-  private initialized = false;
 
   constructor() {
     this.config = { ...DEFAULT_CONFIG };
@@ -61,8 +60,6 @@ class CryptoConfigManager {
       }
       
       this.config.debug = false;
-      
-      this.initialized = true;
     } catch (error) {
       console.error('AES配置初始化失败:', error);
       // 初始化失败时禁用加密
