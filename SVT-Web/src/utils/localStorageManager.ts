@@ -145,8 +145,8 @@ export const tabStorage = {
     
     // 返回默认状态
     return {
-      tabs: [{ key: '/dashboard', label: '仪表盘', path: '/dashboard', closable: false }],
-      activeTab: '/dashboard'
+        tabs: [{ key: '/home', label: '首页', path: '/home', closable: false }],
+  activeTab: '/home'
     };
   },
   

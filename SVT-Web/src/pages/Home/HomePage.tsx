@@ -11,7 +11,7 @@ import '@/styles/PageContainer.css';
 
 const { Title, Text } = Typography;
 
-const DashboardPage: React.FC = () => {
+const HomePage: React.FC = () => {
   const { user } = useAuthStore();
 
   return (
@@ -161,4 +161,4 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-export default DashboardPage; 
+export default HomePage; 

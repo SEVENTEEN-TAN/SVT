@@ -76,7 +76,7 @@ const LoginPage: React.FC = () => {
       showOrgRoleSelection();
     } else if (isAuthenticated && hasSelectedOrgRole) {
       // 🔧 已完成选择，直接跳转
-      navigate('/dashboard', { replace: true });
+                navigate('/home', { replace: true });
     }
   }, [isAuthenticated, hasSelectedOrgRole, navigate, showOrgRoleSelection]);
 
@@ -116,7 +116,7 @@ const LoginPage: React.FC = () => {
       // 关闭弹窗并跳转到dashboard
       setShowOrgRoleModal(false);
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
+        navigate('/home', { replace: true });
       }, 1000);
       
     } catch (error) {
