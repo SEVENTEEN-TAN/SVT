@@ -104,15 +104,7 @@ export const getTabName = (path: string, pathMaps: PathMaps, menuTrees?: MenuIte
   return menuLabel || '页面未找到';
 };
 
-// 计算内容区域的inset值
-export const getContentInset = (collapsed: boolean) => {
-  return {
-    top: LAYOUT_CONSTANTS.HEADER_HEIGHT + LAYOUT_CONSTANTS.TABS_HEIGHT,
-    right: 0,
-    bottom: 0,
-    left: collapsed ? LAYOUT_CONSTANTS.SIDER_WIDTH_COLLAPSED : LAYOUT_CONSTANTS.SIDER_WIDTH_EXPANDED,
-  };
-};
+// getContentInset 函数已移除 - 不再需要计算内容区域的inset值
 
 // 样式常量对象
 export const STYLES = {

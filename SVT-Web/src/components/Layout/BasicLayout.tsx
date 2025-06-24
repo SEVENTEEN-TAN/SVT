@@ -1,15 +1,16 @@
 import React from 'react';
 import { Layout, Spin, Typography } from 'antd';
+import { Outlet } from 'react-router-dom';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { useAuthStore } from '@/stores/authStore';
 import Sidebar from './modules/Sidebar';
 import Header from './modules/Header';
 import TabSystem from './modules/TabSystem';
-import ContentArea from './modules/ContentArea';
+import Footer from './Footer';
 import { useSidebarState } from './modules/Sidebar/hooks/useSidebarState';
 import { usePathMapping } from './shared/hooks/usePathMapping';
 import { useTabManager } from './modules/TabSystem/hooks/useTabManager';
-import { STYLES } from './shared/utils/layoutUtils';
+import { STYLES, LAYOUT_CONSTANTS } from './shared/utils/layoutUtils';
 import type { MenuItem } from './shared/types/layout';
 
 const { Text } = Typography;
@@ -51,31 +52,49 @@ const BasicLayout: React.FC = () => {
 
        <Layout style={{ 
          marginLeft: sidebarState.collapsed ? 80 : 240, 
-         transition: 'margin-left 0.2s' 
+         transition: 'margin-left 0.2s',
+         display: 'flex',
+         flexDirection: 'column',
+         height: '100vh'
        }}>
-         {/* 头部模块 */}
+         {/* 头部模块 - fixed定位，不占用flex空间 */}
          <Header
            collapsed={sidebarState.collapsed}
            onToggleCollapsed={() => sidebarState.setCollapsed(!sidebarState.collapsed)}
            pathMaps={pathMappingState.pathMaps}
          />
 
-         {/* Tab系统模块 */}
+         {/* Tab系统模块 - fixed定位，不占用flex空间 */}
          <TabSystem
            collapsed={sidebarState.collapsed}
            getTabName={pathMappingState.getTabName}
          />
 
-         {/* 内容区域模块 */}
-         <ContentArea
-           collapsed={sidebarState.collapsed}
-           pageRefreshState={{
-             pageRefreshKey: tabManager.pageRefreshKey,
-             isPageRefreshing: tabManager.isPageRefreshing,
-             setPageRefreshKey: tabManager.setPageRefreshKey,
-             setIsPageRefreshing: tabManager.setIsPageRefreshing,
+         {/* 页面内容 - 需要考虑Header和TabSystem的高度 */}
+         <div 
+           key={tabManager.pageRefreshKey} 
+           style={{ 
+             flex: 1,
+             position: 'relative',
+             overflow: 'auto',
+             marginTop: `${LAYOUT_CONSTANTS.HEADER_HEIGHT + LAYOUT_CONSTANTS.TABS_HEIGHT}px`,
+             minHeight: 0
            }}
-         />
+         >
+           {/* 页面加载状态覆盖层 */}
+           {tabManager.isPageRefreshing && (
+             <div style={STYLES.LOADING.pageRefresh}>
+               <Spin size="large" />
+               <Text style={STYLES.LOADING.pageRefreshText}>页面刷新中...</Text>
+             </div>
+           )}
+           
+           {/* 直接渲染页面组件 */}
+           <Outlet />
+         </div>
+
+         {/* 页脚 */}
+         <Footer />
       </Layout>
     </Layout>
   );
