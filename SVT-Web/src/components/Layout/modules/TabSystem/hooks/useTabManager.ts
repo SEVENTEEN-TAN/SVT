@@ -28,9 +28,6 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
 
   // 页面刷新key，用于强制重渲染
   const [pageRefreshKey, setPageRefreshKey] = useState<number>(0);
-  
-  // 页面刷新加载状态
-  const [isPageRefreshing, setIsPageRefreshing] = useState<boolean>(false);
 
   // 页面初次加载时同步路由和Tab状态
   useEffect(() => {
@@ -71,33 +68,32 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
         }
       });
 
-      // 设置活跃Tab
-      setActiveTabKey(currentPath);
+      // 只在activeTabKey与当前路径不一致时才更新，避免干扰加载状态
+      setActiveTabKey(prev => {
+        if (prev !== currentPath) {
+          console.log('🔄 路由变化更新activeTabKey:', prev, '->', currentPath);
+          return currentPath;
+        }
+        return prev;
+      });
     }
   }, [location.pathname, getTabName, saveTabsToStorage]); // 只依赖必要的值
 
-  // 刷新处理函数
+  // 刷新处理函数 - 简化版本，依赖React自然渲染
   const handleRefresh = useCallback((forceRefresh: boolean, isCurrentTab: boolean) => {
     if (forceRefresh || isCurrentTab) {
-      // 显示刷新加载状态
-      setIsPageRefreshing(true);
-      
+      console.log('🔄 开始页面刷新');
+      // 只更新pageRefreshKey，让React自然处理渲染
       setPageRefreshKey(prev => prev + 1);
-      
-      // 刷新后重置滚动位置和关闭加载状态
+
+      // 重置滚动位置
       setTimeout(() => {
-        // 查找可滚动的内容容器并重置滚动位置
         const contentContainer = document.querySelector('div[style*="overflow: auto"]');
         if (contentContainer) {
           contentContainer.scrollTop = 0;
           contentContainer.scrollLeft = 0;
         }
-        
-        // 关闭刷新加载状态 - 延长时间确保动态组件完全加载
-        setTimeout(() => {
-          setIsPageRefreshing(false);
-        }, 200); // 增加时间，确保懒加载组件完成
-      }, 100);
+      }, 0);
     }
   }, []);
 
@@ -187,15 +183,15 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
     });
   }, [navigate, saveTabsToStorage]);
 
-  // 切换Tab（刷新页面内容确保数据最新）
+  // 切换Tab（简化版本，依赖Ant Design原生切换）
   const switchTab = useCallback((targetKey: string) => {
-    setActiveTabKey(targetKey);
+    console.log('🔄 切换Tab:', targetKey);
 
-    // 保存活跃Tab到本地存储
+    setActiveTabKey(targetKey);
     saveTabsToStorage(tabList, targetKey);
 
-    // 处理刷新
-    handleRefresh(true, false); // 切换Tab时总是刷新
+    // 刷新页面内容
+    handleRefresh(true, false);
 
     // 导航到目标路径
     navigate(targetKey);
@@ -313,8 +309,6 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
 
     // 页面刷新状态
     pageRefreshKey,
-    isPageRefreshing,
     setPageRefreshKey,
-    setIsPageRefreshing,
   };
 }; 

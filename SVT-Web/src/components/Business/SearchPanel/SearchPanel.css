@@ -1,0 +1,157 @@
+.search-panel {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  flex-shrink: 0; /* 防止被压缩 */
+}
+
+/* 当不使用折叠面板时的内边距 */
+.search-panel .search-panel-form {
+  padding: 16px 24px;
+}
+
+/* 折叠面板的样式调整 */
+.search-panel .ant-collapse {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+}
+
+.search-panel .ant-collapse > .ant-collapse-item {
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.search-panel .ant-collapse > .ant-collapse-item:last-child {
+  border-bottom: none;
+}
+
+.search-panel .ant-collapse-header {
+  padding: 12px 24px !important;
+  background: #fafafa;
+}
+
+.search-panel .ant-collapse-content-box {
+  padding: 16px 24px;
+}
+
+/* 移除旧的折叠相关样式，现在使用Ant Design的Collapse组件 */
+
+/* 表单区域 */
+.search-panel-form {
+  width: 100%;
+}
+
+.search-panel-form .ant-form-item {
+  margin-bottom: 8px;
+}
+
+.search-panel-form .ant-form-item-label {
+  padding-bottom: 4px;
+  text-align: right;
+  min-width: 80px;
+}
+
+.search-panel-form .ant-form-item-label > label {
+  height: 22px;
+  line-height: 22px;
+  font-size: 14px;
+  color: #000000d9;
+  font-weight: normal;
+  display: inline-block;
+  width: 100%;
+  text-align: right;
+}
+
+/* 统一输入控件大小 */
+.search-panel-form .ant-input,
+.search-panel-form .ant-select-selector,
+.search-panel-form .ant-picker {
+  height: 32px;
+  border-radius: 6px;
+}
+
+.search-panel-form .ant-select-selector {
+  padding: 0 11px;
+}
+
+/* 移除hover边框效果 */
+.search-panel-form .ant-input:hover,
+.search-panel-form .ant-select-selector:hover,
+.search-panel-form .ant-picker:hover,
+.search-panel-form .ant-select:hover .ant-select-selector {
+  border-color: #d9d9d9 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.search-panel-form .ant-input:focus,
+.search-panel-form .ant-select-focused .ant-select-selector,
+.search-panel-form .ant-picker:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 折叠状态 - 减少高度 */
+.search-panel-collapsed {
+  padding: 8px 24px; /* 减少上下padding */
+  min-height: auto;
+}
+
+.search-panel-expand-btn,
+.search-panel-collapse-btn {
+  padding: 4px 8px;
+  height: 28px;
+  font-size: 12px;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.search-panel-expand-btn:hover,
+.search-panel-expand-btn:focus,
+.search-panel-expand-btn:active,
+.search-panel-collapse-btn:hover,
+.search-panel-collapse-btn:focus,
+.search-panel-collapse-btn:active {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+
+/* 响应式布局 */
+@media (max-width: 1200px) {
+  /* 中等屏幕：一行2个元素 */
+  .search-panel-form .ant-col {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-panel {
+    padding: 12px 16px;
+  }
+
+  .search-panel-collapsed {
+    padding: 12px 16px; /* 保持一致 */
+  }
+
+  /* 小屏幕：一行1个元素 */
+  .search-panel-form .ant-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-panel {
+    padding: 8px 12px;
+  }
+
+  .search-panel-collapsed {
+    padding: 8px 12px; /* 保持一致 */
+  }
+}

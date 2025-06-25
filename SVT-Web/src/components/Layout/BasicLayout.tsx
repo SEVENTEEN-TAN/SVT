@@ -9,7 +9,6 @@ import TabSystem from './modules/TabSystem';
 import Footer from './Footer';
 import { useSidebarState } from './modules/Sidebar/hooks/useSidebarState';
 import { usePathMapping } from './shared/hooks/usePathMapping';
-import { useTabManager } from './modules/TabSystem/hooks/useTabManager';
 import { STYLES, LAYOUT_CONSTANTS } from './shared/utils/layoutUtils';
 import type { MenuItem } from './shared/types/layout';
 
@@ -22,12 +21,16 @@ const BasicLayout: React.FC = () => {
   // 使用各模块的Hook
   const sidebarState = useSidebarState();
   const pathMappingState = usePathMapping(user?.menuTrees as MenuItem[]);
-  const tabManager = useTabManager({ getTabName: pathMappingState.getTabName });
+
+  // Tab管理器引用 - 通过TabSystem传递
+  const tabManagerRef = React.useRef<any>(null);
 
   // 菜单点击处理
   const handleMenuClick = (key: string) => {
     // 添加Tab并导航
-    tabManager.addTab(key, true); // 强制刷新
+    if (tabManagerRef.current) {
+      tabManagerRef.current.addTab(key, true); // 强制刷新
+    }
   };
 
   // 用户状态验证加载中
@@ -41,12 +44,12 @@ const BasicLayout: React.FC = () => {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
              {/* 侧边栏模块 */}
        <Sidebar
          collapsed={sidebarState.collapsed}
          menuTrees={user?.menuTrees as MenuItem[]}
-         activeKey={tabManager.activeTabKey}
+         activeKey={tabManagerRef.current?.activeTabKey || ''}
          onMenuClick={handleMenuClick}
        />
 
@@ -55,7 +58,8 @@ const BasicLayout: React.FC = () => {
          transition: 'margin-left 0.2s',
          display: 'flex',
          flexDirection: 'column',
-         height: '100vh'
+         height: '100vh',
+         background: '#f0f2f5'
        }}>
          {/* 头部模块 - fixed定位，不占用flex空间 */}
          <Header
@@ -68,12 +72,15 @@ const BasicLayout: React.FC = () => {
          <TabSystem
            collapsed={sidebarState.collapsed}
            getTabName={pathMappingState.getTabName}
+           onTabManagerReady={(manager) => {
+             tabManagerRef.current = manager;
+           }}
          />
 
          {/* 页面内容 - 需要考虑Header和TabSystem的高度 */}
-         <div 
-           key={tabManager.pageRefreshKey} 
-           style={{ 
+         <div
+           key={tabManagerRef.current?.pageRefreshKey || 0}
+           style={{
              flex: 1,
              position: 'relative',
              overflow: 'auto',
@@ -81,14 +88,6 @@ const BasicLayout: React.FC = () => {
              minHeight: 0
            }}
          >
-           {/* 页面加载状态覆盖层 */}
-           {tabManager.isPageRefreshing && (
-             <div style={STYLES.LOADING.pageRefresh}>
-               <Spin size="large" />
-               <Text style={STYLES.LOADING.pageRefreshText}>页面刷新中...</Text>
-             </div>
-           )}
-           
            {/* 直接渲染页面组件 */}
            <Outlet />
          </div>

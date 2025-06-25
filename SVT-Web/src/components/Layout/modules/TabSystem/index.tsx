@@ -7,11 +7,19 @@ import type { ContextMenuState } from '../../shared/types/layout';
 interface TabSystemProps {
   collapsed: boolean;
   getTabName: (path: string) => string;
+  onTabManagerReady?: (manager: any) => void;
 }
 
-const TabSystem: React.FC<TabSystemProps> = ({ collapsed, getTabName }) => {
+const TabSystem: React.FC<TabSystemProps> = ({ collapsed, getTabName, onTabManagerReady }) => {
   // 使用Tab管理Hook
   const tabManager = useTabManager({ getTabName });
+
+  // 将tabManager传递给父组件
+  React.useEffect(() => {
+    if (onTabManagerReady) {
+      onTabManagerReady(tabManager);
+    }
+  }, [tabManager, onTabManagerReady]);
 
   // 右键菜单状态
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState>({

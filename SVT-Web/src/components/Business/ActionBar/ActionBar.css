@@ -1,0 +1,67 @@
+.action-bar {
+  background: #fff;
+  padding: 16px 24px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f0;
+}
+
+.action-bar-horizontal {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.action-bar-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-bar-left {
+  justify-content: flex-start;
+}
+
+.action-bar-center {
+  justify-content: center;
+}
+
+.action-bar-right {
+  justify-content: flex-end;
+}
+
+.action-bar-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-bar-selection-info {
+  display: flex;
+  align-items: center;
+  color: #666;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.action-bar-selection-info .ant-tag {
+  margin-left: 8px;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .action-bar {
+    padding: 12px;
+  }
+  
+  .action-bar-horizontal {
+    flex-direction: column;
+  }
+  
+  .action-bar-horizontal .ant-btn {
+    width: 100%;
+  }
+} 
