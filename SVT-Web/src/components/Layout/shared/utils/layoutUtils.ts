@@ -213,15 +213,13 @@ export const STYLES = {
       flexDirection: 'column' as const,
       justifyContent: 'center',
       alignItems: 'center',
-      background: 'rgba(255, 255, 255, 0.95)',
-      backdropFilter: 'blur(2px)',
-      zIndex: 100
+      background: 'rgba(255, 255, 255, 0.9)',
+      zIndex: 9999  // 🔧 提高层级，确保覆盖在所有内容之上
     },
     pageRefreshText: {
       marginTop: 16,
-      color: '#1890ff',
-      fontSize: '16px',
-      fontWeight: 500
+      color: '#666',
+      fontSize: '16px'
     }
   },
 

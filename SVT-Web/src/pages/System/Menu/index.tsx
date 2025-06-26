@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Button,
   Space,
@@ -11,30 +11,22 @@ import {
   Input,
   Select,
   TreeSelect,
+  Card,
+  Table,
+  Drawer,
 } from 'antd';
 import {
   PlusOutlined,
   CheckOutlined,
   StopOutlined,
   DeleteOutlined,
-  ExpandOutlined,
-  CompressOutlined,
   ReloadOutlined,
   DownOutlined,
-  MinusSquareOutlined,
-  PlusSquareOutlined,
   EyeOutlined,
-  EditOutlined
+  EditOutlined,
 } from '@ant-design/icons';
-import {
-  SearchPanel,
-  DataManager,
-  InfoDrawer,
-  type SearchField,
-  type ActionItem,
-  type ColumnConfig
-} from '@/components/Business';
 import '@/styles/PageContainer.css';
+import './MenuManagement.css';
 
 // 菜单数据类型定义
 interface MenuTreeNode {
@@ -53,29 +45,7 @@ interface MenuTreeNode {
   children?: MenuTreeNode[];
 }
 
-interface MenuTableRow extends MenuTreeNode {
-  key: string;
-}
-
-// 样式常量 - 避免在render中重复创建
-const STYLES = {
-  menuContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  },
-  expandButton: {
-    padding: '0 4px',
-    minWidth: '20px'
-  },
-  spacer: {
-    width: '20px',
-    display: 'inline-block' as const
-  },
-  menuCode: {
-    fontSize: '12px'
-  }
-};
+// MenuTableRow类型不再需要，直接使用MenuTreeNode
 
 // Mock数据
 const mockMenuData: MenuTreeNode[] = [
@@ -540,141 +510,30 @@ const mockMenuData: MenuTreeNode[] = [
 const MenuManagement: React.FC = () => {
   // 状态管理
   const [menuData] = useState<MenuTreeNode[]>(mockMenuData);
-  const [expandedKeys, setExpandedKeys] = useState<string[]>(['M001', 'M002', 'M003', 'M004', 'M005', 'M006', 'M007', 'M008', 'M009']);
-  const [selectedRows, setSelectedRows] = useState<MenuTableRow[]>([]);
+  const [selectedRows, setSelectedRows] = useState<MenuTreeNode[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('view');
-  const [currentRecord, setCurrentRecord] = useState<MenuTableRow | null>(null);
-  const [form] = Form.useForm();
+  const [currentRecord, setCurrentRecord] = useState<MenuTreeNode | null>(null);
+  // 表单实例
+  const [drawerForm] = Form.useForm();
 
-  // 树形数据扁平化处理 - 优化依赖
-  const flattenTreeData = useCallback((treeData: MenuTreeNode[], level = 1): MenuTableRow[] => {
-    const result: MenuTableRow[] = [];
+  // 直接使用原始树形数据
+  const tableData = menuData;
 
-    treeData.forEach(node => {
-      // 添加当前节点
-      result.push({
-        ...node,
-        level,
-        key: node.menuId,
-        hasChildren: Boolean(node.children && node.children.length > 0),
-        expanded: expandedKeys.includes(node.menuId)
-      });
 
-      // 如果节点展开且有子节点，递归添加子节点
-      if (expandedKeys.includes(node.menuId) && node.children && node.children.length > 0) {
-        result.push(...flattenTreeData(node.children, level + 1));
-      }
-    });
 
-    return result;
-  }, [expandedKeys]);
 
-  // 获取表格数据 - 使用useMemo缓存计算结果
-  const tableData = useMemo(() => flattenTreeData(menuData), [menuData, expandedKeys]);
 
-  // 展开/折叠处理 - 使用useCallback优化
-  const toggleExpand = useCallback((menuId: string) => {
-    setExpandedKeys(prev =>
-      prev.includes(menuId)
-        ? prev.filter(key => key !== menuId)
-        : [...prev, menuId]
-    );
-  }, []);
-
-  // 展开全部 - 使用useCallback优化
-  const expandAll = useCallback(() => {
-    const allKeys: string[] = [];
-    const collectKeys = (nodes: MenuTreeNode[]) => {
-      nodes.forEach(node => {
-        if (node.hasChildren) {
-          allKeys.push(node.menuId);
-        }
-        if (node.children) {
-          collectKeys(node.children);
-        }
-      });
-    };
-    collectKeys(menuData);
-    setExpandedKeys(allKeys);
-  }, [menuData]);
-
-  // 折叠全部 - 使用useCallback优化
-  const collapseAll = useCallback(() => {
-    setExpandedKeys([]);
-  }, []);
-
-  // 搜索字段配置
-  const searchFields: SearchField[] = [
-    {
-      name: 'menuName',
-      label: '菜单名称',
-      type: 'input',
-      placeholder: '请输入菜单名称'
-    },
-    {
-      name: 'menuPath',
-      label: '菜单路径',
-      type: 'input',
-      placeholder: '请输入菜单路径'
-    },
-    {
-      name: 'status',
-      label: '状态',
-      type: 'select',
-      placeholder: '请选择状态',
-      options: [
-        { label: '启用', value: '0' },
-        { label: '停用', value: '1' }
-      ]
-    },
-    {
-      name: 'parentMenu',
-      label: '父级菜单',
-      type: 'select',
-      placeholder: '请选择父级菜单',
-      options: [
-        { label: '系统管理', value: 'M001' },
-        { label: '业务管理', value: 'M002' }
-      ]
-    },
-    {
-      name: 'menuIcon',
-      label: '菜单图标',
-      type: 'input',
-      placeholder: '请输入菜单图标'
-    },
-    {
-      name: 'createTime',
-      label: '创建时间',
-      type: 'dateRange',
-      placeholder: '请选择创建时间范围'
-    },
-    {
-      name: 'updateTime',
-      label: '更新时间',
-      type: 'dateRange',
-      placeholder: '请选择更新时间范围'
-    }
-  ];
-
-  // 处理搜索 - 使用useCallback优化
-  const handleSearch = useCallback((values: any) => {
-    console.log('搜索参数:', values);
+  // 刷新数据
+  const refreshData = () => {
     setLoading(true);
-    // 模拟API调用 - 移除延迟
-    setLoading(false);
-    message.success('搜索完成');
-  }, []);
-
-  // 刷新数据 - 使用useCallback优化
-  const refreshData = useCallback(() => {
-    setLoading(true);
-    // 移除延迟
-    setLoading(false);
-    message.success('数据刷新成功');
-  }, []);
+    setTimeout(() => {
+      setLoading(false);
+      message.success('数据刷新成功');
+    }, 1000);
+  };
 
   // 批量状态更新
   const batchUpdateStatus = async (status: '0' | '1') => {
@@ -689,6 +548,7 @@ const MenuManagement: React.FC = () => {
       onOk: () => {
         message.success(`批量${status === '0' ? '启用' : '停用'}成功`);
         setSelectedRows([]);
+        setSelectedRowKeys([]);
       }
     });
   };
@@ -707,93 +567,26 @@ const MenuManagement: React.FC = () => {
       onOk: () => {
         message.success('批量删除成功');
         setSelectedRows([]);
+        setSelectedRowKeys([]);
       }
     });
   };
 
-  // 操作按钮配置
-  const actions: ActionItem[] = [
-    {
-      key: 'create',
-      label: '新增根菜单',
-      type: 'primary',
-      icon: <PlusOutlined />,
-      onClick: () => {
-        setDrawerMode('create');
-        setCurrentRecord(null);
-        setDrawerOpen(true);
-        form.resetFields();
-      }
-    },
-    {
-      key: 'batchEnable',
-      label: '批量启用',
-      icon: <CheckOutlined />,
-      disabled: selectedRows.length === 0,
-      onClick: () => batchUpdateStatus('0')
-    },
-    {
-      key: 'batchDisable',
-      label: '批量停用',
-      icon: <StopOutlined />,
-      disabled: selectedRows.length === 0,
-      onClick: () => batchUpdateStatus('1')
-    },
-    {
-      key: 'batchDelete',
-      label: '批量删除',
-      type: 'dashed',
-      icon: <DeleteOutlined />,
-      disabled: selectedRows.length === 0,
-      onClick: batchDelete
-    },
-    {
-      key: 'expandAll',
-      label: '展开全部',
-      icon: <ExpandOutlined />,
-      onClick: expandAll
-    },
-    {
-      key: 'collapseAll',
-      label: '折叠全部',
-      icon: <CompressOutlined />,
-      onClick: collapseAll
-    },
-    {
-      key: 'refresh',
-      label: '刷新',
-      icon: <ReloadOutlined />,
-      onClick: refreshData
-    }
-  ];
-
   // 表格列配置
-  const columns: ColumnConfig[] = [
+  const columns = [
     {
       key: 'menuNameZh',
       title: '菜单名称',
       dataIndex: 'menuNameZh',
       width: 300,
-      render: (text, record) => (
+      render: (text: string, record: MenuTreeNode) => (
         <div
           style={{
-            paddingLeft: `${(record.level - 1) * 20}px`,
-            ...STYLES.menuContainer
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}
         >
-          {/* 展开/折叠按钮 */}
-          {record.hasChildren ? (
-            <Button
-              type="text"
-              size="small"
-              icon={record.expanded ? <MinusSquareOutlined /> : <PlusSquareOutlined />}
-              onClick={() => toggleExpand(record.menuId)}
-              style={STYLES.expandButton}
-            />
-          ) : (
-            <span style={STYLES.spacer} />
-          )}
-
           {/* 菜单图标 */}
           <span className="menu-icon">
             {record.hasChildren ? '📁' : '📄'}
@@ -811,22 +604,22 @@ const MenuManagement: React.FC = () => {
       title: '菜单ID',
       dataIndex: 'menuId',
       width: 120,
-      render: (text) => <code style={STYLES.menuCode}>{text}</code>
+      render: (text: string) => <code style={{ fontSize: '12px' }}>{text}</code>
     },
     {
       key: 'menuPath',
       title: '菜单路径',
       dataIndex: 'menuPath',
       width: 200,
-      render: (text) => <code style={{ fontSize: '12px', color: '#666' }}>{text}</code>
+      render: (text: string) => <code style={{ fontSize: '12px', color: '#666' }}>{text}</code>
     },
     {
       key: 'menuSort',
       title: '排序',
       dataIndex: 'menuSort',
       width: 80,
-      align: 'center',
-      render: (sort) => (
+      align: 'center' as const,
+      render: (sort: string) => (
         <InputNumber
           size="small"
           value={parseInt(sort)}
@@ -841,8 +634,8 @@ const MenuManagement: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       width: 100,
-      align: 'center',
-      render: (status) => (
+      align: 'center' as const,
+      render: (status: string) => (
         <Switch
           checked={status === '0'}
           checkedChildren="启用"
@@ -856,8 +649,8 @@ const MenuManagement: React.FC = () => {
       title: '操作',
       dataIndex: 'actions',
       width: 180,
-      align: 'center',
-      render: (_, record) => (
+      align: 'center' as const,
+      render: (_: any, record: MenuTreeNode) => (
         <Space size="small">
           <Button
             type="link"
@@ -909,37 +702,38 @@ const MenuManagement: React.FC = () => {
   ];
 
   // 处理行选择
-  const handleSelectionChange = (selectedRowKeys: React.Key[], selectedRows: MenuTableRow[]) => {
+  const handleSelectionChange = (selectedRowKeys: React.Key[], selectedRows: MenuTreeNode[]) => {
     setSelectedRows(selectedRows);
+    setSelectedRowKeys(selectedRowKeys);
   };
 
   // 处理行查看
-  const handleRowView = (record: MenuTableRow) => {
+  const handleRowView = (record: MenuTreeNode) => {
     setDrawerMode('view');
     setCurrentRecord(record);
     setDrawerOpen(true);
-    form.setFieldsValue(record);
+    drawerForm.setFieldsValue(record);
   };
 
   // 处理行编辑
-  const handleRowEdit = (record: MenuTableRow) => {
+  const handleRowEdit = (record: MenuTreeNode) => {
     setDrawerMode('edit');
     setCurrentRecord(record);
     setDrawerOpen(true);
-    form.setFieldsValue(record);
+    drawerForm.setFieldsValue(record);
   };
 
   // 处理新增子菜单
-  const handleAddChild = (record: MenuTableRow) => {
+  const handleAddChild = (record: MenuTreeNode) => {
     setDrawerMode('create');
     setCurrentRecord(record);
     setDrawerOpen(true);
-    form.resetFields();
-    form.setFieldsValue({ parentId: record.menuId });
+    drawerForm.resetFields();
+    drawerForm.setFieldsValue({ parentId: record.menuId });
   };
 
   // 处理删除
-  const handleDelete = (record: MenuTableRow) => {
+  const handleDelete = (record: MenuTreeNode) => {
     Modal.confirm({
       title: `确定删除菜单 [${record.menuNameZh}] 吗?`,
       content: '此操作不可逆，请谨慎操作。',
@@ -951,7 +745,7 @@ const MenuManagement: React.FC = () => {
 
   // 处理表单提交
   const handleSubmit = () => {
-    form.validateFields().then(values => {
+    drawerForm.validateFields().then((values: any) => {
       console.log('Form values:', values);
       setDrawerOpen(false);
       message.success(drawerMode === 'create' ? '创建成功' : '更新成功');
@@ -967,74 +761,152 @@ const MenuManagement: React.FC = () => {
     }));
   };
 
-  const parentOptions = buildParentOptions(menuData);
-
   return (
     <div className="page-container-management">
-      {/* 检索区域 */}
-      <SearchPanel
-        fields={searchFields}
-        onSearch={handleSearch}
-      />
 
       {/* 数据管理区域 */}
-      <DataManager
-        actions={actions}
-        selectedCount={selectedRows.length}
-        mode="table"
-        loading={loading}
-        columns={columns}
-        data={tableData}
-        pagination={false}
-        rowSelection={{
-          type: 'checkbox',
-          onChange: handleSelectionChange,
-        }}
+      <Card
+        className="data-section"
         title="菜单列表"
-      />
+        extra={
+          <div className="action-buttons">
+            <div className="action-buttons-left">
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setDrawerMode('create');
+                  setCurrentRecord(null);
+                  setDrawerOpen(true);
+                  drawerForm.resetFields();
+                }}
+              >
+                新增根菜单
+              </Button>
+              <Button
+                icon={<CheckOutlined />}
+                disabled={selectedRows.length === 0}
+                onClick={() => batchUpdateStatus('0')}
+              >
+                批量启用
+              </Button>
+              <Button
+                icon={<StopOutlined />}
+                disabled={selectedRows.length === 0}
+                onClick={() => batchUpdateStatus('1')}
+              >
+                批量停用
+              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                disabled={selectedRows.length === 0}
+                onClick={batchDelete}
+              >
+                批量删除
+              </Button>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={refreshData}
+              >
+                刷新
+              </Button>
+            </div>
+            {selectedRows.length > 0 && (
+              <div className="batch-info">
+                已选择 {selectedRows.length} 项
+              </div>
+            )}
+          </div>
+        }
+      >
+
+        {/* 数据表格 */}
+        <Table
+          className="data-table tree-table"
+          columns={columns}
+          dataSource={tableData}
+          rowKey="menuId"
+          loading={loading}
+          pagination={false}
+          rowSelection={{
+            type: 'checkbox',
+            selectedRowKeys: selectedRowKeys,
+            onChange: handleSelectionChange,
+          }}
+          expandable={{
+            defaultExpandAllRows: true,
+          }}
+          scroll={{
+            y: '70vh', // 使用视口高度的70%，响应式适配
+            x: 'max-content' // 水平滚动支持
+          }}
+        />
+      </Card>
 
       {/* 抽屉 */}
-      <InfoDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+      <Drawer
+        className="info-drawer"
         title={
           drawerMode === 'create' ? '新增菜单' :
           drawerMode === 'edit' ? '编辑菜单' : '查看菜单'
         }
-        mode={drawerMode}
-        onOk={handleSubmit}
+        width={520}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+
       >
-        <Form form={form} layout="vertical" disabled={drawerMode === 'view'}>
-          <Form.Item name="parentId" label="上级菜单">
-            <TreeSelect
-              treeData={parentOptions}
-              placeholder="请选择上级菜单"
-              treeDefaultExpandAll
-            />
-          </Form.Item>
-          <Form.Item name="menuNameZh" label="菜单名称(中)" rules={[{ required: true }]}>
-            <Input placeholder="请输入菜单中文名称" />
-          </Form.Item>
-          <Form.Item name="menuNameEn" label="菜单名称(英)" rules={[{ required: true }]}>
-            <Input placeholder="请输入菜单英文名称" />
-          </Form.Item>
-          <Form.Item name="menuPath" label="菜单路径" rules={[{ required: true }]}>
-            <Input placeholder="请输入菜单路径" />
-          </Form.Item>
-          <Form.Item name="menuIcon" label="菜单图标">
-            <Input placeholder="请输入菜单图标" />
-          </Form.Item>
-          <Form.Item name="menuSort" label="显示排序" rules={[{ required: true }]}>
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="status" label="菜单状态" rules={[{ required: true }]}>
-            <Select placeholder="请选择菜单状态">
-              <Select.Option value="0">启用</Select.Option>
-              <Select.Option value="1">停用</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </InfoDrawer>
+        <div className="drawer-form-content">
+          <Form
+            form={drawerForm}
+            layout="vertical"
+            disabled={drawerMode === 'view'}
+            className="drawer-form"
+          >
+            <Form.Item name="parentId" label="上级菜单">
+              <TreeSelect
+                treeData={buildParentOptions(menuData)}
+                placeholder="请选择上级菜单"
+                treeDefaultExpandAll
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item name="menuNameZh" label="菜单名称(中)" rules={[{ required: true }]}>
+              <Input placeholder="请输入菜单中文名称" />
+            </Form.Item>
+            <Form.Item name="menuNameEn" label="菜单名称(英)" rules={[{ required: true }]}>
+              <Input placeholder="请输入菜单英文名称" />
+            </Form.Item>
+            <Form.Item name="menuPath" label="菜单路径" rules={[{ required: true }]}>
+              <Input placeholder="请输入菜单路径" />
+            </Form.Item>
+            <Form.Item name="menuIcon" label="菜单图标">
+              <Input placeholder="请输入菜单图标" />
+            </Form.Item>
+            <Form.Item name="menuSort" label="显示排序" rules={[{ required: true }]}>
+              <InputNumber min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item name="status" label="菜单状态" rules={[{ required: true }]}>
+              <Select placeholder="请选择菜单状态">
+                <Select.Option value="0">启用</Select.Option>
+                <Select.Option value="1">停用</Select.Option>
+              </Select>
+            </Form.Item>
+          </Form>
+        </div>
+
+        {/* 底部操作按钮 */}
+        {drawerMode !== 'view' && (
+          <div className="drawer-actions">
+            <Button onClick={() => setDrawerOpen(false)}>
+              取消
+            </Button>
+            <Button type="primary" onClick={handleSubmit}>
+              {drawerMode === 'create' ? '创建' : '保存'}
+            </Button>
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 };

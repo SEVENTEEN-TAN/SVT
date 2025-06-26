@@ -28,6 +28,9 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
 
   // 页面刷新key，用于强制重渲染
   const [pageRefreshKey, setPageRefreshKey] = useState<number>(0);
+  
+  // 页面刷新加载状态
+  const [isPageRefreshing, setIsPageRefreshing] = useState<boolean>(false);
 
   // 页面初次加载时同步路由和Tab状态
   useEffect(() => {
@@ -47,6 +50,11 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
     // 🔧 为所有路径添加Tab，包括无效路径
     // 这样无效路径会显示为菜单名称，但内容显示404
     if (currentPath !== '/login') {
+      // 🔧 关键修复：检查是否正在进行Tab操作，避免干扰loading状态
+      if (isOperatingRef.current) {
+        return;
+      }
+
       // 使用函数式更新，避免依赖addTab
       setTabList(prev => {
         const existingTab = prev.find(tab => tab.key === currentPath);
@@ -68,32 +76,33 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
         }
       });
 
-      // 只在activeTabKey与当前路径不一致时才更新，避免干扰加载状态
-      setActiveTabKey(prev => {
-        if (prev !== currentPath) {
-          console.log('🔄 路由变化更新activeTabKey:', prev, '->', currentPath);
-          return currentPath;
-        }
-        return prev;
-      });
+      // 🔧 关键修复：只在非操作状态下设置活跃Tab
+      setActiveTabKey(currentPath);
     }
   }, [location.pathname, getTabName, saveTabsToStorage]); // 只依赖必要的值
 
-  // 刷新处理函数 - 简化版本，依赖React自然渲染
+  // 刷新处理函数
   const handleRefresh = useCallback((forceRefresh: boolean, isCurrentTab: boolean) => {
     if (forceRefresh || isCurrentTab) {
-      console.log('🔄 开始页面刷新');
-      // 只更新pageRefreshKey，让React自然处理渲染
+      // 显示刷新加载状态
+      setIsPageRefreshing(true);
+      
       setPageRefreshKey(prev => prev + 1);
-
-      // 重置滚动位置
+      
+      // 刷新后重置滚动位置和关闭加载状态
       setTimeout(() => {
+        // 查找可滚动的内容容器并重置滚动位置
         const contentContainer = document.querySelector('div[style*="overflow: auto"]');
         if (contentContainer) {
           contentContainer.scrollTop = 0;
           contentContainer.scrollLeft = 0;
         }
-      }, 0);
+
+        // 关闭刷新加载状态 - 控制显示时长 200ms（总时长）
+        setTimeout(() => {
+          setIsPageRefreshing(false);
+        }, 200); // 总共200ms 的 loading 动画
+      }, 100);
     }
   }, []);
 
@@ -183,30 +192,48 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
     });
   }, [navigate, saveTabsToStorage]);
 
-  // 切换Tab（简化版本，依赖Ant Design原生切换）
+  // 切换Tab（刷新页面内容确保数据最新）
   const switchTab = useCallback((targetKey: string) => {
-    console.log('🔄 切换Tab:', targetKey);
+    // 🔧 防止重复操作
+    if (isOperatingRef.current) {
+      return;
+    }
 
-    setActiveTabKey(targetKey);
-    saveTabsToStorage(tabList, targetKey);
+    // 🔧 关键修复：设置操作标志，防止useEffect干扰
+    isOperatingRef.current = true;
 
-    // 刷新页面内容
-    handleRefresh(true, false);
+    // 🔧 统一架构：先设置loading状态
+    handleRefresh(true, false); // forceRefresh=true 确保显示loading动画
 
-    // 导航到目标路径
-    navigate(targetKey);
+    // 🔧 延迟执行状态更新和导航，确保loading状态先显示
+    setTimeout(() => {
+      // 更新活跃Tab
+      setActiveTabKey(targetKey);
+
+      // 保存活跃Tab到本地存储
+      saveTabsToStorage(tabList, targetKey);
+
+      // 导航到目标路径
+      navigate(targetKey);
+
+      // 🔧 重置操作标志
+      setTimeout(() => {
+        isOperatingRef.current = false;
+      }, 600); // 确保整个loading流程完成后再重置
+    }, 50); // 50ms延迟，确保loading状态先渲染
   }, [navigate, tabList, saveTabsToStorage, handleRefresh]);
 
-  // Tab右键菜单功能
+    // Tab右键菜单功能
   const refreshTab = useCallback((tabKey: string) => {
-    // 强制刷新指定Tab
+    // 🔧 框架统一：右键刷新使用统一的刷新机制
     setActiveTabKey(tabKey);
 
     // 保存活跃Tab到本地存储
     saveTabsToStorage(tabList, tabKey);
 
-    // 处理刷新
-    handleRefresh(true, false); // 右键刷新总是强制刷新
+    // 🔧 统一架构：使用handleRefresh统一控制加载状态
+    // 右键刷新总是强制刷新
+    handleRefresh(true, false); // forceRefresh=true 确保显示loading动画
 
     // 导航到目标路径
     navigate(tabKey);
@@ -309,6 +336,8 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
 
     // 页面刷新状态
     pageRefreshKey,
+    isPageRefreshing,
     setPageRefreshKey,
+    setIsPageRefreshing,
   };
 }; 

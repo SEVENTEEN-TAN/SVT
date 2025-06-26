@@ -1,0 +1,263 @@
+/* 角色管理页面样式 */
+
+/* ===== 搜索区域样式 ===== */
+.search-section {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 8px;
+  overflow: hidden;
+  flex-shrink: 0; /* 确保搜索区域不会被压缩 */
+}
+
+.search-collapse .ant-collapse {
+  background: transparent;
+  border: none;
+}
+
+.search-collapse .ant-collapse > .ant-collapse-item {
+  border: none;
+}
+
+.search-collapse .ant-collapse-header {
+  padding: 12px 24px !important;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 500;
+}
+
+.search-collapse .ant-collapse-content {
+  border: none;
+}
+
+.search-collapse .ant-collapse-content-box {
+  padding: 16px 24px;
+}
+
+.search-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.search-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+}
+
+.search-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ===== 操作按钮区域样式 ===== */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.action-buttons-left {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.batch-info {
+  color: #1890ff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ===== 数据展示区域样式 ===== */
+.data-section {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.data-section .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 24px;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.data-section .ant-card-head-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.data-section .ant-card-extra {
+  margin-left: auto;
+}
+
+.data-section .ant-card-body {
+  padding: 0 24px 24px 24px;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.data-table {
+  border: 1px solid #f0f0f0; /* 轻微的外边框 */
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.data-table .ant-table {
+  border: none; /* 移除table自身的边框，使用外层边框 */
+}
+
+.data-table .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.data-table .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 500;
+  color: #262626;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* 行操作按钮样式 */
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.row-actions .ant-btn {
+  padding: 4px 8px;
+  height: auto;
+  font-size: 12px;
+}
+
+/* ===== 抽屉样式 ===== */
+.info-drawer .ant-drawer-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.info-drawer .ant-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.info-drawer .ant-drawer-body {
+  padding: 24px;
+}
+
+.drawer-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.drawer-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+}
+
+.drawer-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.drawer-form-content {
+  padding-bottom: 80px; /* 为底部按钮留出空间 */
+}
+
+/* ===== 响应式样式 ===== */
+@media (max-width: 1200px) {
+  .search-form .ant-col {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-section,
+  .data-section {
+    margin: 0 -8px 16px -8px;
+    border-radius: 0;
+  }
+  
+  .search-form .ant-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .action-buttons-left {
+    justify-content: center;
+  }
+  
+  .drawer-actions {
+    flex-direction: column-reverse;
+    padding: 12px 16px;
+  }
+  
+  .drawer-actions .ant-btn {
+    width: 100%;
+  }
+}
+
+/* ===== 状态样式 ===== */
+.status-enabled {
+  color: #52c41a;
+}
+
+.status-disabled {
+  color: #ff4d4f;
+}
+
+/* ===== 动画效果 ===== */
+.ant-table-tbody > tr {
+  transition: background-color 0.2s ease;
+}
+
+.ant-btn {
+  transition: all 0.2s ease;
+}
+
+.search-collapse .ant-collapse-content {
+  transition: all 0.3s ease;
+}
+
+/* ===== 角色特定样式 ===== */
+.role-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.role-permissions .ant-tag {
+  margin: 0;
+  font-size: 12px;
+}
+
+.user-count-tag {
+  font-weight: 500;
+}

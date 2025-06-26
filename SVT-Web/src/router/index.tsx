@@ -24,6 +24,10 @@ const fallbackElement = (
 // 路由配置
 export const router = createBrowserRouter([
   {
+    path: '/',
+    element: <Navigate to="/home" replace />,
+  },
+  {
     path: '/login',
     element: (
       <Suspense fallback={fallbackElement}>
@@ -41,10 +45,6 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      {
-        index: true, // 根路径重定向
-        element: <Navigate to="/home" replace />,
-      },
       {
         path: 'home',
         element: (

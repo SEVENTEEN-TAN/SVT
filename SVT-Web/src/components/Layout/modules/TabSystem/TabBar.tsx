@@ -103,10 +103,7 @@ const TabBar: React.FC<TabBarProps> = ({
       <Tabs
         type="card"
         activeKey={activeTabKey}
-        onChange={(key) => {
-          console.log('📋 TabBar onChange 触发:', key);
-          onTabChange(key);
-        }}
+        onChange={onTabChange}
         items={tabItems}
         style={{
           margin: `0 ${LAYOUT_CONSTANTS.PADDING.MEDIUM}px`,

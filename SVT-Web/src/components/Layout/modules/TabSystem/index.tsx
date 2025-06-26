@@ -2,24 +2,21 @@ import React, { useState, useCallback, useEffect } from 'react';
 import TabBar from './TabBar';
 import TabContextMenu from './TabContextMenu';
 import { useTabManager } from './hooks/useTabManager';
-import type { ContextMenuState } from '../../shared/types/layout';
+import type { ContextMenuState, TabManagerState, PageRefreshState } from '../../shared/types/layout';
 
 interface TabSystemProps {
   collapsed: boolean;
   getTabName: (path: string) => string;
-  onTabManagerReady?: (manager: any) => void;
+  /**
+   * 可选的外部 TabManager，用于在父组件和本组件间共享状态。
+   * 如果未提供，则组件内部将自行创建 TabManager 实例。
+   */
+  tabManager?: TabManagerState & PageRefreshState;
 }
 
-const TabSystem: React.FC<TabSystemProps> = ({ collapsed, getTabName, onTabManagerReady }) => {
-  // 使用Tab管理Hook
-  const tabManager = useTabManager({ getTabName });
-
-  // 将tabManager传递给父组件
-  React.useEffect(() => {
-    if (onTabManagerReady) {
-      onTabManagerReady(tabManager);
-    }
-  }, [tabManager, onTabManagerReady]);
+const TabSystem: React.FC<TabSystemProps> = ({ collapsed, getTabName, tabManager: externalTabManager }) => {
+  // 若父组件传入 tabManager，则复用；否则自行创建
+  const tabManager = externalTabManager ?? useTabManager({ getTabName });
 
   // 右键菜单状态
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState>({
