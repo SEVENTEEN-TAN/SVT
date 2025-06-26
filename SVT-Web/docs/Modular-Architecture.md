@@ -290,6 +290,13 @@ import NewModule from './modules/NewModule';
 4. **文档完善**: 补充更详细的API文档和示例
 5. **工具支持**: 开发模块生成工具，提升开发效率
 
+## 🆕 更新日志
+- 2025-06-26 16:50:43 +08:00:
+  - 对照最新代码审计，确认 Sidebar、TabSystem、Header、ContentArea 等模块文件结构与职责未变。
+  - 补充 TabSystem “页面刷新加载状态” 与 `isOperatingRef` 防重复操作实现描述。
+  - 新增共享常量 `LAYOUT_CONSTANTS`、Loading 覆盖层样式说明。
+  - 文档标题保持不变，版本号未变动（仍 v1.0），但内容已与代码完全同步。
+
 ---
 
 **文档版本**: v1.0  
