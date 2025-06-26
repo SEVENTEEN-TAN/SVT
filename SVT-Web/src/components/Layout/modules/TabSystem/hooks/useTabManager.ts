@@ -98,10 +98,10 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
           contentContainer.scrollLeft = 0;
         }
 
-        // 关闭刷新加载状态 - 控制显示时长 200ms（总时长）
+        // 关闭刷新加载状态 - 延长时间确保动态组件完全加载
         setTimeout(() => {
           setIsPageRefreshing(false);
-        }, 200); // 总共200ms 的 loading 动画
+        }, 400); // 总共400ms的loading时间，确保用户能看到loading状态
       }, 100);
     }
   }, []);
@@ -216,10 +216,7 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
       // 导航到目标路径
       navigate(targetKey);
 
-      // 🔧 重置操作标志
-      setTimeout(() => {
-        isOperatingRef.current = false;
-      }, 600); // 确保整个loading流程完成后再重置
+      // 🔧 移除固定延迟解锁，由上方 useEffect 动态解锁
     }, 50); // 50ms延迟，确保loading状态先渲染
   }, [navigate, tabList, saveTabsToStorage, handleRefresh]);
 
@@ -321,6 +318,20 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
       navigate(tabKey);
     }
   }, [activeTabKey, navigate, saveTabsToStorage]);
+
+  // 添加动态解锁 effect —— 路由变化后立即解锁
+  useEffect(() => {
+    if (isOperatingRef.current) {
+      isOperatingRef.current = false;
+    }
+  }, [location.pathname]);
+
+  // 添加动态解锁 effect —— 页面刷新结束后立即解锁
+  useEffect(() => {
+    if (!isPageRefreshing && isOperatingRef.current) {
+      isOperatingRef.current = false;
+    }
+  }, [isPageRefreshing]);
 
   return {
     // Tab管理状态

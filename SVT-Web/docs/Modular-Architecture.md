@@ -94,7 +94,7 @@ src/components/Layout/
 - 无限Tab支持，水平滚动
 - 丰富的右键菜单操作
 - localStorage持久化
-- 防重复操作保护
+- 动态解锁防重复操作（2025-06-26 修复双击问题）
 
 ### 3. Header模块 - 头部区域
 
