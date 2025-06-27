@@ -6,13 +6,13 @@ import com.seventeen.svt.common.annotation.dbkey.DistributedId;
 import com.seventeen.svt.common.annotation.field.AutoFill;
 import com.seventeen.svt.common.annotation.field.FillType;
 import com.seventeen.svt.common.annotation.field.OperationType;
+import com.seventeen.svt.frame.handler.StringToDateTimeTypeHandler;
 import com.seventeen.svt.frame.listener.FlexInsertListener;
 import com.seventeen.svt.frame.listener.FlexUpdateListener;
 import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 @Table(value = "role_info", comment = "角色表",
         onInsert = FlexInsertListener.class, onUpdate = FlexUpdateListener.class)
@@ -50,8 +50,8 @@ public class RoleInfo implements Serializable {
     private String createOrgId;
 
     @AutoFill(type = FillType.TIME, operation = OperationType.INSERT)
-    @Column(value = "create_time", comment = "创建时间")
-    private LocalDateTime createTime;
+    @Column(value = "create_time", comment = "创建时间", typeHandler = StringToDateTimeTypeHandler.class)
+    private String createTime;
 
     @AutoFill(type = FillType.USER_ID, operation = OperationType.UPDATE)
     @Column(value = "update_by", comment = "更新者")
@@ -62,8 +62,8 @@ public class RoleInfo implements Serializable {
     private String updateOrgId;
 
     @AutoFill(type = FillType.TIME, operation = OperationType.UPDATE)
-    @Column(value = "update_time", comment = "更新时间")
-    private LocalDateTime updateTime;
+    @Column(value = "update_time", comment = "更新时间", typeHandler = StringToDateTimeTypeHandler.class)
+    private String updateTime;
 
     @Column(value = "remark", comment = "备注")
     private String remark;

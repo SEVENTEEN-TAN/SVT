@@ -1,531 +1,233 @@
-import React, { useState } from 'react';
+import React, {useMemo, useState} from 'react';
 import {
-  Button,
-  Space,
-  Switch,
-  InputNumber,
-  Dropdown,
-  message,
-  Modal,
-  Form,
-  Input,
-  Select,
-  TreeSelect,
-  Card,
-  Table,
-  Drawer,
+    Button,
+    Card,
+    Drawer,
+    Form,
+    Input,
+    InputNumber,
+    message,
+    Modal,
+    Select,
+    Space,
+    Switch,
+    Table,
+    TreeSelect,
 } from 'antd';
-import {
-  PlusOutlined,
-  CheckOutlined,
-  StopOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
-  DownOutlined,
-  EyeOutlined,
-  EditOutlined,
-} from '@ant-design/icons';
+import {DownOutlined, PlusOutlined, UpOutlined,} from '@ant-design/icons';
 import '@/styles/PageContainer.css';
 import './MenuManagement.css';
+import axios from 'axios';
+
+import type {ColumnsType} from 'antd/es/table';
 
 // 菜单数据类型定义
-interface MenuTreeNode {
+interface MenuNode {
   menuId: string;
   parentId: string | null;
-  menuNameZh: string;
-  menuNameEn: string;
+  menuName: string;
   menuPath: string;
-  menuIcon: string;
-  menuSort: string;
-  status: '0' | '1'; // 0: 启用, 1: 停用
-  delFlag: '0' | '1';
-  hasChildren: boolean;
-  level: number;
-  expanded?: boolean;
-  children?: MenuTreeNode[];
+  menuSort: number;
+  status: '0' | '1'; // 0 启用 1 停用
+  description?: string;
+  seq?: string; // 层级序号
+  children?: MenuNode[];
 }
 
-// MenuTableRow类型不再需要，直接使用MenuTreeNode
+interface FlatNode extends Omit<MenuNode, 'children'> {
+  level: number; // 层级，用于缩进与拖拽子树计算
+}
 
 // Mock数据
-const mockMenuData: MenuTreeNode[] = [
+const mockTree: MenuNode[] = [
   {
-    menuId: 'M001',
+    menuId: 'M01',
     parentId: null,
-    menuNameZh: '系统管理',
-    menuNameEn: 'System Management',
+    menuName: '系统管理',
     menuPath: '/system',
-    menuIcon: 'setting',
-    menuSort: '1',
+    menuSort: 1,
     status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: true,
+    description: '',
     children: [
       {
-        menuId: 'M001001',
-        parentId: 'M001',
-        menuNameZh: '用户管理',
-        menuNameEn: 'User Management',
+        menuId: 'M01-1',
+        parentId: 'M01',
+        menuName: '用户管理',
         menuPath: '/system/user',
-        menuIcon: 'user',
-        menuSort: '1',
+        menuSort: 1,
         status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
+        description: '',
       },
       {
-        menuId: 'M001002',
-        parentId: 'M001',
-        menuNameZh: '角色管理',
-        menuNameEn: 'Role Management',
+        menuId: 'M01-2',
+        parentId: 'M01',
+        menuName: '角色管理',
         menuPath: '/system/role',
-        menuIcon: 'team',
-        menuSort: '2',
+        menuSort: 2,
         status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
+        description: '',
       },
-      {
-        menuId: 'M001003',
-        parentId: 'M001',
-        menuNameZh: '菜单管理',
-        menuNameEn: 'Menu Management',
-        menuPath: '/system/menu',
-        menuIcon: 'menu',
-        menuSort: '3',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
+    ],
   },
   {
-    menuId: 'M002',
+    menuId: 'M02',
     parentId: null,
-    menuNameZh: '业务管理',
-    menuNameEn: 'Business Management',
+    menuName: '业务管理',
     menuPath: '/business',
-    menuIcon: 'shop',
-    menuSort: '2',
+    menuSort: 2,
     status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: false,
+    description: '',
     children: [
       {
-        menuId: 'M002001',
-        parentId: 'M002',
-        menuNameZh: '业务处理',
-        menuNameEn: 'Business Process',
+        menuId: 'M02-1',
+        parentId: 'M02',
+        menuName: '流程管理',
         menuPath: '/business/process',
-        menuIcon: 'form',
-        menuSort: '1',
+        menuSort: 1,
         status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
+        description: '',
       },
-      {
-        menuId: 'M002002',
-        parentId: 'M002',
-        menuNameZh: '业务查询',
-        menuNameEn: 'Business Query',
-        menuPath: '/business/query',
-        menuIcon: 'search',
-        menuSort: '2',
-        status: '1',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
+    ],
   },
-  {
-    menuId: 'M003',
-    parentId: null,
-    menuNameZh: '财务管理',
-    menuNameEn: 'Finance Management',
-    menuPath: '/finance',
-    menuIcon: 'dollar',
-    menuSort: '3',
-    status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: false,
-    children: [
-      {
-        menuId: 'M003001',
-        parentId: 'M003',
-        menuNameZh: '收支管理',
-        menuNameEn: 'Income & Expense',
-        menuPath: '/finance/income',
-        menuIcon: 'money-collect',
-        menuSort: '1',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M003002',
-        parentId: 'M003',
-        menuNameZh: '报表统计',
-        menuNameEn: 'Financial Reports',
-        menuPath: '/finance/reports',
-        menuIcon: 'bar-chart',
-        menuSort: '2',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M003003',
-        parentId: 'M003',
-        menuNameZh: '预算管理',
-        menuNameEn: 'Budget Management',
-        menuPath: '/finance/budget',
-        menuIcon: 'calculator',
-        menuSort: '3',
-        status: '1',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
-  },
-  {
-    menuId: 'M004',
-    parentId: null,
-    menuNameZh: '人力资源',
-    menuNameEn: 'Human Resources',
-    menuPath: '/hr',
-    menuIcon: 'contacts',
-    menuSort: '4',
-    status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: false,
-    children: [
-      {
-        menuId: 'M004001',
-        parentId: 'M004',
-        menuNameZh: '员工管理',
-        menuNameEn: 'Employee Management',
-        menuPath: '/hr/employee',
-        menuIcon: 'user-add',
-        menuSort: '1',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M004002',
-        parentId: 'M004',
-        menuNameZh: '考勤管理',
-        menuNameEn: 'Attendance Management',
-        menuPath: '/hr/attendance',
-        menuIcon: 'clock-circle',
-        menuSort: '2',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
-  },
-  {
-    menuId: 'M005',
-    parentId: null,
-    menuNameZh: '库存管理',
-    menuNameEn: 'Inventory Management',
-    menuPath: '/inventory',
-    menuIcon: 'inbox',
-    menuSort: '5',
-    status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: false,
-    children: [
-      {
-        menuId: 'M005001',
-        parentId: 'M005',
-        menuNameZh: '商品管理',
-        menuNameEn: 'Product Management',
-        menuPath: '/inventory/product',
-        menuIcon: 'shopping',
-        menuSort: '1',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M005002',
-        parentId: 'M005',
-        menuNameZh: '入库管理',
-        menuNameEn: 'Stock In',
-        menuPath: '/inventory/stock-in',
-        menuIcon: 'import',
-        menuSort: '2',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M005003',
-        parentId: 'M005',
-        menuNameZh: '出库管理',
-        menuNameEn: 'Stock Out',
-        menuPath: '/inventory/stock-out',
-        menuIcon: 'export',
-        menuSort: '3',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
-  },
-  {
-    menuId: 'M006',
-    parentId: null,
-    menuNameZh: '客户管理',
-    menuNameEn: 'Customer Management',
-    menuPath: '/customer',
-    menuIcon: 'solution',
-    menuSort: '6',
-    status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: false,
-    children: [
-      {
-        menuId: 'M006001',
-        parentId: 'M006',
-        menuNameZh: '客户信息',
-        menuNameEn: 'Customer Info',
-        menuPath: '/customer/info',
-        menuIcon: 'idcard',
-        menuSort: '1',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M006002',
-        parentId: 'M006',
-        menuNameZh: '客户服务',
-        menuNameEn: 'Customer Service',
-        menuPath: '/customer/service',
-        menuIcon: 'customer-service',
-        menuSort: '2',
-        status: '1',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
-  },
-  {
-    menuId: 'M007',
-    parentId: null,
-    menuNameZh: '数据分析',
-    menuNameEn: 'Data Analytics',
-    menuPath: '/analytics',
-    menuIcon: 'line-chart',
-    menuSort: '7',
-    status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: false,
-    children: [
-      {
-        menuId: 'M007001',
-        parentId: 'M007',
-        menuNameZh: '销售分析',
-        menuNameEn: 'Sales Analytics',
-        menuPath: '/analytics/sales',
-        menuIcon: 'rise',
-        menuSort: '1',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M007002',
-        parentId: 'M007',
-        menuNameZh: '用户行为',
-        menuNameEn: 'User Behavior',
-        menuPath: '/analytics/behavior',
-        menuIcon: 'heat-map',
-        menuSort: '2',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M007003',
-        parentId: 'M007',
-        menuNameZh: '数据报表',
-        menuNameEn: 'Data Reports',
-        menuPath: '/analytics/reports',
-        menuIcon: 'file-text',
-        menuSort: '3',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M007004',
-        parentId: 'M007',
-        menuNameZh: '实时监控',
-        menuNameEn: 'Real-time Monitor',
-        menuPath: '/analytics/monitor',
-        menuIcon: 'monitor',
-        menuSort: '4',
-        status: '1',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
-  },
-  {
-    menuId: 'M008',
-    parentId: null,
-    menuNameZh: '消息中心',
-    menuNameEn: 'Message Center',
-    menuPath: '/message',
-    menuIcon: 'message',
-    menuSort: '8',
-    status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: false,
-    children: [
-      {
-        menuId: 'M008001',
-        parentId: 'M008',
-        menuNameZh: '站内消息',
-        menuNameEn: 'Internal Message',
-        menuPath: '/message/internal',
-        menuIcon: 'mail',
-        menuSort: '1',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M008002',
-        parentId: 'M008',
-        menuNameZh: '系统通知',
-        menuNameEn: 'System Notification',
-        menuPath: '/message/notification',
-        menuIcon: 'notification',
-        menuSort: '2',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
-  },
-  {
-    menuId: 'M009',
-    parentId: null,
-    menuNameZh: '配置管理',
-    menuNameEn: 'Configuration',
-    menuPath: '/config',
-    menuIcon: 'control',
-    menuSort: '9',
-    status: '0',
-    delFlag: '0',
-    hasChildren: true,
-    level: 1,
-    expanded: false,
-    children: [
-      {
-        menuId: 'M009001',
-        parentId: 'M009',
-        menuNameZh: '系统配置',
-        menuNameEn: 'System Config',
-        menuPath: '/config/system',
-        menuIcon: 'setting',
-        menuSort: '1',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M009002',
-        parentId: 'M009',
-        menuNameZh: '参数设置',
-        menuNameEn: 'Parameter Setting',
-        menuPath: '/config/parameter',
-        menuIcon: 'sliders',
-        menuSort: '2',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      },
-      {
-        menuId: 'M009003',
-        parentId: 'M009',
-        menuNameZh: '字典管理',
-        menuNameEn: 'Dictionary Management',
-        menuPath: '/config/dictionary',
-        menuIcon: 'book',
-        menuSort: '3',
-        status: '0',
-        delFlag: '0',
-        hasChildren: false,
-        level: 2,
-      }
-    ]
-  }
 ];
 
+/* ---------------------------- 排序工具函数 ------------------------------- */
+// subtreeEndIndex 等工具函数已在文件前方定义
+// 移动节点（同级 Up / Down 按钮）
+const moveNode = (tree: MenuNode[], nodeId: string, direction: 'up' | 'down'): MenuNode[] => {
+  const flat = treeToFlat(tree);
+  const start = flat.findIndex(n => n.menuId === nodeId);
+  if (start === -1) return tree;
+  const node = flat[start];
+  const end = subtreeEndIndex(flat, start);
+  const block = flat.slice(start, end + 1);
+
+  // 搜索目标兄弟
+  let targetStart: number | null = null;
+  if (direction === 'up') {
+    for (let i = start - 1; i >= 0; i--) {
+      if (flat[i].level === node.level && flat[i].parentId === node.parentId) {
+        targetStart = i;
+        break;
+      }
+    }
+  } else {
+    for (let i = end + 1; i < flat.length; i++) {
+      if (flat[i].level === node.level && flat[i].parentId === node.parentId) {
+        targetStart = i;
+        break;
+      }
+    }
+  }
+  if (targetStart === null) return tree; // 已在边缘
+
+  const remaining = [...flat];
+  remaining.splice(start, block.length);
+
+  // 计算插入索引
+  let insertPos = targetStart;
+  if (direction === 'down') {
+    // 插入到目标兄弟之后（包括其子树之后）
+    const targetEnd = subtreeEndIndex(remaining, insertPos - (start < targetStart ? block.length : 0));
+    insertPos = targetEnd + 1;
+  }
+
+  remaining.splice(insertPos, 0, ...block);
+
+  // 重新计算同级排序
+  const siblings = remaining.filter(n => n.parentId === node.parentId && n.level === node.level);
+  siblings.forEach((n, idx) => n.menuSort = idx + 1);
+
+  const newTree = flatToTree(remaining);
+  return assignSeq(newTree);
+};
+
+/* ------------------- 工具函数提前 ------------------ */
+// Tree => Flat
+const treeToFlat = (nodes: MenuNode[], level = 0): FlatNode[] => {
+  const res: FlatNode[] = [];
+  nodes
+    .sort((a, b) => a.menuSort - b.menuSort)
+    .forEach((n) => {
+      const { children, ...rest } = n;
+      res.push({ ...rest, level });
+      if (children?.length) {
+        res.push(...treeToFlat(children, level + 1));
+      }
+    });
+  return res;
+};
+
+// Flat => Tree
+const flatToTree = (flat: FlatNode[]): MenuNode[] => {
+  const map = new Map<string, MenuNode>();
+  const roots: MenuNode[] = [];
+
+  flat.forEach((f) => {
+    map.set(f.menuId, { ...f, children: [] });
+  });
+  flat.forEach((f) => {
+    const node = map.get(f.menuId)!;
+    if (f.parentId) {
+      const parent = map.get(f.parentId);
+      if (parent) parent.children!.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  return roots;
+};
+
+// 计算子树块结束索引
+const subtreeEndIndex = (flat: FlatNode[], start: number): number => {
+  const baseLevel = flat[start].level;
+  let end = start;
+  while (end + 1 < flat.length && flat[end + 1].level > baseLevel) {
+    end += 1;
+  }
+  return end;
+};
+
+/* ---------------- 序号计算 & 后端同步 ---------------- */
+const assignSeq = (nodes: MenuNode[], parentSeq = 'S'): MenuNode[] => {
+  return nodes
+    .sort((a, b) => a.menuSort - b.menuSort)
+    .map((n, idx) => {
+      const seq = parentSeq === 'S' ? `S${String(idx + 1).padStart(2, '0')}` : `${parentSeq}${String(idx + 1).padStart(3, '0')}`;
+      return {
+        ...n,
+        seq,
+        children: n.children ? assignSeq(n.children, seq) : undefined,
+      };
+    });
+};
+
+const syncMenuOrder = async (tree: MenuNode[]) => {
+  try {
+    await axios.post('/api/system/menu/sort', tree);
+  } catch (e) {
+    console.error('sync menu order failed', e);
+  }
+};
+
+/* ------------------ 主组件 ------------------ */
 const MenuManagement: React.FC = () => {
   // 状态管理
-  const [menuData] = useState<MenuTreeNode[]>(mockMenuData);
-  const [selectedRows, setSelectedRows] = useState<MenuTreeNode[]>([]);
+  const [tree, setTree] = useState<MenuNode[]>(assignSeq(mockTree));
+  const [selectedRows, setSelectedRows] = useState<MenuNode[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [loading, setLoading] = useState(false);
+  const [checkStrictly, setCheckStrictly] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('view');
-  const [currentRecord, setCurrentRecord] = useState<MenuTreeNode | null>(null);
+  const [currentRecord, setCurrentRecord] = useState<MenuNode | null>(null);
   // 表单实例
   const [drawerForm] = Form.useForm();
 
-  // 直接使用原始树形数据
-  const tableData = menuData;
+  // 扁平化列表
+  const flat = useMemo(() => treeToFlat(tree), [tree]);
 
-
-
-
-
+  /* ---------------- 拖拽排序实现 ---------------- */
   // 刷新数据
   const refreshData = () => {
     setLoading(true);
@@ -572,143 +274,128 @@ const MenuManagement: React.FC = () => {
     });
   };
 
-  // 表格列配置
-  const columns = [
-    {
-      key: 'menuNameZh',
-      title: '菜单名称',
-      dataIndex: 'menuNameZh',
-      width: 300,
-      render: (text: string, record: MenuTreeNode) => (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          {/* 菜单图标 */}
-          <span className="menu-icon">
-            {record.hasChildren ? '📁' : '📄'}
-          </span>
+  /* ======== 状态级联 ======== */
+  const updateStatus = (id: string, status: '0' | '1') => {
+    const dfs = (nodes: MenuNode[]): MenuNode[] => {
+      return nodes.map((n) => {
+        if (n.menuId === id) {
+          // 更新自身及子孙
+          const deepUpdate = (m: MenuNode): MenuNode => ({
+            ...m,
+            status,
+            children: m.children ? m.children.map(deepUpdate) : undefined,
+          });
+          return deepUpdate(n);
+        }
+        return {
+          ...n,
+          children: n.children ? dfs(n.children) : undefined,
+        };
+      });
+    };
+    setTree((prev) => dfs(prev));
+    message.success('状态已更新');
+  };
 
-          {/* 菜单名称 */}
-          <span className="menu-name">
-            {text}
-          </span>
-        </div>
-      )
-    },
+  /* ======== 列定义 ======== */
+  const columns: ColumnsType<FlatNode> = [
     {
-      key: 'menuId',
-      title: '菜单ID',
-      dataIndex: 'menuId',
+      title: 'ID',
+      dataIndex: 'seq',
+      key: 'seq',
       width: 120,
-      render: (text: string) => <code style={{ fontSize: '12px' }}>{text}</code>
     },
     {
-      key: 'menuPath',
+      title: '菜单名称',
+      dataIndex: 'menuName',
+      key: 'menuName',
+      render: (_: any, record: FlatNode) => <span style={{ paddingLeft: record.level * 20 }}>{record.menuName}</span>,
+    },
+    {
       title: '菜单路径',
       dataIndex: 'menuPath',
-      width: 200,
-      render: (text: string) => <code style={{ fontSize: '12px', color: '#666' }}>{text}</code>
+      key: 'menuPath',
+      render: (path: string) => <code style={{ color: '#666' }}>{path}</code>,
     },
     {
-      key: 'menuSort',
-      title: '排序',
-      dataIndex: 'menuSort',
-      width: 80,
-      align: 'center' as const,
-      render: (sort: string) => (
-        <InputNumber
-          size="small"
-          value={parseInt(sort)}
-          min={1}
-          max={999}
-          style={{ width: '60px' }}
-        />
-      )
+      title: '说明',
+      dataIndex: 'description',
+      key: 'description',
+      render: (text: string) => text || '-',
     },
     {
-      key: 'status',
-      title: '状态',
+      title: '是否启用',
       dataIndex: 'status',
-      width: 100,
-      align: 'center' as const,
-      render: (status: string) => (
+      key: 'status',
+      align: 'center',
+      render: (_: any, record: FlatNode) => (
         <Switch
-          checked={status === '0'}
+          size="small"
+          checked={record.status === '0'}
           checkedChildren="启用"
           unCheckedChildren="停用"
-          size="small"
+          onChange={(checked) => updateStatus(record.menuId, checked ? '0' : '1')}
         />
-      )
+      ),
     },
     {
-      key: 'actions',
+      title: '排序',
+      dataIndex: 'menuSort',
+      key: 'menuSort',
+      align: 'center',
+      render: (sort: number, record: FlatNode) => {
+        const siblings = flat.filter(n => n.parentId === record.parentId && n.level === record.level);
+        const firstId = siblings[0]?.menuId;
+        const lastId = siblings[siblings.length - 1]?.menuId;
+        const isFirst = record.menuId === firstId;
+        const isLast = record.menuId === lastId;
+        return (
+          <Space size="small">
+            <Button
+              size="small"
+              icon={<UpOutlined />}
+              disabled={isFirst}
+              onClick={() => setTree(prev => {
+                const updated = moveNode(prev, record.menuId, 'up');
+                syncMenuOrder(updated);
+                return updated;
+              })}
+            />
+            <Button
+              size="small"
+              icon={<DownOutlined />}
+              disabled={isLast}
+              onClick={() => setTree(prev => {
+                const updated = moveNode(prev, record.menuId, 'down');
+                syncMenuOrder(updated);
+                return updated;
+              })}
+            />
+          </Space>
+        );
+      },
+    },
+    {
       title: '操作',
-      dataIndex: 'actions',
-      width: 180,
-      align: 'center' as const,
-      render: (_: any, record: MenuTreeNode) => (
+      key: 'actions',
+      align: 'center',
+      render: (_: any, record: FlatNode) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleRowView(record)}
-          >
-            详情
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleRowEdit(record)}
-          >
-            编辑
-          </Button>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'add',
-                  label: '新增子菜单',
-                  icon: <PlusOutlined />,
-                },
-                {
-                  key: 'delete',
-                  label: '删除',
-                  icon: <DeleteOutlined />,
-                  danger: true
-                }
-              ],
-              onClick: ({ key }) => {
-                if (key === 'add') {
-                  handleAddChild(record);
-                } else if (key === 'delete') {
-                  handleDelete(record);
-                }
-              }
-            }}
-          >
-            <Button type="link" size="small">
-              更多 <DownOutlined />
-            </Button>
-          </Dropdown>
+          <Button type="link" size="small" onClick={() => handleRowView(record as any)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handleRowEdit(record as any)}>编辑</Button>
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   // 处理行选择
-  const handleSelectionChange = (selectedRowKeys: React.Key[], selectedRows: MenuTreeNode[]) => {
+  const handleSelectionChange = (selectedRowKeys: React.Key[], selectedRows: MenuNode[]) => {
     setSelectedRows(selectedRows);
     setSelectedRowKeys(selectedRowKeys);
   };
 
   // 处理行查看
-  const handleRowView = (record: MenuTreeNode) => {
+  const handleRowView = (record: MenuNode) => {
     setDrawerMode('view');
     setCurrentRecord(record);
     setDrawerOpen(true);
@@ -716,7 +403,7 @@ const MenuManagement: React.FC = () => {
   };
 
   // 处理行编辑
-  const handleRowEdit = (record: MenuTreeNode) => {
+  const handleRowEdit = (record: MenuNode) => {
     setDrawerMode('edit');
     setCurrentRecord(record);
     setDrawerOpen(true);
@@ -724,7 +411,7 @@ const MenuManagement: React.FC = () => {
   };
 
   // 处理新增子菜单
-  const handleAddChild = (record: MenuTreeNode) => {
+  const handleAddChild = (record: MenuNode) => {
     setDrawerMode('create');
     setCurrentRecord(record);
     setDrawerOpen(true);
@@ -733,9 +420,9 @@ const MenuManagement: React.FC = () => {
   };
 
   // 处理删除
-  const handleDelete = (record: MenuTreeNode) => {
+  const handleDelete = (record: MenuNode) => {
     Modal.confirm({
-      title: `确定删除菜单 [${record.menuNameZh}] 吗?`,
+      title: `确定删除菜单 [${record.menuName}] 吗?`,
       content: '此操作不可逆，请谨慎操作。',
       onOk: () => {
         message.success('删除成功');
@@ -753,10 +440,10 @@ const MenuManagement: React.FC = () => {
   };
 
   // 构建父菜单选项
-  const buildParentOptions = (nodes: MenuTreeNode[], level = 0): any[] => {
+  const buildParentOptions = (nodes: MenuNode[], level = 0): any[] => {
     return nodes.map(node => ({
       value: node.menuId,
-      title: `${'--'.repeat(level)} ${node.menuNameZh}`,
+      title: `${'--'.repeat(level)} ${node.menuName}`,
       children: node.children ? buildParentOptions(node.children, level + 1) : [],
     }));
   };
@@ -781,51 +468,16 @@ const MenuManagement: React.FC = () => {
                   drawerForm.resetFields();
                 }}
               >
-                新增根菜单
-              </Button>
-              <Button
-                icon={<CheckOutlined />}
-                disabled={selectedRows.length === 0}
-                onClick={() => batchUpdateStatus('0')}
-              >
-                批量启用
-              </Button>
-              <Button
-                icon={<StopOutlined />}
-                disabled={selectedRows.length === 0}
-                onClick={() => batchUpdateStatus('1')}
-              >
-                批量停用
-              </Button>
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                disabled={selectedRows.length === 0}
-                onClick={batchDelete}
-              >
-                批量删除
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={refreshData}
-              >
-                刷新
+                新增菜单
               </Button>
             </div>
-            {selectedRows.length > 0 && (
-              <div className="batch-info">
-                已选择 {selectedRows.length} 项
-              </div>
-            )}
           </div>
         }
       >
-
-        {/* 数据表格 */}
         <Table
           className="data-table tree-table"
           columns={columns}
-          dataSource={tableData}
+          dataSource={flat}
           rowKey="menuId"
           loading={loading}
           pagination={false}
@@ -833,13 +485,14 @@ const MenuManagement: React.FC = () => {
             type: 'checkbox',
             selectedRowKeys: selectedRowKeys,
             onChange: handleSelectionChange,
+            checkStrictly: checkStrictly,
           }}
           expandable={{
             defaultExpandAllRows: true,
           }}
           scroll={{
             y: '70vh', // 使用视口高度的70%，响应式适配
-            x: 'max-content' // 水平滚动支持
+            x: 'max-content', // 水平滚动支持
           }}
         />
       </Card>
@@ -854,7 +507,6 @@ const MenuManagement: React.FC = () => {
         width={520}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-
       >
         <div className="drawer-form-content">
           <Form
@@ -865,23 +517,17 @@ const MenuManagement: React.FC = () => {
           >
             <Form.Item name="parentId" label="上级菜单">
               <TreeSelect
-                treeData={buildParentOptions(menuData)}
+                treeData={buildParentOptions(tree)}
                 placeholder="请选择上级菜单"
                 treeDefaultExpandAll
                 allowClear
               />
             </Form.Item>
-            <Form.Item name="menuNameZh" label="菜单名称(中)" rules={[{ required: true }]}>
-              <Input placeholder="请输入菜单中文名称" />
-            </Form.Item>
-            <Form.Item name="menuNameEn" label="菜单名称(英)" rules={[{ required: true }]}>
-              <Input placeholder="请输入菜单英文名称" />
+            <Form.Item name="menuName" label="菜单名称" rules={[{ required: true }]}>
+              <Input placeholder="请输入菜单名称" />
             </Form.Item>
             <Form.Item name="menuPath" label="菜单路径" rules={[{ required: true }]}>
               <Input placeholder="请输入菜单路径" />
-            </Form.Item>
-            <Form.Item name="menuIcon" label="菜单图标">
-              <Input placeholder="请输入菜单图标" />
             </Form.Item>
             <Form.Item name="menuSort" label="显示排序" rules={[{ required: true }]}>
               <InputNumber min={0} style={{ width: '100%' }} />

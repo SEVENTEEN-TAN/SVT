@@ -11,6 +11,8 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 自定义LocalDateTime字段类型处理器
@@ -23,6 +25,20 @@ public class LocalDateTimeTypeHandler extends BaseTypeHandler<LocalDateTime> {
 
     private static final String DEFAULT_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private final DateTimeFormatter dateTimeFormatter;
+
+    // 支持的时间格式列表
+    private static final List<DateTimeFormatter> SUPPORTED_FORMATTERS = Arrays.asList(
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SS"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.S"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SS"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS")
+    );
 
     public LocalDateTimeTypeHandler() {
         this(DEFAULT_FORMAT);
@@ -93,6 +109,7 @@ public class LocalDateTimeTypeHandler extends BaseTypeHandler<LocalDateTime> {
 
     /**
      * String转换成LocalDateTime
+     * 支持多种时间格式的自动识别
      * @param value String
      * @return LocalDateTime
      */
@@ -100,10 +117,41 @@ public class LocalDateTimeTypeHandler extends BaseTypeHandler<LocalDateTime> {
         if (StringUtils.isBlank(value)) {
             return null;
         }
+
+        String trimmedValue = value.trim();
+
+        // 首先尝试使用默认格式化器
         try {
-            return LocalDateTime.parse(value.trim(), dateTimeFormatter);
-        } catch (DateTimeParseException e) {
-            throw new TypeConversionException("无法将字符串转换为LocalDateTime: " + value, e);
+            return LocalDateTime.parse(trimmedValue, dateTimeFormatter);
+        } catch (DateTimeParseException ignored) {
+            // 如果默认格式失败，尝试其他支持的格式
         }
+
+        // 尝试所有支持的格式
+        for (DateTimeFormatter formatter : SUPPORTED_FORMATTERS) {
+            try {
+                return LocalDateTime.parse(trimmedValue, formatter);
+            } catch (DateTimeParseException ignored) {
+                // 继续尝试下一个格式
+            }
+        }
+
+        // 所有格式都失败，抛出异常
+        throw new TypeConversionException(
+            String.format("无法将字符串转换为LocalDateTime: '%s'。支持的格式包括: %s",
+                value, getSupportedFormats())
+        );
+    }
+
+    /**
+     * 获取支持的时间格式列表（用于错误提示）
+     */
+    private String getSupportedFormats() {
+        return String.join(", ",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS"
+        );
     }
 }

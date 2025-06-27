@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
-public class DbKeyCacheUtil {
+public class DbKeyCacheUtils {
 
     /**
      * 配置缓存

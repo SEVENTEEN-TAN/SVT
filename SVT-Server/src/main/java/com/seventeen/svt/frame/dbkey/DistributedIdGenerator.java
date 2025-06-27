@@ -3,7 +3,7 @@ package com.seventeen.svt.frame.dbkey;
 import cn.hutool.extra.spring.SpringUtil;
 import com.seventeen.svt.common.annotation.dbkey.DistributedId;
 import com.seventeen.svt.common.util.DistributedLockUtil;
-import com.seventeen.svt.frame.cache.util.DbKeyCacheUtil;
+import com.seventeen.svt.frame.cache.util.DbKeyCacheUtils;
 import com.seventeen.svt.modules.system.entity.DbKey;
 import com.seventeen.svt.modules.system.service.DbKeyService;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +78,7 @@ public class DistributedIdGenerator {
             List<String> ids = generateBatchIds(dbKey);
 
             // 保存到缓存
-            DbKeyCacheUtil.putIds(tableName, ids);
+            DbKeyCacheUtils.putIds(tableName, ids);
 
             // 返回第一个ID
             return ids.remove(0);
@@ -91,11 +91,11 @@ public class DistributedIdGenerator {
      * 从缓存获取ID
      */
     private static String getIdFromCache(String tableName) {
-        List<String> ids = DbKeyCacheUtil.getIds(tableName);
+        List<String> ids = DbKeyCacheUtils.getIds(tableName);
         if (ids != null && !ids.isEmpty()) {
             String id = ids.remove(0);
             // 更新缓存
-            DbKeyCacheUtil.putIds(tableName, ids);
+            DbKeyCacheUtils.putIds(tableName, ids);
             return id;
         }
         return null;
@@ -145,7 +145,7 @@ public class DistributedIdGenerator {
         dbKeyServiceImpl.updateCurrentId(dbKey.getTableName(), newCurrentId);
 
         // 更新缓存
-        DbKeyCacheUtil.put(dbKey.getTableName(), dbKey);
+        DbKeyCacheUtils.put(dbKey.getTableName(), dbKey);
 
         return ids;
     }
@@ -155,7 +155,7 @@ public class DistributedIdGenerator {
      */
     private static DbKey getOrCreateConfig(String tableName, String entityName, DistributedId annotation) {
         // 从缓存获取
-        DbKey dbKey = DbKeyCacheUtil.get(tableName);
+        DbKey dbKey = DbKeyCacheUtils.get(tableName);
         if (dbKey != null) {
             return dbKey;
         }
@@ -182,7 +182,7 @@ public class DistributedIdGenerator {
         }
 
         // 更新缓存
-        DbKeyCacheUtil.put(tableName, dbKey);
+        DbKeyCacheUtils.put(tableName, dbKey);
         return dbKey;
     }
 

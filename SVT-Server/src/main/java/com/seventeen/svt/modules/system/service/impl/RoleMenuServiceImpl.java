@@ -15,7 +15,7 @@ import static com.seventeen.svt.modules.system.entity.table.Tables.MENU_INFO;
 import static com.seventeen.svt.modules.system.entity.table.Tables.ROLE_MENU;
 
 /**
-* 针对表【menu_role(菜单角色关联表)】的数据库操作Service实现
+* 针对表【role_menu(菜单角色关联表)】的数据库操作Service实现
 */
 @Service
 public class RoleMenuServiceImpl extends ServiceImpl<RoleMenuMapper, RoleMenu>

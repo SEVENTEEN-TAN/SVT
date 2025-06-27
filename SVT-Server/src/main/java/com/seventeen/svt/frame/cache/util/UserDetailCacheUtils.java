@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  * 用户详情缓存工具类
  * 采用二级缓存: Caffeine + Redis
  * 过期时间与JWT保持一致
- * 
+ * <p>
  * 优化说明：
  * - 添加了Redis异常处理机制
  * - 实现了优雅降级策略
@@ -67,6 +67,7 @@ public class UserDetailCacheUtils {
      * @return UserDetailCache
      */
     public UserDetailCache getUserDetail(String userId) {
+        // 从本地缓存获取
         UserDetailCache userDetail = userDetailLocalCache.getIfPresent(userId);
         if (ObjectUtils.isEmpty(userDetail)) {
             userDetail = safeRedisGet(() -> (UserDetailCache) redisUtils.get(USER_DETAIL_KEY_PREFIX + userId), "getUserDetail");
@@ -76,6 +77,7 @@ public class UserDetailCacheUtils {
         }
         log.debug("Attempting to get user detail for {}: {}", userId, userDetail);
         return userDetail;
+
     }
 
     /**

@@ -3,13 +3,13 @@ package com.seventeen.svt.modules.system.entity;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Table;
 import com.seventeen.svt.common.annotation.dbkey.DistributedId;
+import com.seventeen.svt.frame.handler.StringToDateTimeTypeHandler;
 import com.seventeen.svt.frame.listener.FlexInsertListener;
 import com.seventeen.svt.frame.listener.FlexUpdateListener;
 import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 @Table(value = "audit_log", comment = "审计日志表",
         onInsert = FlexInsertListener.class, onUpdate = FlexUpdateListener.class)
@@ -20,8 +20,8 @@ public class AuditLog implements Serializable {
     @Column(value = "audit_id", comment = "审计ID")
     private String auditId;
 
-    @Column(value = "operation_time", comment = "操作时间")
-    private LocalDateTime operationTime;
+    @Column(value = "operation_time", comment = "操作时间", typeHandler = StringToDateTimeTypeHandler.class)
+    private String operationTime;
 
     @Column(value = "operation_ip", comment = "操作IP")
     private String operationIp;

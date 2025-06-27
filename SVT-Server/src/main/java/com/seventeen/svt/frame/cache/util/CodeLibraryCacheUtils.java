@@ -1,10 +1,12 @@
 package com.seventeen.svt.frame.cache.util;
 
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.seventeen.svt.common.util.RedisUtils;
 import com.seventeen.svt.modules.system.entity.CodeLibrary;
+import com.seventeen.svt.modules.system.service.CodeLibraryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * 码值缓存工具类
  * 采用二级缓存: Caffeine + Redis
  * 过期时间与JWT保持一致
- * 
+ * <p>
  * 优化说明：
  * - 添加了Redis异常处理机制
  * - 实现了优雅降级策略
@@ -51,21 +53,23 @@ public class CodeLibraryCacheUtils {
 
     /**
      * 安全执行Redis操作
-     * @param operation Redis操作
+     *
+     * @param operation     Redis操作
      * @param operationName 操作名称
      */
     private static void safeRedisOperation(Runnable operation, String operationName) {
         try {
             operation.run();
         } catch (Exception e) {
-            log.warn("Redis operation [{}] failed, degrading to local cache only. Error: {}", 
-                     operationName, e.getMessage());
+            log.warn("Redis operation [{}] failed, degrading to local cache only. Error: {}",
+                    operationName, e.getMessage());
         }
     }
 
     /**
      * 安全执行Redis获取操作
-     * @param operation Redis获取操作
+     *
+     * @param operation     Redis获取操作
      * @param operationName 操作名称
      * @return 获取结果，失败时返回null
      */
@@ -73,14 +77,15 @@ public class CodeLibraryCacheUtils {
         try {
             return operation.get();
         } catch (Exception e) {
-            log.warn("Redis get operation [{}] failed, using local cache only. Error: {}", 
-                     operationName, e.getMessage());
+            log.warn("Redis get operation [{}] failed, using local cache only. Error: {}",
+                    operationName, e.getMessage());
             return null;
         }
     }
 
     /**
      * 获取码值缓存
+     *
      * @param codeType 码值编号
      * @return CodeLibrary
      */
@@ -99,12 +104,16 @@ public class CodeLibraryCacheUtils {
                     // 同步到本地缓存
                     putCodeLibraryToLocal(codeType, codeLibrarys);
                 }
-            } else if (cachedData != null) {
+            } else {
                 // 处理获取的数据不是List的情况
                 log.warn("从Redis获取的数据不是List类型，key: {}", CODE_KEY_PREFIX + codeType);
+                //从数据库获取 然后添加到缓存
+                codeLibrarys = SpringUtil.getBean("codeLibraryServiceImpl", CodeLibraryService.class)
+                        .selectCodeLibraryByCodeType(codeType);
+                putCodeLibrary(codeType, codeLibrarys);
             }
         }
-        log.debug("尝试获取{}码值信息:{}",codeType,codeLibrarys);
+        log.debug("尝试获取{}码值信息:{}", codeType, codeLibrarys);
         return codeLibrarys;
     }
 
@@ -117,12 +126,13 @@ public class CodeLibraryCacheUtils {
 
     /**
      * 获取码值缓存
-     * @param codeType 码值编号
+     *
+     * @param codeType  码值编号
      * @param codeValue 码值项
      * @return String 码值名称
      */
-    public static String getCodeName(String codeType,String codeValue) {
-        List<CodeLibrary>  codeLibrary = getCodeLibrary(codeType);
+    public static String getCodeName(String codeType, String codeValue) {
+        List<CodeLibrary> codeLibrary = getCodeLibrary(codeType);
         if (ObjectUtil.isNotEmpty(codeLibrary)) {
             return codeLibrary.stream()
                     .filter(item -> codeValue.equals(item.getCodeValue()))
@@ -130,16 +140,17 @@ public class CodeLibraryCacheUtils {
                     .map(CodeLibrary::getCodeName)
                     .orElse(null);
         }
-        return null;
+        return codeValue;
     }
 
     /**
      * 添加或更新码值缓存
-     * @param codeType 码值ID
+     *
+     * @param codeType    码值ID
      * @param codeLibrary 码值详情
      */
     public static void putCodeLibrary(String codeType, List<CodeLibrary> codeLibrary) {
-        log.debug("尝试添加/更新{}码值信息:{}",codeType,codeLibrary);
+        log.debug("尝试添加/更新{}码值信息:{}", codeType, codeLibrary);
         // 本地缓存
         putCodeLibraryToLocal(codeType, codeLibrary);
         // Redis缓存
@@ -149,15 +160,16 @@ public class CodeLibraryCacheUtils {
     /**
      * 删除码值缓存
      * 优化：即使Redis操作失败，也要确保本地缓存被清理
+     *
      * @param codeType 码值ID
      */
     public static void removeCodeLibrary(String codeType) {
-        log.debug("尝试删除{}码值缓存",codeType);
+        log.debug("尝试删除{}码值缓存", codeType);
         // 本地删除（优先执行，确保本地状态正确）
         codeLibraryCache.invalidate(codeType);
         // Redis删除
         safeRedisOperation(() -> RedisUtils.del(CODE_KEY_PREFIX + codeType), "removeCodeLibrary");
-        
+
         log.debug("Successfully removed code library cache for type: {}", codeType);
     }
 

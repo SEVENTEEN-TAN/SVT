@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @Aspect
@@ -40,7 +41,7 @@ public class AuditAspect {
         
         // 创建审计日志对象 - 先记录基本信息
         AuditLog auditLog = new AuditLog();
-        auditLog.setOperationTime(LocalDateTime.now());
+        auditLog.setOperationTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")));
         auditLog.setOperationDesc(audit.description());
         auditLog.setOperationIp(RequestContextUtils.getIpAddress());
         auditLog.setOperationUrl(RequestContextUtils.getRequestUrl());
