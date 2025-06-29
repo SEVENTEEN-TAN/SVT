@@ -2,8 +2,8 @@
 // Action: Moved; Timestamp: 2025-06-28 16:58:44 +08:00; Reason: 移动API文件到正确目录结构 SVT-Web/src/api/system/; Principle_Applied: 目录结构规范;
 // }}
 
-import { api } from '../../utils/request';
-import type { BackendMenuData } from '../../pages/System/Menu/utils/dataTransform';
+import { api } from '@/utils/request';
+import type { BackendMenuData } from '@/pages/System/Menu/utils/dataTransform';
 
 // 获取菜单树请求参数（无参数）
 export interface GetMenuTreeRequest {}
@@ -118,7 +118,7 @@ class MenuApiService {
 export const menuApi = new MenuApiService();
 
 // 重新导出类型
-export type { BackendMenuData } from '../../pages/System/Menu/utils/dataTransform';
+export type { BackendMenuData } from '@/pages/System/Menu/utils/dataTransform';
 
 // 导出默认实例
 export default menuApi;

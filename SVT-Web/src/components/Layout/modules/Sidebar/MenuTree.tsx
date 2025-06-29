@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo } from 'react';
+﻿import React, { useCallback, useMemo } from 'react';
 import { Menu } from 'antd';
 import type { MenuProps } from 'antd';
-import type { MenuItem } from '../../shared/types/layout';
-import { getIcon } from '../../shared/utils/layoutUtils';
+import type { MenuItem } from '@/components/Layout/shared/types/layout';
+import { getIcon } from '@/components/Layout/shared/utils/layoutUtils';
 
 interface MenuTreeProps {
   menuTrees?: MenuItem[];

@@ -1,4 +1,4 @@
-// {{CHENGQI:
+﻿// {{CHENGQI:
 // Action: Modified; Timestamp: 2025-06-28 16:58:44 +08:00; Reason: 全量接入后端API，替换Mock数据; Principle_Applied: API集成原则;
 // }}
 
@@ -11,7 +11,6 @@ import {
     Input,
     InputNumber,
     message,
-    Modal,
     Select,
     Space,
     Spin,
@@ -24,17 +23,17 @@ import {
     App,
 } from 'antd';
 import {DownOutlined, PlusOutlined, UpOutlined, ExclamationCircleFilled} from '@ant-design/icons';
-import '../../../styles/PageContainer.css';
+import '@/styles/PageContainer.css';
 import './MenuManagement.css';
 import { useLayout } from '@/components/Layout/core/LayoutProvider';
 
 import type { ColumnsType } from 'antd/es/table';
-import menuApi from '../../../api/system/menuApi';
-import roleApi from '../../../api/system/roleApi';
-import type { ActiveRole } from '../../../api/system/roleApi';
+import menuApi from '@/api/system/menuApi';
+import roleApi from '@/api/system/roleApi';
+import type { ActiveRole } from '@/api/system/roleApi';
 
 // 导入类型
-import type { MenuNode, FlatNode } from './utils/dataTransform';
+import type { MenuNode } from './utils/dataTransform';
 
 // 导入函数和值
 import {
@@ -47,7 +46,7 @@ import {
     validateMenuData,
 } from './utils/dataTransform';
 
-import { getIcon } from '../../../components/Layout/shared/utils/layoutUtils';
+import { getIcon } from '@/components/Layout/shared/utils/layoutUtils';
 
 /* ---------------------------- 排序工具函数 ------------------------------- */
 // 移动节点（同级 Up / Down 按钮）
@@ -173,53 +172,10 @@ const MenuManagement: React.FC = () => {
   }, []);
 
   /* ---------------- 数据操作函数 ---------------- */
-  // 刷新数据
-  const refreshData = () => {
-    loadMenuData();
-  };
 
-  // 批量状态更新
-  const batchUpdateStatus = async (status: '0' | '1') => {
-    if (tree.length === 0) {
-      message.warning('请先添加菜单');
-      return;
-    }
 
-    modal.confirm({
-      title: `确认${status === '0' ? '启用' : '停用'}所有菜单吗？`,
-      content: `将${status === '0' ? '启用' : '停用'} ${tree.length} 个菜单`,
-      onOk: async () => {
-        try {
-          const menuIds = tree.map(row => row.menuId);
-          await menuApi.updateMenuStatus(menuIds, status);
-          message.success(`批量${status === '0' ? '启用' : '停用'}成功`);
-          // 刷新数据
-          await loadMenuData();
-        } catch (error: any) {
-          console.error('批量更新状态失败:', error);
-          message.error(error.message || '批量更新状态失败');
-        }
-      }
-    });
-  };
 
-  // 批量删除 - 注意：后端暂无批量删除接口，这里先保留UI逻辑
-  const batchDelete = () => {
-    if (tree.length === 0) {
-      message.warning('请先添加菜单');
-      return;
-    }
 
-    modal.confirm({
-      title: '确认删除所有菜单吗？',
-      content: `将删除 ${tree.length} 个菜单，此操作不可恢复`,
-      okType: 'danger',
-      onOk: () => {
-        // TODO: 等待后端提供批量删除接口
-        message.warning('批量删除功能暂未实现，请联系后端开发人员添加相应接口');
-      }
-    });
-  };
 
   /* ======== 状态级联更新 ======== */
   const updateStatus = async (id: string, status: '0' | '1') => {

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Button } from 'antd';
 import { LogoutOutlined } from '@ant-design/icons';
-import type { UserInfo } from '../../shared/types/layout';
-import { STYLES } from '../../shared/utils/layoutUtils';
+import type { UserInfo } from '@/components/Layout/shared/types/layout';
+import { STYLES } from '@/components/Layout/shared/utils/layoutUtils';
 
 interface UserDropdownProps {
   user?: UserInfo | null;

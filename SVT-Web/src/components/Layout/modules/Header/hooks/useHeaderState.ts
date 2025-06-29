@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/stores/useAuth';
-import type { UserInfo, PathMaps } from '../../../shared/types/layout';
+import type { UserInfo } from '@/components/Layout/shared/types/layout';
 
 interface UseHeaderStateReturn {
   currentPath: string;
@@ -9,7 +9,7 @@ interface UseHeaderStateReturn {
 }
 
 // 头部状态管理Hook
-export const useHeaderState = (pathMaps: PathMaps): UseHeaderStateReturn => {
+export const useHeaderState = (): UseHeaderStateReturn => {
   const location = useLocation();
   const { currentUser: user, logout } = useAuth();
 

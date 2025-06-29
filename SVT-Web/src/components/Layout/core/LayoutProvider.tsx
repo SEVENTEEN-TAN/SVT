@@ -14,10 +14,10 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/stores/useAuth';
-import type { MenuItem } from '@/types/menu';
-import type { PathMaps, TabItem } from '../shared/types/layout';
-import { generatePathMaps, getTabName as getTabNameUtil } from '../shared/utils/layoutUtils';
-import { useTabStorage } from '../modules/TabSystem/hooks/useTabStorage';
+import type { MenuItem } from '@/components/Layout/shared/types/layout';
+import type { PathMaps, TabItem } from '@/components/Layout/shared/types/layout';
+import { generatePathMaps, getTabName as getTabNameUtil } from '@/components/Layout/shared/utils/layoutUtils';
+import { useTabStorage } from '@/components/Layout/modules/TabSystem/hooks/useTabStorage';
 
 // 布局状态接口
 interface LayoutState {
@@ -239,7 +239,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [tabList, activeTabKey, navigate, saveTabsToStorage]);
 
   // 刷新标签页
-  const refreshTab = useCallback((key: string) => {
+  const refreshTab = useCallback(() => {
     handleRefresh(true);
   }, [handleRefresh]);
 

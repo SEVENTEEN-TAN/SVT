@@ -1,14 +1,14 @@
 import React from 'react';
 import { Layout, Typography, Space } from 'antd';
 import { CopyrightOutlined } from '@ant-design/icons';
-import { useAuthStore } from '@/stores/authStore';
+import { useUserStore } from '@/stores/userStore';
 import { appConfig } from '@/config/env';
 
 const { Footer: AntdFooter } = Layout;
 const { Text } = Typography;
 
 const Footer: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user } = useUserStore();
   const currentYear = import.meta.env.VITE_FOOTER_YEAR || new Date().getFullYear();
   const copyrightName = import.meta.env.VITE_FOOTER_COPYRIGHT || 'SVT System';
 

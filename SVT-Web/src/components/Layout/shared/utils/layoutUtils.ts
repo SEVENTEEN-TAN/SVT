@@ -14,7 +14,7 @@ import {
   CrownOutlined,
   IdcardOutlined,
 } from '@ant-design/icons';
-import type { MenuItem, PathMaps } from '../types/layout';
+import type { MenuItem, PathMaps } from '@/components/Layout/shared/types/layout';
 
 // 布局常量
 export const LAYOUT_CONSTANTS = {

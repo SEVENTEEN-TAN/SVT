@@ -6,13 +6,13 @@ import { Spin } from 'antd';
 import ProtectedRoute from './ProtectedRoute';
 
 // 布局组件
-const BasicLayout = React.lazy(() => import('../components/Layout/BasicLayout'));
+const BasicLayout = React.lazy(() => import('@/components/Layout/BasicLayout'));
 
 // 页面组件
-const LoginPage = React.lazy(() => import('../pages/Auth/LoginPage'));
-const HomePage = React.lazy(() => import('../pages/Home/HomePage'));
-const DynamicPage = React.lazy(() => import('../components/DynamicPage'));
-const MenuManagement = React.lazy(() => import('../pages/System/Menu'));
+const LoginPage = React.lazy(() => import('@/pages/Auth/LoginPage'));
+const HomePage = React.lazy(() => import('@/pages/Home/HomePage'));
+const DynamicPage = React.lazy(() => import('@/components/DynamicPage'));
+const MenuManagement = React.lazy(() => import('@/pages/System/Menu'));
 
 // 简单的加载组件
 const fallbackElement = (

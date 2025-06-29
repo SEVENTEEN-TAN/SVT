@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+﻿import { useCallback } from 'react';
 import { tabStorage } from '@/utils/localStorageManager';
-import type { TabItem } from '../../../shared/types/layout';
+import type { TabItem } from '@/components/Layout/shared/types/layout';
 
 // Tab存储管理Hook
 export const useTabStorage = () => {

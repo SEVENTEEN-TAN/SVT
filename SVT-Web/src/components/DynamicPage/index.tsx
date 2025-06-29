@@ -1,8 +1,8 @@
 import React, { Suspense, lazy, Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import NotFoundPage from '../../pages/Error/NotFoundPage';
-import { useAuth } from '../../stores/useAuth';
+import NotFoundPage from '@/pages/Error/NotFoundPage';
+import { useAuth } from '@/stores/useAuth';
 
 // 错误边界组件
 interface ErrorBoundaryState {
@@ -39,10 +39,7 @@ const pageModules = import.meta.glob('../../pages/**/index.tsx');
 // 创建组件缓存映射
 const componentCache = new Map<string, React.LazyExoticComponent<React.ComponentType<any>>>();
 
-// 路径标准化工具函数
-const normalizePath = (path: string): string => {
-  return path.toLowerCase().replace(/\/+/g, '/').replace(/\/$/, '') || '/';
-};
+// 路径标准化工具函数（已移除，如需要可重新添加）
 
 // 路径转换为组件路径的工具函数
 const pathToComponentPath = (menuPath: string): string => {

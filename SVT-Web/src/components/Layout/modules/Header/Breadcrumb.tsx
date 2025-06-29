@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Breadcrumb as AntBreadcrumb } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
-import type { PathMaps } from '../../shared/types/layout';
+import type { PathMaps } from '@/components/Layout/shared/types/layout';
 
 interface BreadcrumbProps {
   currentPath: string;

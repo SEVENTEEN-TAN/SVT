@@ -4,8 +4,8 @@ import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import Breadcrumb from './Breadcrumb';
 import UserDropdown from './UserDropdown';
 import { useHeaderState } from './hooks/useHeaderState';
-import type { PathMaps } from '../../shared/types/layout';
-import { LAYOUT_CONSTANTS, STYLES } from '../../shared/utils/layoutUtils';
+import type { PathMaps } from '@/components/Layout/shared/types/layout';
+import { LAYOUT_CONSTANTS, STYLES } from '@/components/Layout/shared/utils/layoutUtils';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({ collapsed, onToggleCollapsed, pathMaps 
     token: { colorBgContainer },
   } = theme.useToken();
   
-  const { currentPath, user, handleLogout } = useHeaderState(pathMaps);
+  const { currentPath, user, handleLogout } = useHeaderState();
 
   // 用户信息浮窗内容
   const userInfoDropdown = <UserDropdown user={user} onLogout={handleLogout} />;

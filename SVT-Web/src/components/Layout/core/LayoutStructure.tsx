@@ -16,13 +16,13 @@ import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/stores/useAuth';
 import { useLayout } from './LayoutProvider';
-import Sidebar from '../modules/Sidebar';
-import Header from '../modules/Header';
-import TabSystem from '../modules/TabSystem';
-import Footer from '../Footer';
+import Sidebar from '@/components/Layout/modules/Sidebar';
+import Header from '@/components/Layout/modules/Header';
+import TabSystem from '@/components/Layout/modules/TabSystem';
+import Footer from '@/components/Layout/Footer';
 import PageRefreshLoading from '@/components/Loading/PageRefreshLoading';
-import { LAYOUT_CONSTANTS } from '../shared/utils/layoutStyles';
-import type { MenuItem } from '@/types/menu';
+import { LAYOUT_CONSTANTS } from '@/components/Layout/shared/utils/layoutStyles';
+import type { MenuItem } from '@/components/Layout/shared/types/layout';
 
 /**
  * 样式计算Hook

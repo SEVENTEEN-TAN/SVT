@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import TabBar from './TabBar';
 import TabContextMenu from './TabContextMenu';
-import type { ContextMenuState, TabManagerState, PageRefreshState } from '../../shared/types/layout';
+import type { ContextMenuState, TabManagerState, PageRefreshState } from '@/components/Layout/shared/types/layout';
 
 interface TabSystemProps {
   collapsed: boolean;
@@ -12,7 +12,7 @@ interface TabSystemProps {
   tabManager: TabManagerState & PageRefreshState;
 }
 
-const TabSystem: React.FC<TabSystemProps> = ({ collapsed, getTabName, tabManager }) => {
+const TabSystem: React.FC<TabSystemProps> = ({ collapsed, tabManager }) => {
 
   // 右键菜单状态
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState>({

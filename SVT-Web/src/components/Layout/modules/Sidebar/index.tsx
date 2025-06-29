@@ -2,8 +2,8 @@ import React from 'react';
 import { Layout, theme } from 'antd';
 import Logo from './Logo';
 import MenuTree from './MenuTree';
-import type { MenuItem } from '../../shared/types/layout';
-import { LAYOUT_CONSTANTS } from '../../shared/utils/layoutUtils';
+import type { MenuItem } from '@/components/Layout/shared/types/layout';
+import { LAYOUT_CONSTANTS } from '@/components/Layout/shared/utils/layoutUtils';
 
 const { Sider } = Layout;
 

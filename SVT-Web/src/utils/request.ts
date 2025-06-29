@@ -6,7 +6,7 @@ import type {
   InternalAxiosRequestConfig
 } from 'axios';
 import { AESCryptoUtils, isEncryptedData } from './crypto';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { messageManager } from './messageManager';
 import { clearStorageOnTokenExpired } from './localStorageManager';
 import { DebugManager } from './debugManager';
@@ -273,27 +273,22 @@ async function handleApiResponse<T>(apiCall: Promise<any>): Promise<T> {
   }
 }
 
-/**
- * 泛型工厂函数 - 生成API方法，消除重复代码
- */
-function createApiMethod<T = unknown>(
-  method: 'get' | 'post' | 'put' | 'delete'
-) {
-  return (url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> => {
-    if (method === 'get' || method === 'delete') {
-      return handleApiResponse<T>(request[method]<ApiResponse<T>>(url, config as any));
-    } else {
-      return handleApiResponse<T>(request[method]<ApiResponse<T>>(url, data, config));
-    }
-  };
-}
+// 已移除createApiMethod函数，直接在api对象中定义方法
 
-// 使用泛型工厂生成API方法 - 消除重复代码
+// API方法 - 支持泛型
 export const api = {
-  get: createApiMethod<any>('get'),
-  post: createApiMethod<any>('post'),
-  put: createApiMethod<any>('put'),
-  delete: createApiMethod<any>('delete'),
+  get: <T = unknown>(url: string, config?: InternalAxiosRequestConfig): Promise<T> => {
+    return handleApiResponse<T>(request.get<ApiResponse<T>>(url, config));
+  },
+  post: <T = unknown>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> => {
+    return handleApiResponse<T>(request.post<ApiResponse<T>>(url, data, config));
+  },
+  put: <T = unknown>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> => {
+    return handleApiResponse<T>(request.put<ApiResponse<T>>(url, data, config));
+  },
+  delete: <T = unknown>(url: string, config?: InternalAxiosRequestConfig): Promise<T> => {
+    return handleApiResponse<T>(request.delete<ApiResponse<T>>(url, config));
+  },
 
   // 文件上传方法（特殊处理）
   upload: <T = unknown>(url: string, formData: FormData, config?: InternalAxiosRequestConfig): Promise<T> => {

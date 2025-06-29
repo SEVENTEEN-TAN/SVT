@@ -1,8 +1,8 @@
-import React, { useMemo, useCallback } from 'react';
+﻿import React, { useMemo, useCallback } from 'react';
 import { Tabs } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
-import type { TabItem, ContextMenuState } from '../../shared/types/layout';
-import { LAYOUT_CONSTANTS } from '../../shared/utils/layoutUtils';
+import type { TabItem } from '@/components/Layout/shared/types/layout';
+import { LAYOUT_CONSTANTS } from '@/components/Layout/shared/utils/layoutUtils';
 
 interface TabBarProps {
   activeTabKey: string;

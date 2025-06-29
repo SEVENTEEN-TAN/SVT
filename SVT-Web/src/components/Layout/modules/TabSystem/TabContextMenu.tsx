@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   ReloadOutlined,
   CloseOutlined,
@@ -6,8 +6,8 @@ import {
   LeftOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import type { TabContextMenuItem, ContextMenuState } from '../../shared/types/layout';
-import { STYLES } from '../../shared/utils/layoutUtils';
+import type { TabContextMenuItem, ContextMenuState } from '@/components/Layout/shared/types/layout';
+import { STYLES } from '@/components/Layout/shared/utils/layoutUtils';
 
 interface TabContextMenuProps {
   contextMenuState: ContextMenuState;
