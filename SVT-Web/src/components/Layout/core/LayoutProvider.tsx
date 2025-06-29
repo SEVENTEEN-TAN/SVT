@@ -34,6 +34,7 @@ interface LayoutState {
   // 页面刷新状态
   pageRefreshKey: number;
   isPageRefreshing: boolean;
+  endPageRefresh: () => void;
   
   // 标签页操作
   addTab: (path: string, forceRefresh?: boolean) => void;
@@ -93,12 +94,17 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return generatePathMaps(currentUser?.menuTrees as MenuItem[] || []);
   }, [currentUser?.menuTrees]);
 
+  // 手动结束页面刷新
+  const endPageRefresh = useCallback(() => {
+    setIsPageRefreshing(false);
+  }, []);
+
   // 页面刷新处理
   const handleRefresh = useCallback((showLoading: boolean = false) => {
     if (showLoading) {
       setIsPageRefreshing(true);
       setPageRefreshKey(prev => prev + 1);
-      
+
       setTimeout(() => {
         setIsPageRefreshing(false);
       }, 500);
@@ -412,6 +418,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     closeRightTabs,
     closeOtherTabs,
     getTabName,
+    endPageRefresh,
   }), [
     sidebarCollapsed,
     activeTabKey,
@@ -429,6 +436,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     closeRightTabs,
     closeOtherTabs,
     getTabName,
+    endPageRefresh,
   ]);
 
   return (

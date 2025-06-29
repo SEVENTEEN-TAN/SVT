@@ -26,6 +26,7 @@ import {
 import {DownOutlined, PlusOutlined, UpOutlined, ExclamationCircleFilled} from '@ant-design/icons';
 import '../../../styles/PageContainer.css';
 import './MenuManagement.css';
+import { useLayout } from '@/components/Layout/core/LayoutProvider';
 
 import type { ColumnsType } from 'antd/es/table';
 import menuApi from '../../../api/system/menuApi';
@@ -133,6 +134,7 @@ const moveNode = async (tree: MenuNode[], nodeId: string, direction: 'up' | 'dow
 /* ------------------ 主组件 ------------------ */
 const MenuManagement: React.FC = () => {
   const { modal } = App.useApp();
+  const { endPageRefresh } = useLayout();
 
   // 状态管理
   const [tree, setTree] = useState<MenuNode[]>([]);
@@ -147,6 +149,9 @@ const MenuManagement: React.FC = () => {
 
   // 加载菜单数据
   const loadMenuData = async () => {
+    // 结束页面刷新状态，避免与API加载状态重叠
+    endPageRefresh();
+
     setLoading(true);
     try {
       const backendData = await menuApi.getAllMenuTree();
@@ -409,6 +414,9 @@ const MenuManagement: React.FC = () => {
 
   // 处理行查看
   const handleRowView = async (record: MenuNode) => {
+    // 结束页面刷新状态，避免与抽屉加载状态重叠
+    endPageRefresh();
+
     setDrawerMode('view');
     setCurrentRecord(record);
     setDrawerOpen(true);
@@ -431,6 +439,9 @@ const MenuManagement: React.FC = () => {
 
   // 处理行编辑
   const handleRowEdit = async (record: MenuNode) => {
+    // 结束页面刷新状态，避免与抽屉加载状态重叠
+    endPageRefresh();
+
     setDrawerMode('edit');
     setCurrentRecord(record);
     setDrawerOpen(true);

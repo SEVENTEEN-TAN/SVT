@@ -20,14 +20,15 @@ import Sidebar from '../modules/Sidebar';
 import Header from '../modules/Header';
 import TabSystem from '../modules/TabSystem';
 import Footer from '../Footer';
-import { LAYOUT_CONSTANTS, LOADING_STYLES } from '../shared/utils/layoutStyles';
+import PageRefreshLoading from '@/components/Loading/PageRefreshLoading';
+import { LAYOUT_CONSTANTS } from '../shared/utils/layoutStyles';
 import type { MenuItem } from '@/types/menu';
 
 /**
  * 样式计算Hook
  * 优化性能，避免每次渲染都重新计算样式
  */
-const useLayoutStyles = (sidebarCollapsed: boolean, pageRefreshKey: number, isPageRefreshing: boolean) => {
+const useLayoutStyles = (sidebarCollapsed: boolean) => {
   return useMemo(() => ({
     container: {
       minHeight: '100vh',
@@ -47,9 +48,8 @@ const useLayoutStyles = (sidebarCollapsed: boolean, pageRefreshKey: number, isPa
       overflow: 'auto',
       marginTop: `${LAYOUT_CONSTANTS.HEADER_HEIGHT + LAYOUT_CONSTANTS.TABS_HEIGHT}px`,
       minHeight: 0
-    },
-    loadingOverlay: isPageRefreshing ? LOADING_STYLES.pageRefresh : undefined
-  }), [sidebarCollapsed, pageRefreshKey, isPageRefreshing]);
+    }
+  }), [sidebarCollapsed]);
 };
 
 /**
@@ -57,9 +57,9 @@ const useLayoutStyles = (sidebarCollapsed: boolean, pageRefreshKey: number, isPa
  */
 const LayoutStructure: React.FC = () => {
   const { currentUser } = useAuth();
-  const { 
-    sidebarCollapsed, 
-    activeTabKey, 
+  const {
+    sidebarCollapsed,
+    activeTabKey,
     tabList,
     pathMaps,
     pageRefreshKey,
@@ -72,11 +72,12 @@ const LayoutStructure: React.FC = () => {
     closeRightTabs,
     closeOtherTabs,
     getTabName,
-    toggleSidebar
+    toggleSidebar,
+    endPageRefresh
   } = useLayout();
 
   // 计算样式
-  const styles = useLayoutStyles(sidebarCollapsed, pageRefreshKey, isPageRefreshing);
+  const styles = useLayoutStyles(sidebarCollapsed);
 
   // 菜单点击处理
   const handleMenuClick = (key: string) => {
@@ -116,6 +117,7 @@ const LayoutStructure: React.FC = () => {
       isPageRefreshing,
       setPageRefreshKey: () => {}, // 空实现，因为状态由LayoutProvider管理
       setIsPageRefreshing: () => {}, // 空实现，因为状态由LayoutProvider管理
+      endPageRefresh
     }
   };
 
@@ -137,11 +139,11 @@ const LayoutStructure: React.FC = () => {
           style={styles.pageContent}
         >
           {/* 页面加载状态覆盖层 */}
-          {isPageRefreshing && styles.loadingOverlay && (
-            <div style={styles.loadingOverlay}>
-              <div>页面刷新中...</div>
-            </div>
-          )}
+          <PageRefreshLoading
+            visible={isPageRefreshing}
+            text="页面刷新中..."
+            size="large"
+          />
           
           {/* 直接渲染页面组件 */}
           <Outlet />
