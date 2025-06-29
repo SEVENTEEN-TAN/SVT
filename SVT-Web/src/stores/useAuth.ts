@@ -40,10 +40,7 @@ export const useAuth = () => {
       session.setLoginStep('authenticated');
       
       // 2. 获取用户信息
-      await user.refreshUserInfo();
-      session.setLoginStep('completed');
-      
-      DebugManager.production('完整登录流程完成', { 
+      DebugManager.production('认证流程完成，等待用户选择机构角色', { 
         component: 'useAuth', 
         action: 'login' 
       });
@@ -54,7 +51,7 @@ export const useAuth = () => {
       user.clearUser();
       session.clearSession();
       
-      DebugManager.error('完整登录流程失败', error as Error, { 
+      DebugManager.error('登录流程失败', error as Error, { 
         component: 'useAuth', 
         action: 'login' 
       });
@@ -105,6 +102,9 @@ export const useAuth = () => {
     // 完成会话状态
     session.completeOrgRoleSelection(userDetails);
     
+    // 🔧 设置登录步骤为已完成
+    session.setLoginStep('completed');
+    
     DebugManager.logSensitive('机构角色选择完成', {
       userId: userDetails.userId,
       orgId: userDetails.orgId,
@@ -152,9 +152,13 @@ export const useAuth = () => {
   useEffect(() => {
     const status = checkStateRecovery();
 
-    // 如果状态不一致，尝试自动修复
-    if (auth.isAuthenticated && (!user.user || !session.hasSelectedOrgRole)) {
-      DebugManager.warn('检测到状态不一致，尝试自动修复', status, {
+    // 🔧 只有在非初始登录流程时才进行自动修复
+    // 如果是刚刚认证成功但还没选择机构角色，这是正常状态，不需要修复
+    const isInLoginFlow = auth.isAuthenticated && session.loginStep === 'authenticated' && !session.hasSelectedOrgRole;
+    
+    // 如果状态不一致且不在登录流程中，尝试自动修复
+    if (auth.isAuthenticated && (!user.user || !session.hasSelectedOrgRole) && !isInLoginFlow) {
+      DebugManager.warn('检测到状态不一致，尝试自动修复', { ...status, isInLoginFlow }, {
         component: 'useAuth',
         action: 'autoFix'
       });
@@ -166,7 +170,7 @@ export const useAuth = () => {
         });
       });
     }
-  }, [auth.isAuthenticated, user.user, session.hasSelectedOrgRole]);
+  }, [auth.isAuthenticated, user.user, session.hasSelectedOrgRole, session.loginStep]);
 
   return {
     // 分离的Store访问
