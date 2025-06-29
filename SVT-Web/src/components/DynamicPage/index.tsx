@@ -1,8 +1,8 @@
 import React, { Suspense, lazy, Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import NotFoundPage from '@/pages/Error/NotFoundPage';
-import { useAuthStore } from '@/stores/authStore';
+import NotFoundPage from '../../pages/Error/NotFoundPage';
+import { useAuthStore } from '../../stores/authStore';
 
 // 错误边界组件
 interface ErrorBoundaryState {
@@ -78,10 +78,8 @@ const loadComponent = (componentPath: string): React.LazyExoticComponent<React.C
       return LazyComponent;
     }
 
-
     return null;
   } catch (error) {
-
     return null;
   }
 };
@@ -106,21 +104,17 @@ const createDynamicPageMap = (menuTrees: MenuItem[]) => {
     menus.forEach(menu => {
       if (menu.menuPath) {
         const originalPath = menu.menuPath;
-        const normalizedPath = normalizePath(originalPath);
         const componentPath = pathToComponentPath(originalPath);
-        
+
         if (componentPath) {
           try {
             const Component = loadComponent(componentPath);
             if (Component) {
-              // 同时支持原始路径和标准化路径
+              // 只支持原始路径，严格匹配
               pageMap[originalPath] = Component;
-              pageMap[normalizedPath] = Component;
-              
-
             }
           } catch (error) {
-            // 组件导入失败，跳过
+            console.error(`组件映射失败: ${originalPath}`, error);
           }
         }
       }
@@ -145,16 +139,13 @@ const DynamicPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuthStore();
   const currentPath = location.pathname;
-  const normalizedCurrentPath = normalizePath(currentPath);
 
-  // 递归检查用户是否有访问该路径的权限（支持大小写不敏感匹配）
+  // 递归检查用户是否有访问该路径的权限（严格匹配，区分大小写）
   const checkPermission = (menus: MenuItem[], targetPath: string): boolean => {
-    const normalizedTargetPath = normalizePath(targetPath);
-    
     return menus.some(menu => {
       if (menu.menuPath) {
-        const normalizedMenuPath = normalizePath(menu.menuPath);
-        if (normalizedMenuPath === normalizedTargetPath) {
+        // 严格匹配，区分大小写
+        if (menu.menuPath === targetPath) {
           return true;
         }
       }
@@ -175,8 +166,8 @@ const DynamicPage: React.FC = () => {
   // 基于用户菜单数据创建动态页面映射
   const pageMap = user?.menuTrees ? createDynamicPageMap(user.menuTrees as MenuItem[]) : {};
 
-  // 获取对应的页面组件（支持原始路径和标准化路径）
-  const PageComponent = pageMap[currentPath] || pageMap[normalizedCurrentPath];
+  // 获取对应的页面组件（只支持精确匹配）
+  const PageComponent = pageMap[currentPath];
 
   // 如果无法加载组件，统一显示404页面
   if (!PageComponent) {

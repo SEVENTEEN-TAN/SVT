@@ -132,6 +132,11 @@ public class CodeLibraryCacheUtils {
      * @return String 码值名称
      */
     public static String getCodeName(String codeType, String codeValue) {
+        // 添加null检查，防止NullPointerException
+        if (codeValue == null) {
+            return null;
+        }
+
         List<CodeLibrary> codeLibrary = getCodeLibrary(codeType);
         if (ObjectUtil.isNotEmpty(codeLibrary)) {
             return codeLibrary.stream()

@@ -17,4 +17,23 @@ public interface RoleMenuService extends IService<RoleMenu> {
      * @return 菜单列表
      */
     List<MenuInfo> selectMenuListByRoleId(String roleId);
+
+    /**
+     * 根据角色ID删除角色菜单关联
+     * @param roleId 角色ID
+     */
+    void deleteRoleMenuByRoleId(String roleId);
+
+    /**
+     * 根据菜单ID删除角色菜单关联
+     * @param menuId 菜单ID
+     */
+    void deleteRoleMenuByMenuId(String menuId);
+
+    /**
+     * 批量插入角色菜单关联
+     * @param RoleIdList 角色ID列表
+     * @param menuId 菜单ID
+     */
+    void batchInsertRoleMenu(List<String> RoleIdList, String menuId);
 }

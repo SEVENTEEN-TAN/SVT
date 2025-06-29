@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 编辑菜单DTO
@@ -44,4 +45,7 @@ public class EditMenuDTO implements Serializable {
 
     @Schema(description = "备注", example = "备注")
     private String remark;
+
+    @Schema(description = "关联角色ID列表", example = "000000,000001")
+    private List<String> roleIds;
 }

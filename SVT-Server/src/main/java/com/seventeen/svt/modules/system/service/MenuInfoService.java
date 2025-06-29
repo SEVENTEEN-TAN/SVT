@@ -2,10 +2,7 @@ package com.seventeen.svt.modules.system.service;
 
 import com.mybatisflex.core.service.IService;
 import com.seventeen.svt.common.util.TreeUtils;
-import com.seventeen.svt.modules.system.dto.request.EditMenuDTO;
-import com.seventeen.svt.modules.system.dto.request.GetMenuDetailDTO;
-import com.seventeen.svt.modules.system.dto.request.UpdateMenuSortDTO;
-import com.seventeen.svt.modules.system.dto.request.UpdateMenuStatusDTO;
+import com.seventeen.svt.modules.system.dto.request.*;
 import com.seventeen.svt.modules.system.dto.response.GetMenuDetail;
 import com.seventeen.svt.modules.system.entity.MenuInfo;
 
@@ -46,4 +43,10 @@ public interface MenuInfoService extends IService<MenuInfo> {
      * @return 菜单详情
      */
     GetMenuDetail getMenuDetail(GetMenuDetailDTO getMenuDetailDTO);
+
+    /**
+     * 删除菜单
+     * @param deleteMenuDTO 删除菜单DTO
+     */
+    void deleteMenu(DeleteMenuDTO deleteMenuDTO);
 }

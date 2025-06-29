@@ -24,12 +24,6 @@ public class RoleMenu implements Serializable {
     @Column(value = "role_id", comment = "角色ID")
     private String roleId;
 
-    @Column(value = "status", comment = "状态（0：正常，1：停用）")
-    private String status;
-
-    @Column(value = "del_flag", comment = "删除标志（0：存在，1：删除）", isLogicDelete = true)
-    private String delFlag;
-
     @AutoFill(type = FillType.USER_ID, operation = OperationType.INSERT)
     @Column(value = "create_by", comment = "创建者")
     private String createBy;

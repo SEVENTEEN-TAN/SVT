@@ -36,9 +36,11 @@ export const useTabManager = ({ getTabName }: UseTabManagerProps): TabManagerSta
   useEffect(() => {
     const currentPath = location.pathname;
     const { activeTab } = loadTabsFromStorage();
-    
-    // 如果当前URL与保存的活跃Tab不一致，需要导航到保存的Tab
-    if (currentPath !== '/login' && currentPath !== activeTab && activeTab !== '/') {
+
+    // 只有在特定情况下才进行自动跳转：
+    // 1. 当前路径是根路径 '/' 且有保存的活跃Tab
+    // 2. 避免对有效路径进行自动跳转，让路由系统自然处理404
+    if (currentPath === '/' && activeTab && activeTab !== '/') {
       navigate(activeTab, { replace: true });
     }
   }, [navigate]); // 只在初次加载时执行

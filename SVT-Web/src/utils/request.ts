@@ -5,10 +5,10 @@ import type {
   AxiosError,
   InternalAxiosRequestConfig
 } from 'axios';
-import { AESCryptoUtils, isEncryptedData } from '@/utils/crypto';
-import { useAuthStore } from '@/stores/authStore';
-import { messageManager } from '@/utils/messageManager';
-import { clearStorageOnTokenExpired } from '@/utils/localStorageManager';
+import { AESCryptoUtils, isEncryptedData } from './crypto';
+import { useAuthStore } from '../stores/authStore';
+import { messageManager } from './messageManager';
+import { clearStorageOnTokenExpired } from './localStorageManager';
 
 // 定义响应数据结构
 export interface ApiResponse<T = unknown> {

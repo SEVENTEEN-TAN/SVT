@@ -9,6 +9,10 @@ import {
   SearchOutlined,
   DashboardOutlined,
   HomeOutlined,
+  ApartmentOutlined,
+  SafetyOutlined,
+  CrownOutlined,
+  IdcardOutlined,
 } from '@ant-design/icons';
 import type { MenuItem, PathMaps } from '../types/layout';
 
@@ -37,6 +41,7 @@ export const LAYOUT_CONSTANTS = {
 
 // 图标映射函数
 export const getIcon = (iconName: string): React.ReactNode => {
+  const normalized = (iconName || '').trim().replace(/Outlined$/i, '').toLowerCase();
   const iconMap: Record<string, React.ReactNode> = {
     'setting': React.createElement(SettingOutlined),
     'user': React.createElement(UserOutlined),
@@ -47,8 +52,13 @@ export const getIcon = (iconName: string): React.ReactNode => {
     'search': React.createElement(SearchOutlined),
     'dashboard': React.createElement(DashboardOutlined),
     'home': React.createElement(HomeOutlined),
+    'apartment': React.createElement(ApartmentOutlined),
+    'safety': React.createElement(SafetyOutlined),
+    'crown': React.createElement(CrownOutlined),
+    'idcard': React.createElement(IdcardOutlined),
   };
-  return iconMap[iconName] || React.createElement(MenuOutlined);
+
+  return iconMap[normalized] || React.createElement(MenuOutlined);
 };
 
 // 🔧 动态路径映射生成函数

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Typography, Button, Space } from 'antd';
 import { UserOutlined, ToolOutlined } from '@ant-design/icons';
-import '@/styles/PageContainer.css';
+import '../../../styles/PageContainer.css';
 
 const { Title, Paragraph } = Typography;
 

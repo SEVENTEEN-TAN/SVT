@@ -86,21 +86,8 @@ public class TreeUtils {
          * 状态（0：正常，1：停用）
          * 使用@JsonIgnore避免字段直接序列化，只通过getter方法序列化
          */
-//        @JsonIgnore
         private String status;
 
-        //
-//        /**
-//         * 获取状态显示名称（通过缓存转换）
-//         * 使用@JsonProperty确保此方法的返回值被序列化为"status"字段
-//         */
-//        @JsonProperty("status")
-        public String getStatus() {
-            // 临时返回原始值，用于排查递归问题
-//            return status;
-//            // TODO: 恢复缓存转换逻辑
-             return CodeLibraryCacheUtils.getCodeName("COMMON_STATUS", status);
-        }
         /**
          * 描述
          */

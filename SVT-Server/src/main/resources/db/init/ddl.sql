@@ -240,8 +240,6 @@ DROP TABLE IF EXISTS role_menu;
 CREATE TABLE role_menu (
     menu_id NVARCHAR(32),
     role_id NVARCHAR(32),
-    status CHAR(1) DEFAULT '0',
-    del_flag CHAR(1) DEFAULT '0',
     create_by NVARCHAR(32),
     create_org_id NVARCHAR(32),
     create_time DATETIME DEFAULT GETDATE(),
@@ -258,8 +256,6 @@ EXEC sp_addextendedproperty N'MS_Description', N'菜单角色关联表', N'SCHEM
 -- 添加列注释
 EXEC sp_addextendedproperty N'MS_Description', N'菜单ID', N'SCHEMA', N'dbo', N'TABLE', N'role_menu', N'COLUMN', N'menu_id';
 EXEC sp_addextendedproperty N'MS_Description', N'角色ID', N'SCHEMA', N'dbo', N'TABLE', N'role_menu', N'COLUMN', N'role_id';
-EXEC sp_addextendedproperty N'MS_Description', N'状态（0：正常，1：停用）', N'SCHEMA', N'dbo', N'TABLE', N'role_menu', N'COLUMN', N'status';
-EXEC sp_addextendedproperty N'MS_Description', N'删除标志（0：存在，1：删除）', N'SCHEMA', N'dbo', N'TABLE', N'role_menu', N'COLUMN', N'del_flag';
 EXEC sp_addextendedproperty N'MS_Description', N'创建者', N'SCHEMA', N'dbo', N'TABLE', N'role_menu', N'COLUMN', N'create_by';
 EXEC sp_addextendedproperty N'MS_Description', N'创建者机构ID', N'SCHEMA', N'dbo', N'TABLE', N'role_menu', N'COLUMN', N'create_org_id';
 EXEC sp_addextendedproperty N'MS_Description', N'创建时间', N'SCHEMA', N'dbo', N'TABLE', N'role_menu', N'COLUMN', N'create_time';
@@ -492,8 +488,7 @@ CREATE INDEX idx_user_role_user ON user_role(user_id, status, del_flag);
 CREATE INDEX idx_user_role_role ON user_role(role_id, status, del_flag);
 CREATE INDEX idx_user_org_user ON user_org(user_id, status, del_flag);
 CREATE INDEX idx_user_org_org ON user_org(org_id, status, del_flag);
-CREATE INDEX idx_role_menu_role ON role_menu(role_id, status, del_flag);
-CREATE INDEX idx_role_menu_menu ON role_menu(menu_id, status, del_flag);
+CREATE INDEX idx_role_menu_role ON role_menu(role_id,menu_id);
 CREATE INDEX idx_role_permission_role ON role_permission(role_id, status, del_flag);
 CREATE INDEX idx_role_permission_perm ON role_permission(permission_id, status, del_flag);
 

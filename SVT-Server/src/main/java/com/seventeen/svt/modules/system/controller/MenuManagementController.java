@@ -4,10 +4,7 @@ package com.seventeen.svt.modules.system.controller;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.seventeen.svt.common.response.Result;
 import com.seventeen.svt.common.util.TreeUtils;
-import com.seventeen.svt.modules.system.dto.request.EditMenuDTO;
-import com.seventeen.svt.modules.system.dto.request.GetMenuDetailDTO;
-import com.seventeen.svt.modules.system.dto.request.UpdateMenuSortDTO;
-import com.seventeen.svt.modules.system.dto.request.UpdateMenuStatusDTO;
+import com.seventeen.svt.modules.system.dto.request.*;
 import com.seventeen.svt.modules.system.dto.response.GetMenuDetail;
 import com.seventeen.svt.modules.system.service.MenuInfoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -98,5 +95,18 @@ public class MenuManagementController {
     public Result<?> getMenuDetail(@RequestBody GetMenuDetailDTO getMenuDetailDTO) {
         GetMenuDetail menuDetail = menuInfoServiceImpl.getMenuDetail(getMenuDetailDTO);
         return Result.success(menuDetail);
+    }
+
+    /**
+     * 删除菜单
+     * @param deleteMenuDTO 删除菜单DTO
+     * @return 删除结果
+     */
+    @PostMapping("/delete-menu")
+    @Operation(summary = "删除菜单", description = "删除菜单")
+    @ApiOperationSupport(order = 6)
+    public Result<?> deleteMenu(@RequestBody DeleteMenuDTO deleteMenuDTO) {
+        menuInfoServiceImpl.deleteMenu(deleteMenuDTO);
+        return Result.success();
     }
 }

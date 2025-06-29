@@ -118,19 +118,15 @@ VALUES
 (N'USER008', N'ROLE004', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null);
 
 -- 初始化菜单数据
-INSERT INTO menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)
-VALUES
--- 系统管理
-(N'M001', null, N'系统管理', N'System Management', N'/System', N'setting', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001001', N'M001', N'用户管理', N'User Management', N'/System/User', N'user', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001002', N'M001', N'角色管理', N'Role Management', N'/System/Role', N'team', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001003', N'M001', N'菜单管理', N'Menu Management', N'/System/Menu', N'menu', N'3', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001004', N'M001', N'权限管理', N'Permission Management', N'/System/Permission', N'safety', N'4', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M001005', N'M001', N'机构管理', N'Organization Management', N'/System/Org', N'apartment', N'5', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
--- 业务管理
-(N'M002', null, N'业务管理', N'Business Management', N'/Business', N'shop', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M002001', N'M002', N'业务处理', N'Business Process', N'/Business/Process', N'form', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'M002002', N'M002', N'业务查询', N'Business Query', N'/Business/Query', N'search', N'2', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M001', null, N'系统管理', N'System Management', N'/System', N'setting', N'2', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M001001', N'M001', N'用户管理', N'User Management', N'/System/User', N'user', N'1', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M001002', N'M001', N'角色管理', N'Role Management', N'/System/Role', N'idcard', N'2', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M001003', N'M001', N'菜单管理', N'Menu Management', N'/System/Menu', N'menu', N'3', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M001004', N'M001', N'权限管理', N'Permission Management', N'/System/Permission', N'safety', N'4', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M001005', N'M001', N'机构管理', N'Organization Management', N'/System/Org', N'apartment', N'5', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M002', null, N'业务管理', N'Business Management', N'/Business', N'shop', N'1', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M002001', N'M002', N'业务处理', N'Business Process', N'/Business/Process', N'form', N'1', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
+INSERT INTO [svt-dev].dbo.menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M002002', N'M002', N'业务查询', N'Business Query', N'/Business/Query', N'search', N'2', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);
 
 -- 初始化权限数据
 INSERT INTO permission_info (permission_id, permission_key, permission_name_zh, permission_name_en, permission_group, permission_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)
@@ -179,39 +175,39 @@ VALUES
 (N'admin', N'000000', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null);
 
 -- 初始化角色菜单关联
-INSERT INTO role_menu (role_id, menu_id, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)
+INSERT INTO role_menu (role_id, menu_id, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)
 VALUES
 -- 系统管理员拥有所有菜单
-(N'ROLE001', N'M001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE001', N'M001001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE001', N'M001002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE001', N'M001003', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE001', N'M001004', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE001', N'M001005', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE001', N'M002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE001', N'M002001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE001', N'M002002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M001001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M001002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M001003',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M001004',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M001005',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M002001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE001', N'M002002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
 
 -- 分部管理员拥有部分系统管理和业务管理菜单
-(N'ROLE002', N'M001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE002', N'M001001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE002', N'M001002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE002', N'M001005', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE002', N'M002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE002', N'M002001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE002', N'M002002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE002', N'M001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE002', N'M001001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE002', N'M001002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE002', N'M001005',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE002', N'M002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE002', N'M002001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE002', N'M002002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
 
 -- 支部管理员拥有用户管理和业务管理菜单
-(N'ROLE003', N'M001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE003', N'M001001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE003', N'M002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE003', N'M002001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE003', N'M002002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE003', N'M001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE003', N'M001001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE003', N'M002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE003', N'M002001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE003', N'M002002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
 
 -- 普通用户只有业务管理菜单
-(N'ROLE004', N'M002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE004', N'M002001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'ROLE004', N'M002002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null);
+(N'ROLE004', N'M002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE004', N'M002001',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'ROLE004', N'M002002',  N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null);
 
 -- 初始化角色权限关联
 INSERT INTO role_permission (role_id, permission_id, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)

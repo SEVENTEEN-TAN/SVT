@@ -72,3 +72,11 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* 防止菜单与标签栏文字被选中 */
+.ant-menu,
+.ant-menu *,
+.ant-tabs-nav,
+.ant-tabs-tab {
+  user-select: none;
+}

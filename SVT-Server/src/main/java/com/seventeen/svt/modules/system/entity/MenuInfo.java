@@ -20,7 +20,7 @@ import java.io.Serializable;
 @Data
 public class MenuInfo implements Serializable {
 
-    @DistributedId
+    @DistributedId(prefix = "M")
     @Column(value = "menu_id", comment = "菜单ID")
     private String menuId;
 

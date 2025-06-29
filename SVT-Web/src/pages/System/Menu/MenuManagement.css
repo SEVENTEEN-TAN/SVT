@@ -269,3 +269,10 @@
 .search-collapse .ant-collapse-content {
   transition: all 0.3s ease;
 }
+
+/* 表格单元格内容不换行，超出省略 */
+.tree-table .ant-table-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

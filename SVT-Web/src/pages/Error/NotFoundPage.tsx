@@ -1,7 +1,7 @@
 import React from 'react';
 import { Result, Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import '@/styles/PageContainer.css';
+import '../../styles/PageContainer.css';
 
 const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
