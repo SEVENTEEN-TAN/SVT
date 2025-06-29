@@ -6,13 +6,13 @@ import {
   SafetyOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/stores/useAuth';
 import '@/styles/PageContainer.css';
 
 const { Title, Text } = Typography;
 
 const HomePage: React.FC = () => {
-  const { user } = useAuthStore();
+  const { currentUser: user } = useAuth();
 
   return (
     <div className="page-container-content">

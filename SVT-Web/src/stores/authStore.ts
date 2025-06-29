@@ -1,79 +1,91 @@
+/**
+ * 认证Store - 职责分离版本
+ * 
+ * 职责：
+ * - 只负责纯认证逻辑（token、登录状态、过期时间）
+ * - 简化的登录/登出流程
+ * - Token管理和刷新
+ * - 认证状态持久化
+ * 
+ * @author SVT Team
+ * @since 2025-06-29
+ * @version 2.0.0
+ */
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { tokenManager } from '@/utils/tokenManager';
 import * as authApi from '@/api/auth';
-import type { User, LoginRequest } from '@/types/user';
-import type { UserDetailCache } from '@/types/org-role';
-import { 
-  initializeStorageOnLogin, 
-  clearStorageOnLogout, 
+import type { LoginRequest } from '@/types/user';
+import {
+  initializeStorageOnLogin,
+  clearStorageOnLogout,
   clearStorageOnTokenExpired,
   cleanupLegacyStorage,
-  STORAGE_KEYS 
+  STORAGE_KEYS
 } from '@/utils/localStorageManager';
 import { message } from 'antd';
+import { DebugManager } from '@/utils/debugManager';
 
-// 认证状态接口
+// 纯认证状态接口 - 职责单一
 interface AuthState {
-  // 状态
-  user: User | null;
+  // 认证相关状态
   token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
-  expiryDate: string | null; // 新增：token过期日期
-  hasSelectedOrgRole: boolean; // 新增：是否已选择机构角色
+  expiryDate: string | null;
   
-  // 操作
+  // 认证相关操作
   login: (credentials: LoginRequest) => Promise<void>;
   logout: (options?: { message?: string }) => Promise<void>;
-  clearAuthState: () => void; // 🔧 新增：直接清理状态，不调用API
-  refreshUserInfo: () => Promise<void>;
-  updateUser: (user: Partial<User>) => void;
-  completeOrgRoleSelection: (userDetails: UserDetailCache) => void;
+  clearAuthState: () => void;
+  setToken: (token: string, expiryDate?: string | null) => void;
+  refreshToken: () => Promise<void>;
 }
 
-// 创建认证状态管理
+// 创建纯认证状态管理
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       // 初始状态
-      user: null,
       token: null,
       isAuthenticated: false,
       loading: false,
-      expiryDate: null, // 初始化
-      hasSelectedOrgRole: false, // 初始化
+      expiryDate: null,
 
-      // 登录操作
+      // 登录操作 - 简化版，只处理认证
       login: async (credentials: LoginRequest) => {
         set({ loading: true });
         
         try {
+          DebugManager.log('开始用户登录', { username: credentials.loginId }, { 
+            component: 'authStore', 
+            action: 'login' 
+          });
+          
           // 登录时初始化localStorage
           initializeStorageOnLogin();
           
           // 调用登录API
           const response = await authApi.login(credentials);
-          
-          // 修正：根据后端实际返回的数据结构处理
           const { accessToken } = response;
           
+          // 计算过期时间
           const now = new Date();
           let calculatedExpiryDate: string | null = null;
           if (credentials.rememberMe) {
-            // 如果记住我，设置30天有效期
             now.setDate(now.getDate() + 30);
             calculatedExpiryDate = now.toISOString();
           }
 
-          // 🔧 token通过Zustand persist自动存储，无需单独存储到localStorage
+          // 存储过期时间到localStorage
           if (calculatedExpiryDate) {
             localStorage.setItem(STORAGE_KEYS.EXPIRY_DATE, calculatedExpiryDate);
           } else {
-            localStorage.removeItem(STORAGE_KEYS.EXPIRY_DATE); // 如果不记住，确保清除旧的有效期
+            localStorage.removeItem(STORAGE_KEYS.EXPIRY_DATE);
           }
           
-          // 更新状态 - 暂时不设置用户信息，需要额外获取
+          // 更新认证状态
           set({
             token: accessToken,
             isAuthenticated: true,
@@ -84,28 +96,38 @@ export const useAuthStore = create<AuthState>()(
           // 启动Token管理器
           tokenManager.start();
 
-          // 🔧 移除自动调用refreshUserInfo，让登录页面控制机构角色选择流程
-          // await get().refreshUserInfo(); // 删除这一行
+          DebugManager.production('用户登录成功', { 
+            component: 'authStore', 
+            action: 'login' 
+          });
           
         } catch (error) {
           set({ loading: false });
+          DebugManager.error('用户登录失败', error as Error, { 
+            component: 'authStore', 
+            action: 'login' 
+          });
           throw error;
         }
       },
 
-      // 退出登录
+      // 退出登录 - 简化版，只处理认证清理
       logout: async (options?: { message?: string }) => {
         const state = get();
         
-        // 🔧 防止重复调用logout
+        // 防止重复调用logout
         if (state.loading || !state.isAuthenticated) {
-          console.log('登出已在进行中或用户未认证，跳过重复执行');
+          DebugManager.log('登出操作跳过', {
+            reason: state.loading ? '已在进行中' : '用户未认证',
+            loading: state.loading,
+            isAuthenticated: state.isAuthenticated
+          }, { component: 'authStore', action: 'logout' });
           return;
         }
 
         const initialMessage = options?.message;
 
-        // 只有在被动强制登出时（即有错误消息传入时）才显示提示
+        // 被动强制登出时显示提示
         if (initialMessage) {
           message.warning(initialMessage);
         }
@@ -113,15 +135,18 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true });
         
         try {
-          // 🔧 优化：只有在token有效时才调用后端logout
+          // 只有在token有效时才调用后端logout
           if (state.token && state.isAuthenticated) {
             try {
               await authApi.logout();
             } catch (error: unknown) {
-              // 如果是401错误，说明token已失效，不需要显示错误
               const axiosError = error as { response?: { status?: number } };
               if (axiosError.response?.status !== 401) {
-                console.warn('调用后端logout接口失败:', error);
+                DebugManager.warn('调用后端logout接口失败', error as Error, {
+                  component: 'authStore',
+                  action: 'logout',
+                  statusCode: axiosError.response?.status
+                });
                 if (!initialMessage) {
                   message.error('退出登录失败，请稍后重试');
                 }
@@ -129,27 +154,17 @@ export const useAuthStore = create<AuthState>()(
             }
           }
         } finally {
-          // 停止Token管理器
-          tokenManager.stop();
-          
-          // 清理localStorage
-          clearStorageOnLogout();
-          
-          // 重置状态
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            loading: false,
-            expiryDate: null,
-            hasSelectedOrgRole: false,
-          });
+          // 清理认证状态
+          get().clearAuthState();
         }
       },
 
-      // 🔧 直接清理认证状态，不调用logout API（用于verify-user-status 401的情况）
+      // 直接清理认证状态
       clearAuthState: () => {
-        console.log('🔧 直接清理认证状态（不调用logout API）');
+        DebugManager.log('清理认证状态', { skipLogoutAPI: true }, { 
+          component: 'authStore', 
+          action: 'clearAuthState' 
+        });
         
         // 停止Token管理器
         tokenManager.stop();
@@ -157,167 +172,92 @@ export const useAuthStore = create<AuthState>()(
         // 清理localStorage
         clearStorageOnTokenExpired();
         
-        // 重置状态
+        // 重置认证状态
         set({
-          user: null,
           token: null,
           isAuthenticated: false,
           loading: false,
           expiryDate: null,
-          hasSelectedOrgRole: false,
         });
       },
 
-      // 刷新用户信息
-      refreshUserInfo: async () => {
-        const { token } = get();
-        if (!token) return;
+      // 设置Token - 新增方法，供其他Store使用
+      setToken: (token: string, expiryDate?: string | null) => {
+        set({
+          token,
+          isAuthenticated: true,
+          expiryDate: expiryDate || null
+        });
         
+        if (expiryDate) {
+          localStorage.setItem(STORAGE_KEYS.EXPIRY_DATE, expiryDate);
+        }
+        
+        // 启动Token管理器
+        tokenManager.start();
+      },
+
+      // 刷新Token
+      refreshToken: async () => {
+        const { token } = get();
+        if (!token) {
+          throw new Error('No token available for refresh');
+        }
+
         try {
-          console.log('🔄 开始获取用户信息...');
+          const response = await authApi.refreshToken();
+          const { accessToken } = response;
           
-          // 1. 获取用户机构列表
-          const orgResponse = await authApi.getUserOrgList();
-          console.log('📋 用户机构列表:', orgResponse);
+          set({ token: accessToken });
           
-          // 2. 获取用户角色列表  
-          const roleResponse = await authApi.getUserRoleList();
-          console.log('🎭 用户角色列表:', roleResponse);
-          
-          // 3. 选择第一个机构和角色获取详情 (实际项目中可能需要用户选择)
-          if (orgResponse.orgInfos.length > 0 && roleResponse.userRoleInfos.length > 0) {
-            const selectedOrg = orgResponse.orgInfos[0];
-            const selectedRole = roleResponse.userRoleInfos[0];
-            
-            console.log('🎯 选择机构和角色:', { 
-              orgId: selectedOrg.orgId, 
-              orgName: selectedOrg.orgNameZh,
-              roleId: selectedRole.roleId,
-              roleName: selectedRole.roleNameZh 
-            });
-            
-            // 4. 获取用户详情
-            const userDetails = await authApi.getUserDetails({
-              orgId: selectedOrg.orgId,
-              roleId: selectedRole.roleId
-            });
-            
-            console.log('✅ 获取用户详情成功:', userDetails);
-            
-                         // 5. 转换格式并保存用户信息
-             const user: User = {
-               id: parseInt(userDetails.userId, 10),
-               username: userDetails.userNameZh,
-               email: '', // 后端没有提供，设为空
-               roles: [selectedRole.roleCode],
-               permissions: userDetails.permissionKeys,
-               serverVersion: userDetails.serverVersion,
-               createTime: userDetails.loginTime,
-               updateTime: new Date().toISOString(),
-             };
-            
-            set({ user });
-            localStorage.setItem('user', JSON.stringify(user));
-            
-            console.log('💾 用户信息已保存到状态和localStorage:', user);
-            
-          } else {
-            console.warn('⚠️ 未找到有效的机构或角色信息');
-          }
+          DebugManager.log('Token刷新成功', undefined, { 
+            component: 'authStore', 
+            action: 'refreshToken' 
+          });
           
         } catch (error) {
-          console.error('❌ 刷新用户信息失败:', error);
-          // 如果刷新失败，可能token已过期，执行logout
-          await get().logout();
-        }
-      },
-
-      // 更新用户信息
-      updateUser: (userData: Partial<User>) => {
-        const { user } = get();
-        if (user) {
-          const updatedUser = { ...user, ...userData };
-          set({ user: updatedUser });
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        }
-      },
-
-      // 完成机构角色选择
-      completeOrgRoleSelection: (userDetails: UserDetailCache) => {
-        // 🔧 将UserDetailCache完整信息整合到User中，避免重复存储
-        const user: User = {
-          id: userDetails.userId,
-          username: userDetails.userNameZh,
-          email: '', // 后端没有提供，设为空
-          roles: [userDetails.roleId],
-          permissions: userDetails.permissionKeys,
-          serverVersion: userDetails.serverVersion,
-          createTime: userDetails.loginTime,
-          updateTime: new Date().toISOString(),
+          DebugManager.error('Token刷新失败', error as Error, { 
+            component: 'authStore', 
+            action: 'refreshToken' 
+          });
           
-          // 🔧 整合userDetails的所有独有信息
-          userNameEn: userDetails.userNameEn,
-          orgId: userDetails.orgId,
-          orgNameZh: userDetails.orgNameZh,
-          orgNameEn: userDetails.orgNameEn,
-          roleId: userDetails.roleId,
-          roleNameZh: userDetails.roleNameZh,
-          roleNameEn: userDetails.roleNameEn,
-          loginIp: userDetails.loginIp,
-          menuTrees: userDetails.menuTrees,
-        };
-
-        // 🔧 不再单独存储userDetails，所有信息都在user中了
-
-        // 更新状态
-        set({ 
-          user: user,
-          hasSelectedOrgRole: true
-        });
+          // Token刷新失败，清理状态
+          get().clearAuthState();
+          throw error;
+        }
       },
     }),
     {
-      name: 'auth-storage', // localStorage key
-      // 只持久化token、user和选择状态，不持久化loading状态
+      name: 'auth-storage', // 使用标准的storage key
+      // 只持久化认证相关状态
       partialize: (state: AuthState) => ({
         token: state.token,
-        user: state.user,
         isAuthenticated: state.isAuthenticated,
-        hasSelectedOrgRole: state.hasSelectedOrgRole,
+        expiryDate: state.expiryDate,
       }),
       // 从localStorage恢复状态时的处理
       onRehydrateStorage: () => (state: AuthState | undefined) => {
-        // 🔧 清理遗留的缓存数据
         cleanupLegacyStorage();
         
         if (state) {
-          // 🔧 通过Zustand persist自动恢复状态，检查是否已完成机构角色选择
           if (state.token && state.isAuthenticated) {
-                       if (state.hasSelectedOrgRole && state.user) {
-             // 🔧 用户已完成机构角色选择，启动Token管理器
-             tokenManager.start();
-           } else {
-                           // 🔧 用户还没选择机构角色就刷新页面，清除状态
-             console.log('用户未完成机构角色选择，清除登录状态');
-             localStorage.removeItem('expiryDate');
-             cleanupLegacyStorage();
-             
-             state.token = null;
-             state.user = null;
-             state.isAuthenticated = false;
-             state.hasSelectedOrgRole = false;
-           }
-         } else {
-           // 清除本地状态
-           state.token = null;
-           state.user = null;
-           state.isAuthenticated = false;
-           state.hasSelectedOrgRole = false;
-           localStorage.removeItem('expiryDate');
-           cleanupLegacyStorage();
-         }
+            // 恢复认证状态时启动Token管理器
+            tokenManager.start();
+            
+            DebugManager.log('认证状态已恢复', { 
+              hasToken: !!state.token,
+              isAuthenticated: state.isAuthenticated 
+            }, { component: 'authStore', action: 'onRehydrateStorage' });
+          } else {
+            // 清除无效状态
+            state.token = null;
+            state.isAuthenticated = false;
+            state.expiryDate = null;
+            localStorage.removeItem(STORAGE_KEYS.EXPIRY_DATE);
+            cleanupLegacyStorage();
+          }
         }
       },
     }
   )
-); 
+);

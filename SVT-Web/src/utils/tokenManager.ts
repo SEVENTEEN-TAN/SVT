@@ -141,10 +141,7 @@ class TokenManager {
       message.warning('您已超过5分钟未操作，系统已自动登出');
       
       // 🔧 直接清除本地状态，不调用后端logout API（因为token已失效）
-      authStore.token = null;
-      authStore.user = null;
-      authStore.isAuthenticated = false;
-      authStore.hasSelectedOrgRole = false;
+      authStore.clearAuthState();
       
       // 清除localStorage
       localStorage.removeItem('expiryDate');

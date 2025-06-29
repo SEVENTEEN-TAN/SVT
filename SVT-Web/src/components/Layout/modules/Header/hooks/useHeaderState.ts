@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/stores/useAuth';
 import type { UserInfo, PathMaps } from '../../../shared/types/layout';
 
 interface UseHeaderStateReturn {
@@ -11,7 +11,7 @@ interface UseHeaderStateReturn {
 // 头部状态管理Hook
 export const useHeaderState = (pathMaps: PathMaps): UseHeaderStateReturn => {
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { currentUser: user, logout } = useAuth();
 
   const currentPath = location.pathname;
 
@@ -24,4 +24,4 @@ export const useHeaderState = (pathMaps: PathMaps): UseHeaderStateReturn => {
     user: user as UserInfo | null,
     handleLogout,
   };
-}; 
+};

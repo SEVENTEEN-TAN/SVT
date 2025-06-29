@@ -8,7 +8,7 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/stores/useAuth';
 import { getUserOrgList, getUserRoleList, getUserDetails } from '@/api/auth';
 import type { LoginRequest } from '@/types/user';
 import type { UserOrgInfo, UserRoleInfo, OrgRoleSelectForm } from '@/types/org-role';
@@ -21,7 +21,7 @@ const { Option } = Select;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, logout, loading, isAuthenticated, hasSelectedOrgRole, completeOrgRoleSelection } = useAuthStore();
+  const { login, logout, isLoading: loading, isAuthenticated, hasSelectedOrgRole, completeOrgRoleSelection } = useAuth();
   const [form] = Form.useForm();
   const [orgRoleForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();

@@ -2,7 +2,7 @@ import React from 'react';
 import { Layout, Spin, Typography } from 'antd';
 import { Outlet } from 'react-router-dom';
 import { useUserStatus } from '@/hooks/useUserStatus';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/stores/useAuth';
 import Sidebar from './modules/Sidebar';
 import Header from './modules/Header';
 import TabSystem from './modules/TabSystem';
@@ -16,7 +16,7 @@ import type { MenuItem } from './shared/types/layout';
 const { Text } = Typography;
 
 const BasicLayout: React.FC = () => {
-  const { user } = useAuthStore();
+  const { currentUser: user } = useAuth();
   const { loading } = useUserStatus();
   
   // 使用各模块的Hook

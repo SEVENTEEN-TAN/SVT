@@ -2,7 +2,7 @@ import React, { Suspense, lazy, Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import NotFoundPage from '../../pages/Error/NotFoundPage';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../stores/useAuth';
 
 // 错误边界组件
 interface ErrorBoundaryState {
@@ -130,15 +130,33 @@ const createDynamicPageMap = (menuTrees: MenuItem[]) => {
   return pageMap;
 };
 
-// 简单的占位组件，不显示任何加载状态
-// 因为BasicLayout已经提供了全局的页面刷新状态
-const PageLoading: React.FC = () => null;
+// 页面加载组件 - 等待用户数据恢复
+const PageLoading: React.FC = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '200px'
+  }}>
+    <div>正在加载页面...</div>
+  </div>
+);
 
 // 动态页面组件
 const DynamicPage: React.FC = () => {
   const location = useLocation();
-  const { user } = useAuthStore();
+  const { currentUser: user, isAuthenticated, isLoading } = useAuth();
   const currentPath = location.pathname;
+
+  // 如果用户未认证，显示404
+  if (!isAuthenticated) {
+    return <NotFoundPage />;
+  }
+
+  // 如果正在加载或用户数据还没有恢复，显示加载状态
+  if (isLoading || !user) {
+    return <PageLoading />;
+  }
 
   // 递归检查用户是否有访问该路径的权限（严格匹配，区分大小写）
   const checkPermission = (menus: MenuItem[], targetPath: string): boolean => {
