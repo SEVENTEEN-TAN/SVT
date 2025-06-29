@@ -66,7 +66,7 @@ const TabBar: React.FC<TabBarProps> = ({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('关闭Tab:', tab.key); // 调试日志
+              // Tab关闭操作
               onTabRemove(tab.key);
             }}
           />

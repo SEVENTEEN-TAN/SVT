@@ -71,6 +71,7 @@ const TabContextMenu: React.FC<TabContextMenuProps> = ({
 
   return (
     <div
+      data-context-menu
       style={{
         ...STYLES.CONTEXT_MENU.container,
         left: position.x,

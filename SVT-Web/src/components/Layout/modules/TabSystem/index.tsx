@@ -1,22 +1,18 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import TabBar from './TabBar';
 import TabContextMenu from './TabContextMenu';
-import { useTabManager } from './hooks/useTabManager';
 import type { ContextMenuState, TabManagerState, PageRefreshState } from '../../shared/types/layout';
 
 interface TabSystemProps {
   collapsed: boolean;
   getTabName: (path: string) => string;
   /**
-   * 可选的外部 TabManager，用于在父组件和本组件间共享状态。
-   * 如果未提供，则组件内部将自行创建 TabManager 实例。
+   * TabManager状态，由父组件LayoutProvider提供
    */
-  tabManager?: TabManagerState & PageRefreshState;
+  tabManager: TabManagerState & PageRefreshState;
 }
 
-const TabSystem: React.FC<TabSystemProps> = ({ collapsed, getTabName, tabManager: externalTabManager }) => {
-  // 若父组件传入 tabManager，则复用；否则自行创建
-  const tabManager = externalTabManager ?? useTabManager({ getTabName });
+const TabSystem: React.FC<TabSystemProps> = ({ collapsed, getTabName, tabManager }) => {
 
   // 右键菜单状态
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState>({
@@ -31,36 +27,42 @@ const TabSystem: React.FC<TabSystemProps> = ({ collapsed, getTabName, tabManager
   // 处理右键菜单
   const handleTabContextMenu = useCallback((e: React.MouseEvent, tabKey: string) => {
     e.preventDefault();
-    setContextMenuState({
-      ...contextMenuState,
+    setContextMenuState(prev => ({
+      ...prev,
       visible: true,
       position: { x: e.clientX, y: e.clientY },
       tabKey,
-    });
-  }, [contextMenuState]);
+    }));
+  }, []);
 
   // 关闭右键菜单
   const closeContextMenu = useCallback(() => {
-    setContextMenuState({
-      ...contextMenuState,
+    setContextMenuState(prev => ({
+      ...prev,
       visible: false,
-    });
-  }, [contextMenuState]);
+    }));
+  }, []);
 
   // 监听点击事件，关闭右键菜单
   useEffect(() => {
-    const handleClickOutside = () => {
+    const handleClickOutside = (e: MouseEvent) => {
       if (contextMenuState.visible) {
-        closeContextMenu();
+        // 检查点击是否在右键菜单外部
+        const target = e.target as HTMLElement;
+        const contextMenu = document.querySelector('[data-context-menu]');
+
+        if (!contextMenu || !contextMenu.contains(target)) {
+          closeContextMenu();
+        }
       }
     };
 
-    if (contextMenuState.visible) {
-      document.addEventListener('click', handleClickOutside);
-      return () => {
-        document.removeEventListener('click', handleClickOutside);
-      };
-    }
+    // 使用mousedown事件，确保在click之前触发
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [contextMenuState.visible, closeContextMenu]);
 
   return (
