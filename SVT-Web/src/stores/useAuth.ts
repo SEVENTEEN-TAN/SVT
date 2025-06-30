@@ -154,10 +154,17 @@ export const useAuth = () => {
 
     // 🔧 只有在非初始登录流程时才进行自动修复
     // 如果是刚刚认证成功但还没选择机构角色，这是正常状态，不需要修复
-    const isInLoginFlow = auth.isAuthenticated && session.loginStep === 'authenticated' && !session.hasSelectedOrgRole;
-    
+    const isInLoginFlow = auth.isAuthenticated &&
+                         (session.loginStep === 'initial' ||
+                          session.loginStep === 'authenticated' ||
+                          session.loginStep === 'org-role-selection') &&
+                         !session.hasSelectedOrgRole;
+
     // 如果状态不一致且不在登录流程中，尝试自动修复
-    if (auth.isAuthenticated && (!user.user || !session.hasSelectedOrgRole) && !isInLoginFlow) {
+    // 只有在loginStep为'completed'但缺少用户数据时才修复
+    if (auth.isAuthenticated &&
+        session.loginStep === 'completed' &&
+        (!user.user || !session.hasSelectedOrgRole)) {
       DebugManager.warn('检测到状态不一致，尝试自动修复', { ...status, isInLoginFlow }, {
         component: 'useAuth',
         action: 'autoFix'

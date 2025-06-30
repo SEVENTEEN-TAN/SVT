@@ -120,9 +120,9 @@ export const useUserStore = create<UserState>()(
           });
           
           // 3. 选择第一个机构和角色获取详情
-          if (orgResponse.orgInfos.length > 0 && roleResponse.userRoleInfos.length > 0) {
-            const selectedOrg = orgResponse.orgInfos[0];
-            const selectedRole = roleResponse.userRoleInfos[0];
+          if (orgResponse.data.length > 0 && roleResponse.data.length > 0) {
+            const selectedOrg = orgResponse.data[0];
+            const selectedRole = roleResponse.data[0];
             
             DebugManager.logSensitive('选择机构和角色', {
               orgId: selectedOrg.orgId,

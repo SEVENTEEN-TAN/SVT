@@ -1,9 +1,12 @@
 package com.seventeen.svt.modules.system.service;
 
 import com.mybatisflex.core.service.IService;
+import com.seventeen.svt.common.page.PageQuery;
+import com.seventeen.svt.common.page.PageResult;
 import com.seventeen.svt.common.util.TreeUtils;
 import com.seventeen.svt.modules.system.dto.request.*;
-import com.seventeen.svt.modules.system.dto.response.GetMenuDetail;
+import com.seventeen.svt.modules.system.dto.response.MenuDetailDTO;
+import com.seventeen.svt.modules.system.dto.response.RoleDetailDTO;
 import com.seventeen.svt.modules.system.entity.MenuInfo;
 
 import java.util.List;
@@ -33,20 +36,27 @@ public interface MenuInfoService extends IService<MenuInfo> {
 
     /**
      * 编辑菜单
-     * @param editMenuDTO 编辑菜单DTO
+     * @param insertOrUpdateMenuDTO 编辑菜单DTO
      */
-    void editMenu(EditMenuDTO editMenuDTO);
+    void insertOrUpdateMenu(InsertOrUpdateMenuDTO insertOrUpdateMenuDTO);
 
     /**
      * 获取菜单详情
-     * @param getMenuDetailDTO 菜单ID
+     * @param menuIdStr 菜单ID
      * @return 菜单详情
      */
-    GetMenuDetail getMenuDetail(GetMenuDetailDTO getMenuDetailDTO);
+    MenuDetailDTO getMenuDetail(String menuIdStr);
 
     /**
      * 删除菜单
-     * @param deleteMenuDTO 删除菜单DTO
+     * @param menuIdStr 删除菜单DTO
      */
-    void deleteMenu(DeleteMenuDTO deleteMenuDTO);
+    void deleteMenu(String menuIdStr);
+
+    /**
+     * 获取菜单角色列表
+     * @param menuIdConditionDTO 菜单ID
+     * @return 菜单角色列表
+     */
+    List<RoleDetailDTO> getMenuRoleList(MenuConditionDTO menuIdConditionDTO);
 }

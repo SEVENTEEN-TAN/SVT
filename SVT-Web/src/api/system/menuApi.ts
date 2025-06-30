@@ -39,8 +39,22 @@ export interface GetMenuDetailRequest {
   menuId: string;
 }
 
+// 获取菜单关联角色列表请求参数
+export interface GetMenuRoleListRequest {
+  menuId: string;
+}
+
+
+
 // 角色关联信息
 export interface MenuRoleInfo {
+  roleId: string;
+  roleNameZh: string;
+  roleNameEn: string;
+}
+
+// 菜单角色项
+export interface MenuRoleItem {
   roleId: string;
   roleNameZh: string;
   roleNameEn: string;
@@ -94,7 +108,7 @@ class MenuApiService {
    * @param menuData 菜单数据
    */
   async editMenu(menuData: EditMenuRequest): Promise<any> {
-    return api.post<any>(`${this.prefix}/edit-menu`, menuData);
+    return api.post<any>(`${this.prefix}/insert-or-update-menu`, menuData);
   }
 
   /**
@@ -104,6 +118,15 @@ class MenuApiService {
   async getMenuDetail(menuId: string): Promise<MenuDetailResponse> {
     const request: GetMenuDetailRequest = { menuId };
     return api.post<MenuDetailResponse>(`${this.prefix}/get-menu-detail`, request);
+  }
+
+  /**
+   * 获取菜单关联的角色列表
+   * @param menuId 菜单ID
+   */
+  async getMenuRoleList(menuId: string): Promise<MenuRoleItem[]> {
+    const request: GetMenuRoleListRequest = { menuId };
+    return api.post<MenuRoleItem[]>(`${this.prefix}/get-menu-role-list`, request);
   }
 
   /**

@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class EditMenuDTO implements Serializable {
+public class InsertOrUpdateMenuDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 

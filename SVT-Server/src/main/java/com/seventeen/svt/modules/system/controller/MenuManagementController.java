@@ -4,8 +4,12 @@ package com.seventeen.svt.modules.system.controller;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.seventeen.svt.common.response.Result;
 import com.seventeen.svt.common.util.TreeUtils;
-import com.seventeen.svt.modules.system.dto.request.*;
-import com.seventeen.svt.modules.system.dto.response.GetMenuDetail;
+import com.seventeen.svt.modules.system.dto.request.InsertOrUpdateMenuDTO;
+import com.seventeen.svt.modules.system.dto.request.MenuConditionDTO;
+import com.seventeen.svt.modules.system.dto.request.UpdateMenuSortDTO;
+import com.seventeen.svt.modules.system.dto.request.UpdateMenuStatusDTO;
+import com.seventeen.svt.modules.system.dto.response.MenuDetailDTO;
+import com.seventeen.svt.modules.system.dto.response.RoleDetailDTO;
 import com.seventeen.svt.modules.system.service.MenuInfoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,6 +40,7 @@ public class MenuManagementController {
 
     /**
      * 获取菜单树
+     *
      * @return 菜单树
      */
     @PostMapping("/get-all-menu-tree")
@@ -48,6 +53,7 @@ public class MenuManagementController {
 
     /**
      * 更新菜单状态
+     *
      * @param updateMenuStatusDTO 更新菜单状态DTO
      * @return 更新结果
      */
@@ -61,6 +67,7 @@ public class MenuManagementController {
 
     /**
      * 更新菜单排序
+     *
      * @return 更新结果
      */
     @PostMapping("/update-menu-sort")
@@ -73,40 +80,57 @@ public class MenuManagementController {
 
     /**
      * 新增/编辑菜单
-     * @param editMenuDTO 编辑菜单DTO
+     *
+     * @param insertOrUpdateMenuDTO 编辑菜单DTO
      * @return 新增/编辑结果
      */
-    @PostMapping("/edit-menu")
+    @PostMapping("/insert-or-update-menu")
     @Operation(summary = "新增/编辑菜单", description = "新增/编辑菜单,如果有menuId则编辑，否则新增")
     @ApiOperationSupport(order = 4)
-    public Result<?> editMenu(@RequestBody EditMenuDTO editMenuDTO) {
-        menuInfoServiceImpl.editMenu(editMenuDTO);
+    public Result<?> insertOrUpdateMenu(@RequestBody InsertOrUpdateMenuDTO insertOrUpdateMenuDTO) {
+        menuInfoServiceImpl.insertOrUpdateMenu(insertOrUpdateMenuDTO);
         return Result.success();
     }
 
     /**
      * 获取指定菜单详情
-     * @param getMenuDetailDTO 菜单ID
+     *
+     * @param menuConditionDTO 菜单ID
      * @return 菜单详情
      */
     @PostMapping("/get-menu-detail")
     @Operation(summary = "获取指定菜单详情", description = "获取指定菜单详情")
     @ApiOperationSupport(order = 5)
-    public Result<?> getMenuDetail(@RequestBody GetMenuDetailDTO getMenuDetailDTO) {
-        GetMenuDetail menuDetail = menuInfoServiceImpl.getMenuDetail(getMenuDetailDTO);
+    public Result<?> getMenuDetail(@RequestBody MenuConditionDTO menuConditionDTO) {
+        MenuDetailDTO menuDetail = menuInfoServiceImpl.getMenuDetail(menuConditionDTO.getMenuId());
         return Result.success(menuDetail);
     }
 
     /**
+     * 获取菜单关联的角色
+     *
+     * @param menuIdConditionDTO 菜单ID
+     * @return 菜单关联的角色
+     */
+    @PostMapping("/get-menu-role-list")
+    @Operation(summary = "获取菜单关联的角色", description = "获取菜单关联的角色")
+    @ApiOperationSupport(order = 6)
+    public Result<?> getMenuRoleList(@RequestBody MenuConditionDTO menuIdConditionDTO) {
+        List<RoleDetailDTO> roleListPage = menuInfoServiceImpl.getMenuRoleList(menuIdConditionDTO);
+        return Result.success(roleListPage);
+    }
+
+    /**
      * 删除菜单
-     * @param deleteMenuDTO 删除菜单DTO
+     *
+     * @param menuConditionDTO 删除菜单DTO
      * @return 删除结果
      */
     @PostMapping("/delete-menu")
     @Operation(summary = "删除菜单", description = "删除菜单")
-    @ApiOperationSupport(order = 6)
-    public Result<?> deleteMenu(@RequestBody DeleteMenuDTO deleteMenuDTO) {
-        menuInfoServiceImpl.deleteMenu(deleteMenuDTO);
+    @ApiOperationSupport(order = 7)
+    public Result<?> deleteMenu(@RequestBody MenuConditionDTO menuConditionDTO) {
+        menuInfoServiceImpl.deleteMenu(menuConditionDTO.getMenuId());
         return Result.success();
     }
 }

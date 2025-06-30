@@ -21,7 +21,8 @@ const { Option } = Select;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, logout, isLoading: loading, isAuthenticated, hasSelectedOrgRole, completeOrgRoleSelection } = useAuth();
+  const authHook = useAuth();
+  const { login, logout, isLoading: loading, isAuthenticated, hasSelectedOrgRole, completeOrgRoleSelection } = authHook;
   const [form] = Form.useForm();
   const [orgRoleForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
@@ -40,24 +41,39 @@ const LoginPage: React.FC = () => {
     try {
       setOrgRoleLoading(true);
       setShowOrgRoleModal(true);
-      
+
+      // 等待token设置完成
+      let currentToken = authHook.auth.token;
+      let retryCount = 0;
+      const maxRetries = 10; // 最多等待1秒
+
+      while (!currentToken && retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        currentToken = authHook.auth.token;
+        retryCount++;
+      }
+
+      if (!currentToken) {
+        throw new Error('无法获取认证token，请重新登录');
+      }
+
       // 并行加载机构和角色列表
-      const [orgResponse, roleResponse] = await Promise.all([
+      const [orgList, roleList] = await Promise.all([
         getUserOrgList(),
         getUserRoleList()
       ]);
-      
-      setOrgList(orgResponse.orgInfos || []);
-      setRoleList(roleResponse.userRoleInfos || []);
-      
+
+      setOrgList(orgList || []);
+      setRoleList(roleList || []);
+
       // 如果只有一个机构或角色，自动选择
-      if (orgResponse.orgInfos?.length === 1) {
-        orgRoleForm.setFieldValue('orgId', orgResponse.orgInfos[0].orgId);
+      if (orgList?.length === 1) {
+        orgRoleForm.setFieldValue('orgId', orgList[0].orgId);
       }
-      if (roleResponse.userRoleInfos?.length === 1) {
-        orgRoleForm.setFieldValue('roleId', roleResponse.userRoleInfos[0].roleId);
+      if (roleList?.length === 1) {
+        orgRoleForm.setFieldValue('roleId', roleList[0].roleId);
       }
-      
+
     } catch (error) {
       console.error('加载机构角色列表失败:', error);
       messageApi.error('加载机构和角色列表失败，将退出登录');
@@ -68,22 +84,29 @@ const LoginPage: React.FC = () => {
     } finally {
       setOrgRoleLoading(false);
     }
-  }, [navigate, orgRoleForm, messageApi]);
+  }, [navigate, orgRoleForm, logout]);
 
   useEffect(() => {
     if (isAuthenticated && !hasSelectedOrgRole) {
       // 🔧 只有登录成功且未选择机构角色时才显示弹窗
-      showOrgRoleSelection();
+      // 添加小延迟确保token已经设置
+      const timer = setTimeout(() => {
+        showOrgRoleSelection();
+      }, 100);
+      return () => clearTimeout(timer);
     } else if (isAuthenticated && hasSelectedOrgRole) {
       // 🔧 已完成选择，直接跳转
-                navigate('/home', { replace: true });
+      navigate('/home', { replace: true });
     }
-  }, [isAuthenticated, hasSelectedOrgRole, navigate, showOrgRoleSelection]);
+  }, [isAuthenticated, hasSelectedOrgRole, navigate]);
 
   const handleSubmit = async (values: LoginRequest) => {
     try {
       await login(values);
-      messageApi.success('验证成！请选择登录机构与角色....');
+
+
+
+      messageApi.success('验证成功！请选择登录机构与角色....');
       // 登录成功后，useEffect会自动显示机构角色选择弹窗
     } catch (error: unknown) {
       const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || '登录失败，请检查您的凭据';
@@ -258,7 +281,7 @@ const LoginPage: React.FC = () => {
         width={500}
         centered
         maskClosable={false}
-        destroyOnHidden
+        destroyOnClose
       >
         <div style={{ padding: '20px 0' }}>
           <Paragraph style={{ marginBottom: 24, color: '#666' }}>

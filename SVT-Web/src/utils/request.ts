@@ -31,21 +31,64 @@ const request: AxiosInstance = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    // 🔧 从Zustand persist获取token（优先）或localStorage（兼容旧数据）
+    // 🔧 优先从authStore获取token（实时），然后从localStorage获取（兼容）
     let token = null;
+
+    // 1. 优先从authStore获取实时token
     try {
-      const authStorage = localStorage.getItem('auth-storage');
-      if (authStorage) {
-        const parsed = JSON.parse(authStorage);
-        token = parsed.state?.token;
-      }
-    } catch {
-      // 兜底：从单独的localStorage获取（兼容旧数据）
-      token = localStorage.getItem('token');
+      const authState = useAuthStore.getState();
+      token = authState.token;
+      DebugManager.log('从authStore获取token', { hasToken: !!token, url: config.url }, {
+        component: 'request',
+        action: 'getToken'
+      });
+    } catch (error) {
+      DebugManager.warn('从authStore获取token失败', error, {
+        component: 'request',
+        action: 'getToken'
+      });
     }
-    
+
+    // 2. 如果authStore中没有token，从localStorage获取
+    if (!token) {
+      try {
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage);
+          token = parsed.state?.token;
+          DebugManager.log('从localStorage获取token', { hasToken: !!token, url: config.url }, {
+            component: 'request',
+            action: 'getTokenFromStorage'
+          });
+        }
+      } catch {
+        // 兜底：从单独的localStorage获取（兼容旧数据）
+        token = localStorage.getItem('token');
+        DebugManager.log('从兜底localStorage获取token', { hasToken: !!token, url: config.url }, {
+          component: 'request',
+          action: 'getTokenFallback'
+        });
+      }
+    }
+
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+      DebugManager.log('Token已添加到请求头', {
+        url: config.url,
+        tokenPrefix: token.substring(0, 20) + '...'
+      }, {
+        component: 'request',
+        action: 'addToken'
+      });
+    } else {
+      DebugManager.warn('未能添加token到请求头', {
+        hasToken: !!token,
+        hasHeaders: !!config.headers,
+        url: config.url
+      }, {
+        component: 'request',
+        action: 'addToken'
+      });
     }
     
     // 添加请求时间戳（避免缓存）

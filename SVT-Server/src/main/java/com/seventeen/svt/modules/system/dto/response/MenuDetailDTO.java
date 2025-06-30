@@ -12,13 +12,12 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GetMenuDetail implements Serializable {
+public class MenuDetailDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -123,21 +122,4 @@ public class GetMenuDetail implements Serializable {
     @Schema(description = "备注")
     private String remark;
 
-    @Schema(description = "角色菜单关联列表")
-    private List<RoleInfo> roleList;
-
-    @Data
-    public static class RoleInfo implements Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Schema(description = "角色ID")
-        private String roleId;
-
-        @Schema(description = "角色中文名称")
-        private String roleNameZh;
-
-        @Schema(description = "角色英文名称")
-        private String roleNameEn;
-    }
 }

@@ -87,13 +87,19 @@ export interface UserDetailCache {
 }
 
 // API响应类型
-export interface GetUserOrgResponse {
-  orgInfos: UserOrgInfo[];
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+  success: boolean;
+  timestamp: number;
+  traceId: string;
 }
 
-export interface GetUserRoleResponse {
-  userRoleInfos: UserRoleInfo[];
-}
+// API响应类型
+export interface GetUserOrgResponse extends ApiResponse<UserOrgInfo[]>{}
+
+export interface GetUserRoleResponse extends  ApiResponse<UserRoleInfo[]>{}
 
 export interface GetUserDetailsRequest {
   orgId: string;

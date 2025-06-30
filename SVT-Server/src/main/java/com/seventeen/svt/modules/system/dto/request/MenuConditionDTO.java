@@ -7,12 +7,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 获取菜单详情请求DTO
+ * 删除菜单DTO
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GetMenuDetailDTO {
+public class MenuConditionDTO {
 
     /**
      * 菜单ID

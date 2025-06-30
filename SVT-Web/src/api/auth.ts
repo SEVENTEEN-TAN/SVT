@@ -3,11 +3,13 @@
  */
 import { api, request } from '@/utils/request';
 import type { LoginRequest, LoginResponse, User } from '@/types/user';
-import type { 
-  GetUserOrgResponse, 
-  GetUserRoleResponse, 
-  GetUserDetailsRequest, 
-  UserDetailCache 
+import type {
+  UserOrgInfo,
+  UserRoleInfo,
+  GetUserOrgResponse,
+  GetUserRoleResponse,
+  GetUserDetailsRequest,
+  UserDetailCache
 } from '@/types/org-role';
 
 /**
@@ -72,8 +74,8 @@ export const validateToken = async (): Promise<boolean> => {
  * 获取当前用户的机构列表
  * @returns 机构列表
  */
-export const getUserOrgList = async (): Promise<GetUserOrgResponse> => {
-  const response = await api.get<GetUserOrgResponse>('/auth/get-user-org-list');
+export const getUserOrgList = async (): Promise<UserOrgInfo[]> => {
+  const response = await api.get<UserOrgInfo[]>('/auth/get-user-org-list');
   return response;
 };
 
@@ -81,8 +83,8 @@ export const getUserOrgList = async (): Promise<GetUserOrgResponse> => {
  * 获取当前用户的角色列表
  * @returns 角色列表
  */
-export const getUserRoleList = async (): Promise<GetUserRoleResponse> => {
-  const response = await api.get<GetUserRoleResponse>('/auth/get-user-role');
+export const getUserRoleList = async (): Promise<UserRoleInfo[]> => {
+  const response = await api.get<UserRoleInfo[]>('/auth/get-user-role');
   return response;
 };
 

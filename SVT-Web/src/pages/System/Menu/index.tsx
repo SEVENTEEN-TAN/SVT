@@ -16,16 +16,18 @@ import {
     Spin,
     Switch,
     Table,
+    Tag,
     TreeSelect,
     Tooltip,
     Typography,
-    Tag,
     App,
 } from 'antd';
 import {DownOutlined, PlusOutlined, UpOutlined, ExclamationCircleFilled} from '@ant-design/icons';
 import '@/styles/PageContainer.css';
 import './MenuManagement.css';
 import { useLayout } from '@/components/Layout/core/LayoutProvider';
+
+const { Text } = Typography;
 
 import type { ColumnsType } from 'antd/es/table';
 import menuApi from '@/api/system/menuApi';
@@ -143,6 +145,11 @@ const MenuManagement: React.FC = () => {
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('view');
   const [currentRecord, setCurrentRecord] = useState<MenuNode | null>(null);
   const [roles, setRoles] = useState<ActiveRole[]>([]);
+
+  // 角色关联相关状态
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+  const [roleLoading, setRoleLoading] = useState(false);
+
   // 表单实例
   const [drawerForm] = Form.useForm();
 
@@ -376,20 +383,37 @@ const MenuManagement: React.FC = () => {
     setDrawerMode('view');
     setCurrentRecord(record);
     setDrawerOpen(true);
-    setDrawerLoading(true); // 开始加载
+    setDrawerLoading(true);
+    setRoleLoading(true);
 
     try {
-      // 从后端获取详细信息
-      const detailData = await menuApi.getMenuDetail(record.menuId);
+      // 并行加载菜单详情和角色关联信息
+      const [detailData, menuRoles] = await Promise.all([
+        menuApi.getMenuDetail(record.menuId),
+        menuApi.getMenuRoleList(record.menuId)
+      ]);
+
       const frontendData = transformBackendTreeToFrontend([detailData])[0];
-      drawerForm.setFieldsValue({ ...frontendData, roleIds: detailData.roleList?.map(r=>r.roleId) });
+      const selectedRoleIds = menuRoles.map(role => role.roleId);
+
+      // 设置表单数据
+      drawerForm.setFieldsValue({
+        ...frontendData,
+        roleIds: selectedRoleIds
+      });
+
+      // 设置角色选择状态
+      setSelectedRoleIds(selectedRoleIds);
+
     } catch (error: any) {
       console.error('获取菜单详情失败:', error);
       message.error(error.message || '获取菜单详情失败');
       // 如果获取失败，使用当前记录的数据
       drawerForm.setFieldsValue(record);
+      setSelectedRoleIds([]);
     } finally {
-      setDrawerLoading(false); // 结束加载
+      setDrawerLoading(false);
+      setRoleLoading(false);
     }
   };
 
@@ -401,20 +425,37 @@ const MenuManagement: React.FC = () => {
     setDrawerMode('edit');
     setCurrentRecord(record);
     setDrawerOpen(true);
-    setDrawerLoading(true); // 开始加载
+    setDrawerLoading(true);
+    setRoleLoading(true);
 
     try {
-      // 从后端获取详细信息用于编辑
-      const detailData = await menuApi.getMenuDetail(record.menuId);
+      // 并行加载菜单详情和角色关联信息
+      const [detailData, menuRoles] = await Promise.all([
+        menuApi.getMenuDetail(record.menuId),
+        menuApi.getMenuRoleList(record.menuId)
+      ]);
+
       const frontendData = transformBackendTreeToFrontend([detailData])[0];
-      drawerForm.setFieldsValue({ ...frontendData, roleIds: detailData.roleList?.map(r=>r.roleId) });
+      const selectedRoleIds = menuRoles.map(role => role.roleId);
+
+      // 设置表单数据
+      drawerForm.setFieldsValue({
+        ...frontendData,
+        roleIds: selectedRoleIds
+      });
+
+      // 设置角色选择状态
+      setSelectedRoleIds(selectedRoleIds);
+
     } catch (error: any) {
       console.error('获取菜单详情失败:', error);
       message.error(error.message || '获取菜单详情失败');
       // 如果获取失败，使用当前记录的数据
       drawerForm.setFieldsValue(record);
+      setSelectedRoleIds([]);
     } finally {
-      setDrawerLoading(false); // 结束加载
+      setDrawerLoading(false);
+      setRoleLoading(false);
     }
   };
 
@@ -424,8 +465,12 @@ const MenuManagement: React.FC = () => {
     setCurrentRecord(record);
     setDrawerOpen(true);
     setDrawerLoading(false); // 新增模式不需要加载
+    setRoleLoading(false);
+
+    // 重置表单和角色状态
     drawerForm.resetFields();
     drawerForm.setFieldsValue({ parentId: record.menuId, menuSort: getNextSort(record.menuId) });
+    setSelectedRoleIds([]);
   };
 
   // 处理删除
@@ -470,15 +515,18 @@ const MenuManagement: React.FC = () => {
         values.menuSort = getNextSort(values.parentId ?? null);
       }
 
-      // 转换为后端数据格式
-      const backendData: any = { ...transformFrontendToBackend(values), roleIds: values.roleIds };
+      // 转换为后端数据格式（包含roleIds）
+      const backendData: any = {
+        ...transformFrontendToBackend(values),
+        roleIds: selectedRoleIds
+      };
 
       // 若为编辑模式，补充 menuId
       if (drawerMode === 'edit' && currentRecord?.menuId) {
         backendData.menuId = currentRecord.menuId;
       }
 
-      // 调用后端API
+      // 调用后端API保存菜单信息（包含角色关联）
       await menuApi.editMenu(backendData);
 
       setDrawerOpen(false);
@@ -505,6 +553,8 @@ const MenuManagement: React.FC = () => {
   const flat = useMemo(() => treeToFlat(tree), [tree]);
 
   const getRoleLabel = (id:string)=> roles.find(r=>r.roleId===id)?.roleNameZh || id;
+
+
 
   const getNextSort = (parentId: string | null | undefined): number => {
     if (parentId) {
@@ -548,8 +598,12 @@ const MenuManagement: React.FC = () => {
                   setCurrentRecord(null);
                   setDrawerOpen(true);
                   setDrawerLoading(false); // 新增模式不需要加载
+                  setRoleLoading(false);
+
+                  // 重置表单和角色状态
                   drawerForm.resetFields();
                   drawerForm.setFieldsValue({ menuSort: getNextSort(null) });
+                  setSelectedRoleIds([]);
                 }}
               >
                 新增菜单
@@ -633,16 +687,21 @@ const MenuManagement: React.FC = () => {
               </Select>
             </Form.Item>
 
-            {drawerMode==='view' ? (
+            {drawerMode === 'view' ? (
               <Form.Item label="关联角色" shouldUpdate={(prev:any,cur:any)=>prev.roleIds!==cur.roleIds}>
                 {({ getFieldValue }) => {
                   const roleIds = getFieldValue('roleIds') || [];
                   return (
                     <Space wrap>
                       {roleIds.length === 0 && <span style={{ color: '#999' }}>未选择</span>}
-                      {roleIds.map((id: string) => (
-                        <Tag key={id} title={roles.find(r => r.roleId === id)?.roleNameEn}>{getRoleLabel(id)}</Tag>
-                      ))}
+                      {roleIds.map((id: string) => {
+                        const role = roles.find(r => r.roleId === id);
+                        return role ? (
+                          <Tag key={id} title={role.roleNameEn}>
+                            {role.roleNameZh}
+                          </Tag>
+                        ) : null;
+                      })}
                     </Space>
                   );
                 }}
@@ -651,8 +710,21 @@ const MenuManagement: React.FC = () => {
               <Form.Item name="roleIds" label="关联角色">
                 <Select
                   mode="multiple"
-                  placeholder="请选择角色"
-                  options={roles.map(r => ({ label: `${r.roleNameZh} · ${r.roleNameEn}`, value: r.roleId }))}
+                  allowClear
+                  showSearch
+                  filterOption={(input, option) => {
+                    const label = option?.label?.toString() || '';
+                    return label.toLowerCase().includes(input.toLowerCase());
+                  }}
+                  style={{ width: '100%' }}
+                  placeholder="请选择关联角色"
+                  loading={roleLoading}
+                  options={roles.map(role => ({
+                    label: `${role.roleNameZh} · ${role.roleNameEn}`,
+                    value: role.roleId,
+                    title: role.roleNameEn
+                  }))}
+                  onChange={(value) => setSelectedRoleIds(value || [])}
                 />
               </Form.Item>
             )}
@@ -677,6 +749,8 @@ const MenuManagement: React.FC = () => {
           </div>
         )}
       </Drawer>
+
+
     </div>
   );
 };
