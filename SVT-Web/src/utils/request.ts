@@ -12,6 +12,8 @@ import { modalManager } from './modalManager';
 import { clearStorageOnTokenExpired } from './localStorageManager';
 import { DebugManager } from './debugManager';
 import { sessionManager } from './sessionManager';
+import { tokenManager } from './tokenManager';
+import { secureStorage } from './secureStorage';
 
 // 定义响应数据结构
 export interface ApiResponse<T = unknown> {
@@ -33,40 +35,40 @@ const request: AxiosInstance = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    // 🔧 优先从authStore获取token（实时），然后从localStorage获取（兼容）
+    // 🔐 使用安全存储获取Token - 支持内存优先、安全存储兜底
     let token = null;
 
-    // 1. 优先从authStore获取实时token
     try {
-      const authState = useAuthStore.getState();
-      token = authState.token;
-      DebugManager.log('从authStore获取token', { hasToken: !!token, url: config.url }, {
+      // 使用TokenManager统一获取Token（内存优先，安全存储兜底）
+      token = await tokenManager.getCurrentToken();
+      
+      DebugManager.log('🔐 [请求拦截器] 从TokenManager获取Token', { 
+        hasToken: !!token, 
+        url: config.url,
+        tokenLength: token?.length 
+      }, {
         component: 'request',
-        action: 'getToken'
+        action: 'getSecureToken'
       });
     } catch (error) {
-      DebugManager.warn('从authStore获取token失败', error, {
+      DebugManager.warn('🔐 [请求拦截器] 从安全存储获取Token失败', error, {
         component: 'request',
-        action: 'getToken'
+        action: 'getSecureToken'
       });
-    }
-
-    // 2. 如果authStore中没有token，从localStorage获取
-    if (!token) {
+      
+      // 兜底：尝试从authStore直接获取
       try {
-        const authStorage = localStorage.getItem('auth-storage');
-        if (authStorage) {
-          const parsed = JSON.parse(authStorage);
-          token = parsed.state?.token;
-          DebugManager.log('从localStorage获取token', { hasToken: !!token, url: config.url }, {
-            component: 'request',
-            action: 'getTokenFromStorage'
-          });
-        }
-      } catch {
-        // 兜底：从单独的localStorage获取（兼容旧数据）
-        token = localStorage.getItem('token');
-        DebugManager.log('从兜底localStorage获取token', { hasToken: !!token, url: config.url }, {
+        const authState = useAuthStore.getState();
+        token = authState.token;
+        DebugManager.log('🔧 [请求拦截器] 兜底从authStore获取Token', { 
+          hasToken: !!token, 
+          url: config.url 
+        }, {
+          component: 'request',
+          action: 'getTokenFallback'
+        });
+      } catch (fallbackError) {
+        DebugManager.error('🔧 [请求拦截器] 兜底获取Token也失败', fallbackError as Error, {
           component: 'request',
           action: 'getTokenFallback'
         });

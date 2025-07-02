@@ -1,5 +1,6 @@
-import { message } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
+import { secureStorage } from '@/utils/secureStorage';
+import { DebugManager } from '@/utils/debugManager';
 
 /**
  * Token管理工具类 - 简化版本
@@ -31,8 +32,42 @@ class TokenManager {
 
   /**
    * 获取当前Token
+   * 优先从authStore获取，如果没有则从安全存储获取
    */
-  getCurrentToken(): string | null {
+  async getCurrentToken(): Promise<string | null> {
+    const authStore = useAuthStore.getState();
+    
+    // 优先从内存状态获取
+    if (authStore.token) {
+      return authStore.token;
+    }
+    
+    // 如果内存没有，尝试从安全存储获取
+    try {
+      const secureToken = await secureStorage.getToken();
+      if (secureToken) {
+        DebugManager.log('🔐 [TokenManager] 从安全存储恢复Token', { 
+          tokenLength: secureToken.length 
+        }, { 
+          component: 'TokenManager', 
+          action: 'getCurrentToken' 
+        });
+        return secureToken;
+      }
+    } catch (error) {
+      DebugManager.error('从安全存储获取Token失败', error as Error, { 
+        component: 'TokenManager', 
+        action: 'getCurrentToken' 
+      });
+    }
+    
+    return null;
+  }
+
+  /**
+   * 获取当前Token（同步版本，用于向后兼容）
+   */
+  getCurrentTokenSync(): string | null {
     const authStore = useAuthStore.getState();
     return authStore.token;
   }
@@ -40,8 +75,16 @@ class TokenManager {
   /**
    * 检查是否有Token（不验证有效性）
    */
-  hasToken(): boolean {
-    const token = this.getCurrentToken();
+  async hasToken(): Promise<boolean> {
+    const token = await this.getCurrentToken();
+    return !!token;
+  }
+
+  /**
+   * 检查是否有Token（同步版本）
+   */
+  hasTokenSync(): boolean {
+    const token = this.getCurrentTokenSync();
     return !!token;
   }
 
@@ -51,6 +94,13 @@ class TokenManager {
   clearToken(): void {
     const authStore = useAuthStore.getState();
     authStore.clearAuthState();
+    
+    // 清理安全存储
+    secureStorage.removeToken();
+    DebugManager.log('🔐 [TokenManager] Token已从安全存储清除', {}, { 
+      component: 'TokenManager', 
+      action: 'clearToken' 
+    });
   }
 
   // 以下方法保留用于向后兼容，但不再使用JWT解析
