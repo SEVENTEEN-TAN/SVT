@@ -1,557 +1,540 @@
-# Schema 配置规范
+# Schema配置规范
 
-## 📋 Info页面配置
+基于实际代码分析的SVT-Web前端数据模型与表单配置规范。
 
-### 基础结构
-```json
-{
-  "pageType": "info",
-  "title": "用户信息",
-  "api": {
-    "load": "/api/users/{id}",
-    "save": "/api/users/{id}",
-    "create": "/api/users"
-  },
-  "layout": {
-    "columns": 2,
-    "labelAlign": "right",
-    "size": "middle"
-  },
-  "fields": []
+## 1. 概述
+
+SVT-Web采用TypeScript接口定义数据模型，使用Ant Design表单组件进行数据验证和展示。本文档规范了项目中数据模型定义、表单配置、数据转换等相关标准。
+
+### 1.1 核心原则
+
+- **类型安全**: 使用TypeScript接口确保类型安全
+- **手动配置**: 表单和表格通过代码显式配置
+- **统一规范**: 遵循一致的命名和结构约定
+- **数据转换**: 前后端数据格式转换标准化
+
+### 1.2 技术选型
+
+- **类型定义**: TypeScript接口
+- **表单验证**: Ant Design Form内置验证
+- **数据展示**: Ant Design Table
+- **状态管理**: Zustand + TypeScript
+
+## 2. 数据模型定义
+
+### 2.1 接口命名规范
+
+```typescript
+// 实体模型 - 使用名词
+interface User {
+  id: string;
+  username: string;
+  status: '0' | '1';
+}
+
+// 查询参数 - 使用Query后缀
+interface UserQuery extends BaseQuery {
+  username?: string;
+  status?: string;
+}
+
+// 创建/更新DTO - 使用DTO后缀
+interface CreateUserDTO {
+  username: string;
+  password: string;
+}
+
+interface UpdateUserDTO {
+  id: string;
+  username?: string;
+  status?: string;
 }
 ```
 
-### 字段配置
+### 2.2 通用基础类型
 
-#### 文本输入
-```json
-{
-  "key": "username",
-  "label": "用户名",
-  "type": "input",
-  "required": true,
-  "placeholder": "请输入用户名",
-  "maxLength": 50,
-  "rules": [
-    {
-      "pattern": "^[a-zA-Z0-9_]{3,20}$",
-      "message": "用户名只能包含字母、数字、下划线，长度3-20位"
+```typescript
+// 基础查询参数
+interface BaseQuery {
+  page?: number;
+  size?: number;
+  sort?: string;
+}
+
+// API响应格式
+interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+  timestamp: number;
+}
+
+// 分页数据
+interface PageData<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+```
+
+### 2.3 枚举类型定义
+
+```typescript
+// 使用字面量类型而非enum
+type Status = '0' | '1';  // 0-禁用 1-启用
+type MenuType = '0' | '1' | '2';  // 0-目录 1-菜单 2-按钮
+
+// 枚举映射对象
+const STATUS_MAP = {
+  '0': { text: '禁用', color: 'error' },
+  '1': { text: '启用', color: 'success' }
+} as const;
+```
+
+## 3. 表单配置规范
+
+### 3.1 表单实例创建
+
+```typescript
+import { Form } from 'antd';
+
+function MyComponent() {
+  const [form] = Form.useForm();
+  
+  // 表单初始化
+  useEffect(() => {
+    if (editData) {
+      form.setFieldsValue(editData);
     }
-  ]
+  }, [editData, form]);
+  
+  return (
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={handleSubmit}
+    >
+      {/* 表单项 */}
+    </Form>
+  );
 }
 ```
 
-#### 下拉选择（静态数据）
-```json
-{
-  "key": "status",
-  "label": "状态",
-  "type": "select",
-  "required": true,
-  "placeholder": "请选择状态",
-  "dataSource": {
-    "type": "static",
-    "options": [
-      { "label": "启用", "value": 1 },
-      { "label": "禁用", "value": 0 }
-    ]
-  }
-}
-```
+### 3.2 表单项配置
 
-#### 下拉选择（API数据）
-```json
-{
-  "key": "companyId",
-  "label": "公司",
-  "type": "select",
-  "required": true,
-  "dataSource": {
-    "type": "api",
-    "url": "/api/companies/options",
-    "method": "GET",
-    "responseMapping": {
-      "labelField": "name",
-      "valueField": "id",
-      "dataPath": "data"
-    },
-    "cache": {
-      "enabled": true,
-      "duration": 300
-    }
-  }
-}
-```
+```typescript
+// 基础输入框
+<Form.Item
+  name="username"
+  label="用户名"
+  rules={[
+    { required: true, message: '请输入用户名' },
+    { min: 3, max: 20, message: '用户名长度应为3-20个字符' },
+    { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线' }
+  ]}
+>
+  <Input placeholder="请输入用户名" />
+</Form.Item>
 
-#### 字段依赖
-```json
-{
-  "key": "departmentId",
-  "label": "部门",
-  "type": "select",
-  "required": true,
-  "dataSource": {
-    "type": "api",
-    "url": "/api/departments/options",
-    "dependencies": {
-      "watch": ["companyId"],
-      "url": "/api/departments/options?companyId={companyId}"
-    },
-    "responseMapping": {
-      "labelField": "name",
-      "valueField": "id"
-    }
-  }
-}
-```
-
-## 📊 List页面配置
-
-### 基础结构
-```json
-{
-  "pageType": "list",
-  "title": "用户列表",
-  "api": {
-    "list": "/api/users",
-    "delete": "/api/users/{id}",
-    "batchDelete": "/api/users/batch"
-  },
-  "search": {
-    "enabled": true,
-    "fields": []
-  },
-  "table": {
-    "columns": [],
-    "pagination": true,
-    "selection": true,
-    "actions": []
-  },
-  "toolbar": {
-    "actions": []
-  }
-}
-```
-
-### 搜索配置
-```json
-{
-  "search": {
-    "enabled": true,
-    "layout": "inline",
-    "fields": [
-      {
-        "key": "username",
-        "label": "用户名",
-        "type": "input",
-        "placeholder": "用户名模糊搜索"
-      },
-      {
-        "key": "status",
-        "label": "状态",
-        "type": "select",
-        "dataSource": {
-          "type": "static",
-          "options": [
-            { "label": "全部", "value": "" },
-            { "label": "启用", "value": 1 },
-            { "label": "禁用", "value": 0 }
-          ]
-        }
-      }
-    ]
-  }
-}
-```
-
-### 表格列配置
-```json
-{
-  "table": {
-    "columns": [
-      {
-        "key": "username",
-        "title": "用户名",
-        "width": 120,
-        "fixed": "left"
-      },
-      {
-        "key": "email",
-        "title": "邮箱",
-        "width": 200
-      },
-      {
-        "key": "status",
-        "title": "状态",
-        "width": 80,
-        "render": {
-          "type": "tag",
-          "mapping": {
-            "1": { "color": "green", "text": "启用" },
-            "0": { "color": "red", "text": "禁用" }
-          }
-        }
-      },
-      {
-        "key": "createTime",
-        "title": "创建时间",
-        "width": 180,
-        "render": {
-          "type": "date",
-          "format": "YYYY-MM-DD HH:mm:ss"
-        }
-      }
-    ]
-  }
-}
-```
-
-### 操作按钮配置
-```json
-{
-  "toolbar": {
-    "actions": [
-      {
-        "key": "add",
-        "label": "新增",
-        "type": "primary",
-        "icon": "PlusOutlined",
-        "action": {
-          "type": "navigate",
-          "path": "/users/add"
-        }
-      },
-      {
-        "key": "batchDelete",
-        "label": "批量删除",
-        "type": "danger",
-        "icon": "DeleteOutlined",
-        "action": {
-          "type": "api",
-          "api": "/api/users/batch",
-          "method": "DELETE",
-          "confirm": {
-            "title": "确认删除",
-            "content": "确定要删除选中的用户吗？"
-          }
-        },
-        "permission": "user:delete"
-      }
-    ]
-  }
-}
-```
-
-### 行操作配置
-```json
-{
-  "table": {
-    "actions": [
-      {
-        "key": "edit",
-        "label": "编辑",
-        "type": "link",
-        "action": {
-          "type": "navigate",
-          "path": "/users/edit/{id}"
-        },
-        "permission": "user:edit"
-      },
-      {
-        "key": "delete",
-        "label": "删除",
-        "type": "link",
-        "danger": true,
-        "action": {
-          "type": "api",
-          "api": "/api/users/{id}",
-          "method": "DELETE",
-          "confirm": {
-            "title": "确认删除",
-            "content": "确定要删除用户 {username} 吗？"
-          }
-        },
-        "permission": "user:delete"
-      }
-    ]
-  }
-}
-```
-
-## 🎨 组件类型规范
-
-### 基础组件
-```json
-// 输入框
-{ "type": "input", "placeholder": "提示文字", "maxLength": 100 }
+// 下拉选择
+<Form.Item
+  name="status"
+  label="状态"
+  rules={[{ required: true, message: '请选择状态' }]}
+>
+  <Select placeholder="请选择状态">
+    <Select.Option value="1">启用</Select.Option>
+    <Select.Option value="0">禁用</Select.Option>
+  </Select>
+</Form.Item>
 
 // 数字输入
-{ "type": "number", "min": 0, "max": 999, "precision": 2 }
-
-// 多行文本
-{ "type": "textarea", "rows": 4, "maxLength": 500 }
-
-// 密码框
-{ "type": "password", "minLength": 6 }
-
-// 日期选择
-{ "type": "datePicker", "format": "YYYY-MM-DD", "showTime": false }
-
-// 日期范围
-{ "type": "dateRange", "format": "YYYY-MM-DD" }
-
-// 开关
-{ "type": "switch", "checkedValue": 1, "uncheckedValue": 0 }
-
-// 文件上传
-{
-  "type": "upload",
-  "accept": ".jpg,.png,.pdf",
-  "maxSize": 5,
-  "maxCount": 1,
-  "action": "/api/upload"
-}
+<Form.Item
+  name="sort"
+  label="排序"
+  rules={[
+    { required: true, message: '请输入排序值' },
+    { type: 'number', min: 0, max: 999, message: '排序值应在0-999之间' }
+  ]}
+>
+  <InputNumber min={0} max={999} precision={0} />
+</Form.Item>
 ```
 
-### 高级组件
-```json
-// 级联选择
-{
-  "type": "cascader",
-  "dataSource": {
-    "type": "api",
-    "url": "/api/areas/tree"
-  },
-  "fieldNames": {
-    "label": "name",
-    "value": "code",
-    "children": "children"
+### 3.3 表单验证规则
+
+```typescript
+// 自定义验证函数
+const validatePassword = (_, value) => {
+  if (!value) {
+    return Promise.reject(new Error('请输入密码'));
   }
-}
+  if (value.length < 8) {
+    return Promise.reject(new Error('密码长度至少8位'));
+  }
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
+    return Promise.reject(new Error('密码必须包含大小写字母和数字'));
+  }
+  return Promise.resolve();
+};
 
-// 树形选择
-{
-  "type": "treeSelect",
-  "dataSource": {
-    "type": "api",
-    "url": "/api/departments/tree"
-  },
-  "multiple": false,
-  "showSearch": true
-}
-
-// 富文本编辑器
-{
-  "type": "editor",
-  "height": 300,
-  "toolbar": ["bold", "italic", "underline", "link", "image"]
-}
+// 使用自定义验证
+<Form.Item
+  name="password"
+  label="密码"
+  rules={[{ validator: validatePassword }]}
+>
+  <Input.Password />
+</Form.Item>
 ```
 
-## 🔧 数据源配置
+### 3.4 表单提交处理
 
-### API数据源
-```json
-{
-  "dataSource": {
-    "type": "api",
-    "url": "/api/endpoint",
-    "method": "GET",
-    "headers": {
-      "Content-Type": "application/json"
-    },
-    "params": {
-      "pageSize": 100
-    },
-    "responseMapping": {
-      "labelField": "name",
-      "valueField": "id",
-      "dataPath": "data.records"
-    },
-    "cache": {
-      "enabled": true,
-      "duration": 300,
-      "key": "custom_cache_key"
-    },
-    "dependencies": {
-      "watch": ["parentId"],
-      "url": "/api/endpoint?parentId={parentId}",
-      "debounce": 300
+```typescript
+const handleSubmit = async (values: CreateUserDTO) => {
+  try {
+    // 数据转换
+    const requestData = transformFormData(values);
+    
+    // API调用
+    const response = await userApi.create(requestData);
+    
+    if (response.code === 200) {
+      message.success('创建成功');
+      form.resetFields();
+      onSuccess?.();
     }
+  } catch (error) {
+    message.error('操作失败');
   }
-}
+};
 ```
 
-### 静态数据源
-```json
-{
-  "dataSource": {
-    "type": "static",
-    "options": [
-      { "label": "选项1", "value": "1" },
-      { "label": "选项2", "value": "2" }
-    ]
-  }
-}
-```
+## 4. 表格配置规范
 
-## 📏 验证规则
+### 4.1 列定义
 
-### 内置验证
-```json
-{
-  "required": true,
-  "minLength": 3,
-  "maxLength": 20,
-  "min": 0,
-  "max": 100,
-  "pattern": "^[0-9]+$",
-  "email": true,
-  "url": true,
-  "number": true
-}
-```
+```typescript
+import { ColumnsType } from 'antd/es/table';
 
-### 自定义验证
-```json
-{
-  "rules": [
-    {
-      "pattern": "^1[3-9]\\d{9}$",
-      "message": "请输入正确的手机号码"
-    },
-    {
-      "validator": "checkUniqueUsername",
-      "message": "用户名已存在"
-    }
-  ]
-}
-```
-
-## 🎯 权限控制
-
-### 字段权限
-```json
-{
-  "key": "salary",
-  "label": "薪资",
-  "type": "number",
-  "permission": {
-    "view": "user:salary:view",
-    "edit": "user:salary:edit"
-  }
-}
-```
-
-### 操作权限
-```json
-{
-  "key": "delete",
-  "label": "删除",
-  "permission": "user:delete",
-  "action": {
-    "type": "api",
-    "api": "/api/users/{id}",
-    "method": "DELETE"
-  }
-}
-```
-
-## 📱 响应式配置
-
-### 布局配置
-```json
-{
-  "layout": {
-    "columns": {
-      "xs": 1,
-      "sm": 1,
-      "md": 2,
-      "lg": 3,
-      "xl": 4
-    },
-    "gutter": {
-      "xs": 16,
-      "sm": 16,
-      "md": 24,
-      "lg": 32
-    }
-  }
-}
-```
-
-## 🚀 使用示例
-
-### 完整的用户信息页配置
-```json
-{
-  "pageType": "info",
-  "title": "用户信息",
-  "api": {
-    "load": "/api/users/{id}",
-    "save": "/api/users/{id}",
-    "create": "/api/users"
+const columns: ColumnsType<User> = [
+  {
+    title: '用户名',
+    dataIndex: 'username',
+    key: 'username',
+    width: 150,
+    ellipsis: true,
   },
-  "layout": {
-    "columns": 2,
-    "labelAlign": "right"
+  {
+    title: '状态',
+    dataIndex: 'status',
+    key: 'status',
+    width: 100,
+    render: (status: Status) => (
+      <Tag color={STATUS_MAP[status].color}>
+        {STATUS_MAP[status].text}
+      </Tag>
+    ),
   },
-  "fields": [
-    {
-      "key": "username",
-      "label": "用户名",
-      "type": "input",
-      "required": true,
-      "colSpan": 1,
-      "rules": [
-        {
-          "pattern": "^[a-zA-Z0-9_]{3,20}$",
-          "message": "用户名格式不正确"
-        }
-      ]
-    },
-    {
-      "key": "email",
-      "label": "邮箱",
-      "type": "input",
-      "required": true,
-      "colSpan": 1,
-      "rules": [{ "email": true }]
-    },
-    {
-      "key": "companyId",
-      "label": "公司",
-      "type": "select",
-      "required": true,
-      "colSpan": 1,
-      "dataSource": {
-        "type": "api",
-        "url": "/api/companies/options",
-        "responseMapping": {
-          "labelField": "name",
-          "valueField": "id"
-        }
+  {
+    title: '创建时间',
+    dataIndex: 'createTime',
+    key: 'createTime',
+    width: 180,
+    render: (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
+  },
+  {
+    title: '操作',
+    key: 'action',
+    width: 150,
+    fixed: 'right',
+    render: (_, record) => (
+      <Space>
+        <Button type="link" onClick={() => handleEdit(record)}>
+          编辑
+        </Button>
+        <Button type="link" danger onClick={() => handleDelete(record)}>
+          删除
+        </Button>
+      </Space>
+    ),
+  },
+];
+```
+
+### 4.2 表格配置
+
+```typescript
+<Table
+  columns={columns}
+  dataSource={dataList}
+  rowKey="id"
+  loading={loading}
+  pagination={{
+    current: pagination.current,
+    pageSize: pagination.pageSize,
+    total: pagination.total,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total) => `共 ${total} 条`,
+    onChange: handlePageChange,
+  }}
+  scroll={{ x: 'max-content' }}
+/>
+```
+
+## 5. 数据转换规范
+
+### 5.1 前后端字段映射
+
+```typescript
+// 后端到前端的转换
+export function transformMenuFromAPI(apiMenu: any): MenuNode {
+  return {
+    menuId: apiMenu.menu_id,
+    parentId: apiMenu.parent_id,
+    menuNameZh: apiMenu.menu_name_zh,
+    menuNameEn: apiMenu.menu_name_en,
+    menuPath: apiMenu.menu_path,
+    menuIcon: apiMenu.menu_icon,
+    menuSort: apiMenu.menu_sort,
+    status: apiMenu.status,
+    createTime: apiMenu.create_time,
+  };
+}
+
+// 前端到后端的转换
+export function transformMenuToAPI(menu: Partial<MenuNode>): any {
+  return {
+    menu_id: menu.menuId,
+    parent_id: menu.parentId,
+    menu_name_zh: menu.menuNameZh,
+    menu_name_en: menu.menuNameEn,
+    menu_path: menu.menuPath,
+    menu_icon: menu.menuIcon,
+    menu_sort: menu.menuSort,
+    status: menu.status,
+  };
+}
+```
+
+### 5.2 数据验证函数
+
+```typescript
+export function validateMenuData(menuData: Partial<MenuNode>) {
+  const errors: string[] = [];
+  
+  if (!menuData.menuNameZh?.trim()) {
+    errors.push('菜单中文名称不能为空');
+  }
+  
+  if (!menuData.menuPath?.trim()) {
+    errors.push('菜单路径不能为空');
+  }
+  
+  if (menuData.menuSort === undefined || menuData.menuSort < 0) {
+    errors.push('排序值必须大于等于0');
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+```
+
+### 5.3 树形数据处理
+
+```typescript
+export function buildTreeData<T extends { id: string; parentId: string | null }>(
+  flatData: T[]
+): TreeNode<T>[] {
+  const map = new Map<string, TreeNode<T>>();
+  const roots: TreeNode<T>[] = [];
+  
+  // 创建节点映射
+  flatData.forEach(item => {
+    map.set(item.id, { ...item, children: [] });
+  });
+  
+  // 构建树形结构
+  flatData.forEach(item => {
+    const node = map.get(item.id)!;
+    if (item.parentId && map.has(item.parentId)) {
+      map.get(item.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  
+  return roots;
+}
+```
+
+## 6. 搜索表单规范
+
+### 6.1 搜索表单配置
+
+```typescript
+const SearchForm: React.FC<{ onSearch: (values: UserQuery) => void }> = ({ onSearch }) => {
+  const [form] = Form.useForm();
+  
+  const handleSearch = (values: UserQuery) => {
+    // 过滤空值
+    const params = Object.entries(values).reduce((acc, [key, value]) => {
+      if (value !== undefined && value !== '') {
+        acc[key] = value;
       }
-    },
-    {
-      "key": "departmentId",
-      "label": "部门",
-      "type": "select",
-      "required": true,
-      "colSpan": 1,
-      "dataSource": {
-        "type": "api",
-        "url": "/api/departments/options",
-        "dependencies": {
-          "watch": ["companyId"],
-          "url": "/api/departments/options?companyId={companyId}"
-        }
-      }
+      return acc;
+    }, {} as UserQuery);
+    
+    onSearch(params);
+  };
+  
+  const handleReset = () => {
+    form.resetFields();
+    onSearch({});
+  };
+  
+  return (
+    <Form form={form} layout="inline" onFinish={handleSearch}>
+      <Form.Item name="username">
+        <Input placeholder="请输入用户名" allowClear />
+      </Form.Item>
+      
+      <Form.Item name="status">
+        <Select placeholder="请选择状态" allowClear style={{ width: 120 }}>
+          <Select.Option value="1">启用</Select.Option>
+          <Select.Option value="0">禁用</Select.Option>
+        </Select>
+      </Form.Item>
+      
+      <Form.Item>
+        <Space>
+          <Button type="primary" htmlType="submit">
+            查询
+          </Button>
+          <Button onClick={handleReset}>
+            重置
+          </Button>
+        </Space>
+      </Form.Item>
+    </Form>
+  );
+};
+```
+
+## 7. 最佳实践
+
+### 7.1 类型定义位置
+
+```
+src/types/
+├── api.ts          # API相关类型
+├── user.ts         # 用户模块类型
+├── menu.ts         # 菜单模块类型
+├── role.ts         # 角色模块类型
+└── index.ts        # 公共类型导出
+```
+
+### 7.2 数据转换位置
+
+```
+src/pages/System/Menu/
+├── index.tsx              # 页面组件
+├── utils/
+│   ├── dataTransform.ts  # 数据转换函数
+│   └── validation.ts     # 数据验证函数
+└── types.ts              # 页面特定类型
+```
+
+### 7.3 表单复用
+
+```typescript
+// 创建通用表单组件
+const UserForm: React.FC<{
+  initialValues?: Partial<User>;
+  onSubmit: (values: User) => Promise<void>;
+}> = ({ initialValues, onSubmit }) => {
+  const [form] = Form.useForm();
+  
+  useEffect(() => {
+    if (initialValues) {
+      form.setFieldsValue(initialValues);
     }
-  ]
+  }, [initialValues, form]);
+  
+  return (
+    <Form form={form} onFinish={onSubmit}>
+      {/* 表单项 */}
+    </Form>
+  );
+};
+
+// 在不同场景复用
+<UserForm onSubmit={handleCreate} />  // 创建
+<UserForm initialValues={editUser} onSubmit={handleUpdate} />  // 编辑
+```
+
+### 7.4 错误处理
+
+```typescript
+// 统一的错误处理
+const handleApiError = (error: any, defaultMessage = '操作失败') => {
+  if (error.response?.data?.message) {
+    message.error(error.response.data.message);
+  } else if (error.message) {
+    message.error(error.message);
+  } else {
+    message.error(defaultMessage);
+  }
+};
+
+// 使用示例
+try {
+  await userApi.create(data);
+  message.success('创建成功');
+} catch (error) {
+  handleApiError(error, '创建用户失败');
 }
 ```
+
+## 8. 注意事项
+
+### 8.1 类型安全
+
+- 避免使用`any`类型
+- 为所有数据定义明确的接口
+- 使用泛型提高代码复用性
+- 利用TypeScript的类型推导
+
+### 8.2 性能优化
+
+- 大数据表格使用虚拟滚动
+- 表单项较多时考虑分步表单
+- 使用`useMemo`缓存计算结果
+- 避免在render中创建新对象
+
+### 8.3 用户体验
+
+- 提供清晰的错误提示
+- 表单验证即时反馈
+- 加载状态显示
+- 操作成功/失败提示
+
+### 8.4 代码组织
+
+- 相关类型定义放在一起
+- 数据转换函数集中管理
+- 表单验证规则可复用
+- 遵循单一职责原则
 
 ---
 
-**说明**: 此规范涵盖了常用的Schema配置场景，可根据实际需求扩展。 
+## 📚 相关文档
+
+- [前端设计原则](./Frontend-Design-Principles.md)
+- [组件结构](./Component-Structure.md)
+- [开发指南](./开发指南.md)

@@ -29,8 +29,6 @@ logging:
   file:
     name: logs/log.log  # 开发环境日志文件路径
 
-# 开发环境Spring Security配置
-spring.security.debug: true      # 开启Spring Security调试模式
 
 # 开发环境Swagger配置
 springdoc:
@@ -61,15 +59,21 @@ spring.cache:
 svt:
   security:
     aes:
-      enabled: true           # 开发环境启用AES加密
+      enabled: false           # 开发环境暂时关闭AES加密
       debug: true             # 开发环境启用调试模式
       key: ENC(DTSJxXmkJ+nrfdRRcTQhezXFylSFaq4l+9cXbSIFf1Onu+9Umq0S/Lhi4Hul5x5UaEZ1VQGx59U6IdI88YilHi+UWaMuHc5JPKqmj/fNp+4=) # AES API密钥(Base64, 32-byte)
     # 开发环境脱敏配置：关闭脱敏功能，便于调试
     sensitive:
       enabled: false          # 开发环境关闭脱敏
 
-# 开发环境JWT配置
+# 开发环境JWT配置 (临时使用明文，用于测试)
 jwt:
   secret: ENC(JWlmelw38npHv2mTU/XgpfViufiA7dAqaqhKS69qz1fi0LAqZz4bixTr/I7VGgsllihWCA7SCCeuANvfTPmxZEriKKavH4xjQqnSaKaspe5ckohCLE7HyRtCAgpUYNII)
-  expiration: 18000 # 5 hours
-  refresh-threshold-seconds: 3600 # 1 hour
+  expiration: 300 # 5分钟 (真正的session过期时间)
+  issuer: svt-issuer
+
+  # 开发环境智能续期配置
+  smart-renewal:
+    enabled: true                      # 启用智能续期
+    activity-cycle-seconds: 60    # 1钟活跃度周期（用户无操作1分钟=不活跃）
+    activity-renewal-threshold: 20     # 20%续期阈值（最后20秒内操作才刷新缓存，避免频繁写入）

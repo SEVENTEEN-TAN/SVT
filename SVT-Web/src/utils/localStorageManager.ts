@@ -64,20 +64,30 @@ export const clearStorageOnTokenExpired = (): void => {
  * 统一的清理逻辑
  */
 const clearAllUserData = (): void => {
+  console.log('🧹 [JWT智能续期测试] 开始清理所有用户相关数据');
+  
   // 清理手动管理的数据
   localStorage.removeItem(STORAGE_KEYS.EXPIRY_DATE);
   localStorage.removeItem(STORAGE_KEYS.TAB_STATE);
   localStorage.removeItem(STORAGE_KEYS.ACTIVE_TAB);
+  console.log('🧹 [JWT智能续期测试] 手动管理的数据已清理');
   
   // 清理兼容旧版本的数据
   localStorage.removeItem(STORAGE_KEYS.USER);
   localStorage.removeItem(STORAGE_KEYS.TOKEN);
   localStorage.removeItem(STORAGE_KEYS.USER_DETAILS);
+  console.log('🧹 [JWT智能续期测试] 兼容旧版本的数据已清理');
+  
+  // 🔧 关键修复：清理所有Zustand persist存储
+  localStorage.removeItem('session-storage'); // 机构角色选择状态
+  localStorage.removeItem('user-storage');    // 用户详情状态
+  // 注意：auth-storage 由authStore自己管理，不在这里清理
+  console.log('🧹 [JWT智能续期测试] Zustand persist存储已清理');
   
   // 清理其他可能的遗留数据
   cleanupLegacyStorage();
   
-  // 注意：不清理AUTH_STORAGE，因为Zustand persist会自动管理
+  console.log('🎯 [JWT智能续期测试] 所有用户相关数据清理完成');
 };
 
 /**

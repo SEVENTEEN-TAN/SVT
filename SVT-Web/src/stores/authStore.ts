@@ -26,6 +26,7 @@ import {
 } from '@/utils/localStorageManager';
 import { message } from 'antd';
 import { DebugManager } from '@/utils/debugManager';
+import { sessionManager } from '@/utils/sessionManager';
 
 // 纯认证状态接口 - 职责单一
 interface AuthState {
@@ -58,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true });
         
         try {
-          DebugManager.log('开始用户登录', { username: credentials.loginId }, { 
+          DebugManager.log('🚀 [JWT智能续期测试] 开始用户登录', { username: credentials.loginId }, { 
             component: 'authStore', 
             action: 'login' 
           });
@@ -69,6 +70,14 @@ export const useAuthStore = create<AuthState>()(
           // 调用登录API
           const response = await authApi.login(credentials);
           const { accessToken } = response;
+          
+          DebugManager.log('✅ [JWT智能续期测试] 登录API调用成功', { 
+            tokenLength: accessToken?.length,
+            tokenPrefix: accessToken?.substring(0, 20) + '...'
+          }, { 
+            component: 'authStore', 
+            action: 'loginSuccess' 
+          });
           
           // 计算过期时间
           const now = new Date();
@@ -95,15 +104,26 @@ export const useAuthStore = create<AuthState>()(
 
           // 启动Token管理器
           tokenManager.start();
-
-          DebugManager.production('用户登录成功', { 
+          DebugManager.log('🔄 [JWT智能续期测试] Token管理器已启动', {}, { 
             component: 'authStore', 
-            action: 'login' 
+            action: 'tokenManagerStart' 
+          });
+
+          // 重置会话管理器状态
+          sessionManager.reset();
+          DebugManager.log('🔄 [JWT智能续期测试] SessionManager已重置', {}, { 
+            component: 'authStore', 
+            action: 'sessionManagerReset' 
+          });
+
+          DebugManager.production('🎉 [JWT智能续期测试] 用户登录成功', {
+            component: 'authStore',
+            action: 'login'
           });
           
         } catch (error) {
           set({ loading: false });
-          DebugManager.error('用户登录失败', error as Error, { 
+          DebugManager.error('❌ [JWT智能续期测试] 用户登录失败', error as Error, { 
             component: 'authStore', 
             action: 'login' 
           });
@@ -144,8 +164,7 @@ export const useAuthStore = create<AuthState>()(
               if (axiosError.response?.status !== 401) {
                 DebugManager.warn('调用后端logout接口失败', error as Error, {
                   component: 'authStore',
-                  action: 'logout',
-                  statusCode: axiosError.response?.status
+                  action: 'logout'
                 });
                 if (!initialMessage) {
                   message.error('退出登录失败，请稍后重试');
@@ -161,16 +180,39 @@ export const useAuthStore = create<AuthState>()(
 
       // 直接清理认证状态
       clearAuthState: () => {
-        DebugManager.log('清理认证状态', { skipLogoutAPI: true }, { 
+        DebugManager.log('🧹 [JWT智能续期测试] 开始清理认证状态', { skipLogoutAPI: true }, { 
           component: 'authStore', 
           action: 'clearAuthState' 
         });
         
         // 停止Token管理器
         tokenManager.stop();
+        DebugManager.log('🔄 [JWT智能续期测试] Token管理器已停止', {}, { 
+          component: 'authStore', 
+          action: 'tokenManagerStop' 
+        });
         
         // 清理localStorage
         clearStorageOnTokenExpired();
+        DebugManager.log('🧹 [JWT智能续期测试] localStorage已清理', {}, { 
+          component: 'authStore', 
+          action: 'localStorageCleared' 
+        });
+        
+        // 🔧 关键修复：清理所有Zustand persist存储
+        // 清理session-storage (机构角色选择状态)
+        localStorage.removeItem('session-storage');
+        DebugManager.log('🧹 [JWT智能续期测试] session-storage已清理', {}, { 
+          component: 'authStore', 
+          action: 'sessionStorageCleared' 
+        });
+        
+        // 清理user-storage (用户详情状态)  
+        localStorage.removeItem('user-storage');
+        DebugManager.log('🧹 [JWT智能续期测试] user-storage已清理', {}, { 
+          component: 'authStore', 
+          action: 'userStorageCleared' 
+        });
         
         // 重置认证状态
         set({
@@ -178,6 +220,11 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           loading: false,
           expiryDate: null,
+        });
+        
+        DebugManager.production('🎯 [JWT智能续期测试] 认证状态完全清理完成', { 
+          component: 'authStore', 
+          action: 'clearAuthState' 
         });
       },
 

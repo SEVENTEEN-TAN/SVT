@@ -8,8 +8,10 @@ import type {
 import { AESCryptoUtils, isEncryptedData } from './crypto';
 import { useAuthStore } from '@/stores/authStore';
 import { messageManager } from './messageManager';
+import { modalManager } from './modalManager';
 import { clearStorageOnTokenExpired } from './localStorageManager';
 import { DebugManager } from './debugManager';
+import { sessionManager } from './sessionManager';
 
 // 定义响应数据结构
 export interface ApiResponse<T = unknown> {
@@ -141,11 +143,11 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   async (response: AxiosResponse<ApiResponse>) => {
     let { data } = response;
-    
+
     // 🔓 AES解密处理
     // axios会自动将响应头转换为小写
     const encryptedHeader = response.headers['x-encrypted'];
-    
+
     if (AESCryptoUtils.isEnabled() && encryptedHeader === 'true') {
       try {
         // 检查响应数据是否为加密格式
@@ -160,7 +162,38 @@ request.interceptors.response.use(
         throw new Error('响应数据解密失败');
       }
     }
-    
+
+    // 🔄 新增：处理会话状态响应头（智能续期机制）
+    try {
+      // 🔍 测试输出：响应拦截器处理
+      const hasSessionHeaders = response.headers['x-session-status'] || response.headers['x-session-remaining'];
+      
+      DebugManager.log('检查会话状态响应头', {
+        url: response.config?.url,
+        hasSessionHeaders,
+        sessionStatus: response.headers['x-session-status'],
+        sessionRemaining: response.headers['x-session-remaining'],
+        sessionWarning: response.headers['x-session-warning']
+      }, { component: 'request', action: 'checkSessionHeaders' });
+      
+      if (hasSessionHeaders) {
+        console.log('📡 [Request] 检测到会话状态响应头，调用SessionManager处理');
+        DebugManager.production('检测到会话状态响应头，调用SessionManager处理', {
+          component: 'request',
+          action: 'sessionHeaders'
+        });
+      }
+
+      sessionManager.handleSessionStatus(response);
+    } catch (error) {
+      console.error('❌ [Request] 处理会话状态失败:', error);
+      DebugManager.warn('处理会话状态失败', error, {
+        component: 'request',
+        action: 'handleSessionStatus'
+      });
+      // 会话状态处理失败不应该影响正常的业务响应
+    }
+
     // 成功响应
     if (data.code === 200 || data.success === true) {
       return response;
@@ -177,8 +210,7 @@ request.interceptors.response.use(
       // 如果是认证相关错误，则触发登出逻辑
       DebugManager.warn('检测到认证错误', undefined, {
         component: 'request',
-        action: 'authError',
-        errorType: 'business-level'
+        action: 'authError'
       });
 
       // 清理localStorage
@@ -199,45 +231,68 @@ request.interceptors.response.use(
       
       switch (status) {
         case 401: {
+          // 🔍 测试输出：401错误详情
+          console.group('🚨 [Request] 401认证失败处理');
+          console.log('📡 请求URL:', error.config?.url);
+          console.log('📝 错误消息:', (data as ApiResponse)?.message);
+          console.log('⏰ 发生时间:', new Date().toLocaleTimeString());
+          console.groupEnd();
+
           DebugManager.warn('API认证失败', undefined, {
             component: 'request',
-            action: 'handleError',
-            statusCode: 401
+            action: 'handleError'
           });
 
-          // 🔧 关键优化：检查是否为verify-user-status请求
-          const isVerifyUserStatus = error.config?.url?.includes('/verify-user-status');
-          
-          if (isVerifyUserStatus) {
-            // verify-user-status返回401时，后端已将token加入黑名单
-            // 只需清理前端状态，不再调用logout API
-            DebugManager.log('执行特殊认证处理', {
-              endpoint: 'verify-user-status',
-              action: 'clearState',
-              reason: 'backend-handled-blacklist'
-            }, { component: 'request', action: 'handle401' });
+          // 🔄 新增：使用SessionManager统一处理会话过期
+          // 这样可以保持与智能续期机制的一致性
+          try {
+            console.log('🔄 [Request] 尝试使用SessionManager处理401');
+            sessionManager.handleSessionStatus({
+              headers: {
+                'x-session-status': 'EXPIRED',
+                'x-session-remaining': '0',
+                'x-session-warning': 'JWT_TOKEN_EXPIRED' // 统一使用标准过期原因代码
+              }
+            } as any);
+            console.log('✅ [Request] SessionManager处理401成功');
+          } catch (sessionError) {
+            console.group('⚠️ [Request] SessionManager处理401失败，使用降级处理');
+            console.log('❌ SessionManager错误:', sessionError);
 
-            // 清理localStorage
-            clearStorageOnTokenExpired();
-            
-            useAuthStore.getState().clearAuthState(); // 直接清理状态，不调用logout API
-            
-            // 显示一次消息即可
+            DebugManager.warn('SessionManager处理401失败，使用降级处理', sessionError, {
+              component: 'request',
+              action: 'handle401Fallback'
+            });
+
+            // 降级处理：也使用SessionManager方式
             const errorMsg = (data as ApiResponse)?.message || '登录已过期，请重新登录';
-            setTimeout(() => {
-              messageManager.warning(errorMsg);
-            }, 100);
-          } else {
-            // 其他API的401，正常处理
-            const errorMsg = (data as ApiResponse)?.message || '登录已过期，请重新登录';
+            console.log('💬 错误消息:', errorMsg);
+
+            // 🔧 修复：不在这里立即清理状态，而是通过sessionManager处理
+            // 避免重复显示Modal和状态清理竞态条件
             
-            // 清理localStorage
-            clearStorageOnTokenExpired();
-            
-            useAuthStore.getState().logout();
-            setTimeout(() => {
-              messageManager.warning(errorMsg);
-            }, 100);
+            // 手动调用sessionManager的过期处理
+            console.log('🔄 手动调用SessionManager处理降级401...');
+            try {
+              sessionManager.handleSessionStatus({
+                headers: {
+                  'x-session-status': 'EXPIRED',
+                  'x-session-remaining': '0',
+                  'x-session-warning': 'JWT_TOKEN_EXPIRED' // 降级处理也使用标准代码
+                }
+              } as any);
+              console.log('✅ 降级处理：SessionManager调用成功');
+            } catch (fallbackError) {
+              console.error('❌ 降级处理也失败，只能直接跳转:', fallbackError);
+              // 最后的兜底：直接跳转
+              setTimeout(() => {
+                if (window.location.pathname !== '/login') {
+                  window.location.href = '/login';
+                }
+              }, 100);
+            }
+
+            console.groupEnd();
           }
           break;
         }

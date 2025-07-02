@@ -26,8 +26,6 @@ logging:
   file:
     name: logs/log.log  # 生产环境日志文件路径
 
-# 生产环境Spring Security配置
-spring.security.debug: false      # 关闭Spring Security调试模式
 
 # 生产环境Swagger配置
 springdoc:
@@ -62,4 +60,10 @@ svt:
 jwt:
   secret: ENC(JWlmelw38npHv2mTU/XgpfViufiA7dAqaqhKS69qz1fi0LAqZz4bixTr/I7VGgsllihWCA7SCCeuANvfTPmxZEriKKavH4xjQqnSaKaspe5ckohCLE7HyRtCAgpUYNII)
   expiration: 86400 # 24 hours
-  refresh-threshold-seconds: 7200 # 2 hours
+  issuer: svt-issuer
+
+  # 生产环境智能续期配置
+  smart-renewal:
+    enabled: true                      # 启用智能续期
+    activity-cycle-seconds: 1800       # 30分钟活跃度周期
+    activity-renewal-threshold: 20     # 20%续期阈值（后6分钟）

@@ -1,304 +1,707 @@
-# SVT-Web 模块化架构设计文档
+# SVT前端模块化架构设计
 
-## 📖 概述
+基于实际代码分析的SVT前端模块化架构设计与实现文档。
 
-本文档详细说明了SVT-Web前端项目的模块化架构重构，该重构于2025-06-24完成，将原有的1073行巨石组件BasicLayout重构为清晰的模块化架构。
+## 1. 架构设计概述
 
-## 🎯 重构目标
+### 1.1 技术栈与架构基础
 
-- **单一职责**: 每个模块只负责一个功能域
-- **可复用性**: 模块可独立使用和测试
-- **可维护性**: 降低代码复杂度，提升开发效率
-- **可扩展性**: 新功能可独立添加，不影响现有模块
+**核心技术栈：**
+- **React 19.1.0**: 最新React特性支持，包括Concurrent Features
+- **TypeScript 5.8.3**: 完整类型安全保障
+- **Vite 6.3.5**: 极速构建工具
+- **Ant Design 5.25.4**: 企业级UI组件库
+- **Zustand 5.0.1**: 轻量级状态管理
+- **React Router 7.0.1**: 客户端路由管理
+- **React Query 5.62.8**: 服务器状态管理
 
-## 📊 重构成果
+**架构设计原则：**
+- **模块化分层**: Core(核心) → Modules(模块) → Shared(共享)
+- **职责分离**: 每个模块只负责单一功能域
+- **状态统一**: 基于React Context + Zustand的混合状态管理
+- **类型安全**: 完整的TypeScript类型体系
+- **性能优先**: 代码分割、懒加载、渲染优化
 
-| 维度 | 重构前 | 重构后 | 改进幅度 |
-|------|--------|--------|----------|
-| **代码组织** | 1个文件1073行 | 5个模块平均250行 | 减少76% |
-| **职责数量** | 5个功能混合 | 1个职责/模块 | 100%分离 |
-| **可复用性** | 0个可复用组件 | 5个独立模块 | 无限提升 |
-| **Hook封装** | 0个专用Hook | 7个功能Hook | 逻辑完全封装 |
-| **文件数量** | 1个巨石文件 | 20+个模块文件 | 结构清晰化 |
+### 1.2 架构价值
 
-## 🏗️ 模块化架构
+| 维度 | 传统架构 | SVT模块化架构 | 实际效果 |
+|------|----------|------------|----------|
+| **开发效率** | 功能耦合 | 并行开发 | 多人协作无冲突 |
+| **代码质量** | 单文件巨石 | 分层模块化 | 可读性显著提升 |
+| **性能表现** | 全量更新 | 精确更新 | 页面响应速度提升 |
+| **维护成本** | 牵一发动全身 | 模块独立 | 功能迭代风险可控 |
+| **测试覆盖** | 难以测试 | 单元测试 | 组件级测试覆盖 |
 
-### 整体架构图
+## 2. 模块化架构体系
 
-```
-src/components/Layout/
-├── BasicLayout.tsx                    # 主布局组件（重构后）
-├── Footer.tsx                         # 页脚组件（保持不变）
-├── modules/                           # 功能模块目录
-│   ├── Sidebar/                       # 侧边栏模块
-│   │   ├── Logo.tsx                   # Logo组件
-│   │   ├── MenuTree.tsx               # 菜单树组件
-│   │   ├── hooks/
-│   │   │   └── useSidebarState.ts     # 侧边栏状态管理
-│   │   └── index.tsx                  # 主组件
-│   ├── TabSystem/                     # Tab系统模块
-│   │   ├── TabBar.tsx                 # Tab栏组件
-│   │   ├── TabContextMenu.tsx         # 右键菜单组件
-│   │   ├── hooks/
-│   │   │   ├── useTabManager.ts       # Tab管理Hook
-│   │   │   └── useTabStorage.ts       # Tab存储Hook
-│   │   └── index.tsx                  # 主组件
-│   ├── Header/                        # 头部模块
-│   │   ├── Breadcrumb.tsx             # 面包屑组件
-│   │   ├── UserDropdown.tsx           # 用户下拉菜单
-│   │   ├── hooks/
-│   │   │   └── useHeaderState.ts      # 头部状态管理
-│   │   └── index.tsx                  # 主组件
-│   └── ContentArea/                   # 内容区域模块
-│       ├── PageLoader.tsx             # 页面加载组件
-│       ├── hooks/
-│       │   └── useContentState.ts     # 内容状态管理
-│       └── index.tsx                  # 主组件
-└── shared/                            # 共享资源
-    ├── types/
-    │   └── layout.ts                  # 布局类型定义
-    ├── utils/
-    │   └── layoutUtils.ts             # 工具函数和样式常量
-    └── hooks/
-        └── usePathMapping.ts          # 路径映射Hook
-```
+### 2.1 整体架构分层
 
-## 🔧 核心模块详解
-
-### 1. Sidebar模块 - 侧边栏管理
-
-**职责**: 管理侧边栏的显示、菜单渲染、折叠状态
-
-**核心组件**:
-- `Logo.tsx`: Logo区域组件
-- `MenuTree.tsx`: 菜单树组件，支持递归渲染和固定首页选项
-- `useSidebarState.ts`: 侧边栏状态管理Hook
-
-**关键特性**:
-- 固定首页菜单项，不依赖后端数据
-- 支持菜单折叠/展开
-- 递归渲染多级菜单
-- 图标自动映射
-
-### 2. TabSystem模块 - 标签页系统
-
-**职责**: 管理多Tab页面的创建、切换、关闭和存储
-
-**核心组件**:
-- `TabBar.tsx`: Tab栏渲染和交互
-- `TabContextMenu.tsx`: 右键菜单功能
-- `useTabManager.ts`: Tab管理逻辑Hook
-- `useTabStorage.ts`: Tab本地存储Hook
-
-**关键特性**:
-- 无限Tab支持，水平滚动
-- 丰富的右键菜单操作
-- localStorage持久化
-- 动态解锁防重复操作（2025-06-26 修复双击问题）
-
-### 3. Header模块 - 头部区域
-
-**职责**: 管理头部导航、面包屑、用户信息
-
-**核心组件**:
-- `Breadcrumb.tsx`: 面包屑导航组件
-- `UserDropdown.tsx`: 用户信息下拉菜单
-- `useHeaderState.ts`: 头部状态管理Hook
-
-**关键特性**:
-- 动态面包屑生成
-- 用户信息展示和操作
-- 响应式头部布局
-
-### 4. ContentArea模块 - 内容区域
-
-**职责**: 管理页面内容的加载和显示
-
-**核心组件**:
-- `PageLoader.tsx`: 页面加载状态组件
-- `useContentState.ts`: 内容状态管理Hook
-
-**关键特性**:
-- 页面加载状态管理
-- 内容区域布局计算
-- 错误边界处理
-
-### 5. 共享基础设施
-
-**职责**: 提供模块间共享的类型、工具和Hook
-
-**核心文件**:
-- `layout.ts`: 完整的布局类型定义
-- `layoutUtils.ts`: 工具函数和样式常量
-- `usePathMapping.ts`: 路径映射逻辑Hook
-
-**关键特性**:
-- 统一的类型定义
-- 可复用的工具函数
-- 一致的样式常量
-
-## 🎨 设计原则
-
-### 1. 单一职责原则 (SRP)
-每个模块只负责一个功能域：
-- Sidebar只管侧边栏
-- TabSystem只管Tab
-- Header只管头部
-- ContentArea只管内容区域
-
-### 2. 开闭原则 (OCP)
-- 新增功能时只需扩展对应模块
-- 模块接口稳定，内部实现可自由修改
-- MenuTree组件新增固定首页选项，无需修改其他模块
-
-### 3. 依赖倒置原则 (DIP)
-- 模块间通过Props和Hook接口通信
-- 不直接依赖具体实现
-- 共享类型和工具函数统一管理
-
-### 4. 命名一致性原则
-- 路由路径、目录结构、文件名称、组件名称完全一致
-- `/home` → `Home/` → `HomePage.tsx` → `HomePage` 形成清晰映射
-
-## 🚀 架构价值
-
-### 1. 开发效率提升
-- 新功能开发时，只需关注对应模块
-- 团队成员可并行开发不同模块
-- 问题定位更快速准确
-- 固定首页菜单确保用户始终能返回主页
-
-### 2. 维护成本降低
-- 修改某个功能不会影响其他模块
-- 代码结构清晰，新人上手更快
-- 单元测试覆盖更容易实现
-- 命名规范统一，减少理解成本
-
-### 3. 复用价值最大化
-- 每个模块都可以在其他项目中复用
-- Hook可以独立发布为工具包
-- 组件库建设的良好基础
-- MenuTree组件可作为标准菜单组件复用
-
-### 4. 用户体验优化
-- 固定首页选项提升导航体验
-- 命名一致性降低用户认知负担
-- 模块化架构确保功能稳定性
-
-## 📝 使用指南
-
-### 如何扩展新模块
-
-1. **创建模块目录**
-```bash
-mkdir src/components/Layout/modules/NewModule
-mkdir src/components/Layout/modules/NewModule/hooks
-```
-
-2. **实现核心组件**
 ```typescript
-// src/components/Layout/modules/NewModule/index.tsx
-import React from 'react';
-import { useNewModuleState } from './hooks/useNewModuleState';
+// SVT前端架构分层设计
+React Application (应用层)
+    ↓
+Router System (路由层)
+    ├── Browser Router
+    ├── Protected Routes
+    └── Dynamic Page Loading
+    ↓
+Layout System (布局层)
+    ├── LayoutProvider (Context状态管理)
+    ├── LayoutStructure (布局结构)
+    └── Layout Modules
+        ├── Header Module
+        ├── Sidebar Module 
+        ├── TabSystem Module
+        └── Content Module
+    ↓
+Business Layer (业务层)
+    ├── Pages (页面组件)
+    ├── Components (业务组件)
+    └── API Integration
+    ↓
+Shared Layer (共享层)
+    ├── Stores (状态管理)
+    ├── Utils (工具函数)
+    ├── Hooks (自定义Hook)
+    ├── Types (类型定义)
+    └── Configs (配置文件)
+```
 
-const NewModule: React.FC = () => {
-  const { state, actions } = useNewModuleState();
+### 2.2 核心设计模式
+
+**架构模式：**
+- **Provider Pattern**: 状态管理模式，用于Layout状态统一管理
+- **Compound Component**: 组合组件模式，Tab系统的核心设计
+- **Custom Hooks**: 逻辑复用模式，封装业务逻辑
+- **Render Props**: 渲染属性模式，动态页面加载
+- **Observer Pattern**: 观察者模式，状态变化监听
+
+**模块化策略：**
+- **功能模块化**: 按业务功能划分模块
+- **层次模块化**: 按技术层次划分职责
+- **组件模块化**: 按复用性划分组件
+- **工具模块化**: 按功能类型划分工具
+
+## 3. 核心模块设计
+
+### 3.1 Layout布局系统
+
+**位置**: `src/components/Layout/`
+
+**架构设计**:
+```
+Layout/
+├── BasicLayout.tsx               # 主布局入口
+├── Footer.tsx                    # 页脚组件
+├── core/                        # 核心架构层
+│   ├── LayoutProvider.tsx       # Context状态管理
+│   └── LayoutStructure.tsx      # 布局结构组件
+├── modules/                     # 功能模块层
+│   ├── Header/                  # 头部模块
+│   │   ├── Breadcrumb.tsx       # 面包屑导航
+│   │   ├── UserDropdown.tsx     # 用户下拉菜单
+│   │   ├── hooks/useHeaderState.ts
+│   │   └── index.tsx
+│   ├── Sidebar/                 # 侧边栏模块
+│   │   ├── Logo.tsx             # Logo组件
+│   │   ├── MenuTree.tsx         # 菜单树组件
+│   │   ├── hooks/useSidebarState.ts
+│   │   └── index.tsx
+│   └── TabSystem/               # Tab系统模块
+│       ├── TabBar.tsx           # Tab标签栏
+│       ├── TabContextMenu.tsx   # 右键上下文菜单
+│       ├── hooks/useTabStorage.ts
+│       └── index.tsx
+└── shared/                      # 共享资源层
+    ├── types/layout.ts          # 布局类型定义
+    ├── utils/layoutUtils.ts     # 布局工具函数
+    └── utils/layoutStyles.ts    # 布局样式工具
+```
+
+**核心实现**:
+```typescript
+// LayoutProvider - 状态管理核心
+interface LayoutState {
+  // 侧边栏状态
+  sidebarCollapsed: boolean;
   
+  // Tab系统状态
+  activeTabKey: string;
+  tabList: TabItem[];
+  
+  // 页面刷新状态
+  pageRefreshKey: number;
+  isPageRefreshing: boolean;
+  
+  // 路径映射
+  pathMaps: PathMaps;
+  
+  // 操作方法
+  addTab: (path: string, forceRefresh?: boolean) => void;
+  removeTab: (key: string) => void;
+  switchTab: (key: string) => void;
+  refreshTab: (key: string) => void;
+  closeLeftTabs: (currentKey: string) => void;
+  closeRightTabs: (currentKey: string) => void;
+  closeOtherTabs: (currentKey: string) => void;
+}
+```
+
+### 3.2 状态管理系统
+
+**位置**: `src/stores/`
+
+**设计原则**: 职责分离，按业务域划分Store
+
+```typescript
+// 认证状态管理
+// src/stores/authStore.ts
+interface AuthState {
+  token: string | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  expiryDate: string | null;
+  
+  login: (credentials: LoginRequest) => Promise<void>;
+  logout: (options?: { message?: string }) => Promise<void>;
+  refreshToken: () => Promise<void>;
+}
+
+// 用户信息管理
+// src/stores/userStore.ts
+interface UserState {
+  userInfo: UserInfo | null;
+  permissions: string[];
+  currentOrgId: string | null;
+  
+  fetchUserInfo: () => Promise<void>;
+  updateUserInfo: (userInfo: UserInfo) => void;
+  setCurrentOrg: (orgId: string) => void;
+}
+
+// 会话状态管理
+// src/stores/sessionStore.ts
+interface SessionState {
+  refreshKey: number;
+  lastActivity: number;
+  sessionWarning: boolean;
+  
+  updateActivity: () => void;
+  triggerRefresh: () => void;
+  showSessionWarning: () => void;
+}
+```
+
+### 3.3 路由系统
+
+**位置**: `src/router/`
+
+**核心特性**:
+- 路由懒加载和代码分割
+- 路由守卫和权限控制
+- 动态路由和页面组件映射
+
+```typescript
+// 路由配置 - src/router/index.tsx
+export const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />
+  },
+  {
+    path: '/',
+    element: <ProtectedRoute />,
+    children: [
+      { index: true, element: <Navigate to="/home" replace /> },
+      { path: 'home', element: <HomePage /> },
+      {
+        path: 'system',
+        children: [
+          { path: 'menu', element: <MenuManagement /> },
+          { path: 'role', element: <RoleManagement /> }
+        ]
+      }
+    ]
+  }
+]);
+
+// 路由守卫 - src/router/ProtectedRoute.tsx
+const ProtectedRoute: React.FC = () => {
+  const { isAuthenticated, token } = useAuthStore();
+
+  if (!isAuthenticated || !token) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
-    <div>
-      {/* 模块UI实现 */}
+    <BasicLayout>
+      <Suspense fallback={<PageLoading loading={true} />}>
+        <Outlet />
+      </Suspense>
+    </BasicLayout>
+  );
+};
+```
+
+### 3.4 工具系统
+
+**位置**: `src/utils/`
+
+**分类设计**:
+```typescript
+// 系统工具
+├── debugManager.ts          # 调试管理器
+├── tokenManager.ts          # Token生命周期管理
+├── sessionManager.ts        # 会话监控管理
+├── modalManager.ts          # 模态框统一管理
+└── localStorageManager.ts   # 本地存储管理
+
+// 业务工具
+├── crypto.ts                # AES加密/解密
+├── request.ts               # HTTP请求封装
+├── messageManager.ts        # 消息提示管理
+└── stateRecoveryValidator.ts # 状态恢复验证
+
+// 特定功能工具
+├── tabStorageCleanup.ts     # Tab存储清理
+├── storageCleanup.ts        # 存储清理工具
+└── [其他工具]
+```
+
+**工具设计模式**:
+```typescript
+// 单例模式 - 调试管理器
+class DebugManager {
+  private static instance: DebugManager;
+  
+  static getInstance(): DebugManager {
+    if (!DebugManager.instance) {
+      DebugManager.instance = new DebugManager();
+    }
+    return DebugManager.instance;
+  }
+  
+  log(component: string, message: string, data?: any) {
+    if (import.meta.env.DEV) {
+      console.log(`[${component}] ${message}`, data);
+    }
+  }
+}
+
+// 工厂模式 - 请求管理器
+class RequestFactory {
+  static createRequest(baseURL: string, config?: AxiosRequestConfig) {
+    const instance = axios.create({ baseURL, ...config });
+    
+    // 请求拦截器
+    instance.interceptors.request.use(request => {
+      const token = useAuthStore.getState().token;
+      if (token) {
+        request.headers.Authorization = `Bearer ${token}`;
+      }
+      return request;
+    });
+    
+    return instance;
+  }
+}
+```
+
+## 4. 性能优化架构
+
+### 4.1 代码分割策略
+
+**页面级分割**:
+```typescript
+// 懒加载页面组件
+const LoginPage = lazy(() => import('@/pages/Auth/LoginPage'));
+const HomePage = lazy(() => import('@/pages/Home/HomePage'));
+const MenuManagement = lazy(() => import('@/pages/System/Menu'));
+const RoleManagement = lazy(() => import('@/pages/System/Role'));
+
+// 预加载机制
+const preloadComponent = (componentImport: () => Promise<any>) => {
+  componentImport();
+};
+
+// 菜单悬停预加载
+const MenuItem: React.FC = ({ path, children }) => {
+  const handleMouseEnter = () => {
+    if (PAGE_COMPONENTS[path]) {
+      preloadComponent(PAGE_COMPONENTS[path]);
+    }
+  };
+
+  return (
+    <div onMouseEnter={handleMouseEnter}>
+      {children}
+    </div>
+  );
+};
+```
+
+**组件级优化**:
+```typescript
+// React.memo优化
+const TabItem = React.memo<TabItemProps>(({ tab, active, onSwitch }) => {
+  return (
+    <div 
+      className={`tab-item ${active ? 'active' : ''}`}
+      onClick={() => onSwitch(tab.key)}
+    >
+      {tab.label}
+    </div>
+  );
+});
+
+// useCallback优化
+const handleTabSwitch = useCallback((targetKey: string) => {
+  switchTab(targetKey);
+}, [switchTab]);
+
+// useMemo优化
+const processedData = useMemo(() => {
+  return data.map(item => processItem(item));
+}, [data]);
+```
+
+### 4.2 状态更新优化
+
+**精确订阅**:
+```typescript
+// ❌ 错误：订阅整个Store
+const authStore = useAuthStore();
+
+// ✅ 正确：只订阅需要的状态
+const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+// ✅ 更好：使用稳定的选择器
+const authSelector = useCallback(
+  (state: AuthState) => ({
+    isAuthenticated: state.isAuthenticated,
+    loading: state.loading
+  }),
+  []
+);
+const { isAuthenticated, loading } = useAuthStore(authSelector);
+```
+
+**批量状态更新**:
+```typescript
+// ❌ 错误：多次set调用
+set({ loading: true });
+set({ error: null });
+set({ data: [] });
+
+// ✅ 正确：批量更新
+set({ 
+  loading: true, 
+  error: null, 
+  data: [] 
+});
+```
+
+### 4.3 渲染优化
+
+**虚拟化处理**:
+```typescript
+// Tab列表虚拟化(大量Tab场景)
+const VirtualTabBar = useMemo(() => {
+  if (tabList.length > 20) {
+    return <VirtualizedList items={tabList} renderItem={TabItem} />;
+  }
+  return <StandardTabBar tabs={tabList} />;
+}, [tabList]);
+```
+
+**防抖和节流**:
+```typescript
+// 搜索防抖
+const debouncedSearch = useMemo(
+  () => debounce((query: string) => {
+    performSearch(query);
+  }, 300),
+  []
+);
+
+// 滚动节流
+const throttledScroll = useMemo(
+  () => throttle(() => {
+    handleScroll();
+  }, 100),
+  []
+);
+```
+
+## 5. 类型系统架构
+
+### 5.1 类型组织结构
+
+```typescript
+// types/index.ts - 通用类型
+export interface BaseEntity {
+  id: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface ApiResponse<T = any> {
+  code: number;
+  message: string;
+  data: T;
+  success: boolean;
+}
+
+// types/layout.ts - 布局类型
+export interface TabItem {
+  key: string;
+  label: string;
+  path: string;
+  closable: boolean;
+}
+
+export interface LayoutConstants {
+  HEADER_HEIGHT: number;
+  TABS_HEIGHT: number;
+  SIDER_WIDTH_EXPANDED: number;
+  SIDER_WIDTH_COLLAPSED: number;
+}
+
+// types/user.ts - 用户类型
+export interface UserInfo extends BaseEntity {
+  username: string;
+  displayName: string;
+  email?: string;
+  avatar?: string;
+  status: UserStatus;
+}
+
+// types/api.ts - API类型
+export interface MenuTreeResponse {
+  menuTrees: MenuItem[];
+  permissions: string[];
+}
+```
+
+### 5.2 类型安全实践
+
+```typescript
+// 严格的接口定义
+interface StrictComponentProps {
+  readonly data: ReadonlyArray<DataItem>;
+  onAction: (item: DataItem) => Promise<void>;
+  config: Readonly<ComponentConfig>;
+}
+
+// 联合类型和类型守卫
+type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+function isErrorState(state: LoadingState): state is 'error' {
+  return state === 'error';
+}
+
+// 泛型约束
+interface Repository<T extends BaseEntity> {
+  findById(id: string): Promise<T | null>;
+  save(entity: Omit<T, 'id'>): Promise<T>;
+  delete(id: string): Promise<void>;
+}
+```
+
+## 6. 开发规范
+
+### 6.1 命名规范
+
+**文件命名:**
+- 组件文件: `PascalCase.tsx` (如 `LoginPage.tsx`)
+- 工具文件: `camelCase.ts` (如 `tokenManager.ts`)
+- 类型文件: `kebab-case.ts` (如 `org-role.ts`)
+- Hook文件: `use*.ts` (如 `useHeaderState.ts`)
+
+**变量命名:**
+- 组件: `PascalCase` (如 `UserProfile`)
+- 函数/变量: `camelCase` (如 `handleLogin`)
+- 常量: `SCREAMING_SNAKE_CASE` (如 `API_BASE_URL`)
+- 类型/接口: `PascalCase` (如 `UserInfo`)
+
+### 6.2 组件开发规范
+
+```typescript
+// ✅ 良好的组件设计
+interface UserCardProps {
+  user: UserInfo;
+  showActions?: boolean;
+  onEdit?: (user: UserInfo) => void;
+  onDelete?: (userId: string) => void;
+  className?: string;
+}
+
+const UserCard: React.FC<UserCardProps> = ({
+  user,
+  showActions = true,
+  onEdit,
+  onDelete,
+  className
+}) => {
+  // 使用useCallback优化性能
+  const handleEdit = useCallback(() => {
+    onEdit?.(user);
+  }, [user, onEdit]);
+
+  const handleDelete = useCallback(() => {
+    onDelete?.(user.id);
+  }, [user.id, onDelete]);
+
+  return (
+    <div className={`user-card ${className || ''}`}>
+      <div className="user-info">
+        <h3>{user.displayName}</h3>
+        <p>{user.email}</p>
+      </div>
+      
+      {showActions && (
+        <div className="user-actions">
+          <Button onClick={handleEdit}>编辑</Button>
+          <Button danger onClick={handleDelete}>删除</Button>
+        </div>
+      )}
     </div>
   );
 };
 
-export default NewModule;
+// 使用React.memo优化渲染
+export default React.memo(UserCard);
 ```
 
-3. **实现状态管理Hook**
-```typescript
-// src/components/Layout/modules/NewModule/hooks/useNewModuleState.ts
-import { useState, useCallback } from 'react';
+### 6.3 错误处理架构
 
-export const useNewModuleState = () => {
-  const [state, setState] = useState(/* 初始状态 */);
+```typescript
+// 错误边界组件
+class ComponentErrorBoundary extends React.Component<Props, State> {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // 记录错误
+    DebugManager.error('组件错误', error, { errorInfo });
+    
+    // 上报错误
+    reportError(error, { component: this.props.componentName });
+  }
+}
+
+// 异步错误处理Hook
+const useAsyncError = () => {
+  const [error, setError] = useState<Error | null>(null);
   
-  const actions = {
-    // 操作方法
-  };
+  const handleAsync = useCallback(async <T>(
+    asyncFn: () => Promise<T>
+  ): Promise<T | null> => {
+    try {
+      return await asyncFn();
+    } catch (err) {
+      setError(err as Error);
+      return null;
+    }
+  }, []);
   
-  return { state, actions };
+  return { error, handleAsync, clearError: () => setError(null) };
 };
 ```
 
-4. **集成到主布局**
-```typescript
-// src/components/Layout/BasicLayout.tsx
-import NewModule from './modules/NewModule';
+## 7. 测试架构
 
-// 在合适的位置添加新模块
-<NewModule />
+### 7.1 测试策略
+
+**单元测试**:
+```typescript
+// 组件测试
+describe('UserCard', () => {
+  it('should render user information correctly', () => {
+    const user = { id: '1', displayName: 'Test User', email: 'test@example.com' };
+    render(<UserCard user={user} />);
+    
+    expect(screen.getByText('Test User')).toBeInTheDocument();
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+  });
+});
+
+// Store测试
+describe('AuthStore', () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      token: null,
+      isAuthenticated: false,
+      loading: false
+    });
+  });
+
+  it('should login successfully', async () => {
+    const store = useAuthStore.getState();
+    
+    await store.login({ username: 'test', password: 'test' });
+    
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.token).toBeTruthy();
+  });
+});
 ```
 
-### 如何修改现有模块
+**集成测试**:
+```typescript
+// 路由测试
+test('should navigate to protected route after login', async () => {
+  render(<App />);
+  
+  // 模拟登录
+  fireEvent.click(screen.getByRole('button', { name: /登录/i }));
+  
+  // 验证跳转
+  await waitFor(() => {
+    expect(screen.getByText('首页')).toBeInTheDocument();
+  });
+});
+```
 
-1. **定位对应模块**: 根据功能域找到对应的模块目录
-2. **修改组件**: 只修改该模块内的组件，不影响其他模块
-3. **更新Hook**: 如需修改状态逻辑，更新对应的Hook
-4. **测试验证**: 验证修改不影响其他模块功能
+### 7.2 性能测试
 
-### 最佳实践
-
-1. **保持模块独立**: 避免模块间直接依赖
-2. **使用共享资源**: 公共类型和工具函数放在shared目录
-3. **Hook优先**: 业务逻辑封装在Hook中，保持组件纯净
-4. **类型安全**: 充分利用TypeScript类型检查
-5. **命名规范**: 遵循既定的命名约定
-
-## 🔍 故障排查
-
-### 常见问题
-
-1. **模块加载失败**
-   - 检查导入路径是否正确
-   - 确认组件是否正确导出
-
-2. **状态不同步**
-   - 检查Hook依赖数组
-   - 确认状态提升是否正确
-
-3. **样式冲突**
-   - 使用CSS Modules或styled-components
-   - 遵循BEM命名规范
-
-4. **性能问题**
-   - 使用React.memo优化重渲染
-   - 合理使用useCallback和useMemo
-
-## 📚 相关文档
-
-- [项目整体README](../README.md)
-- [组件结构说明](./Component-Structure.md)
-- [Tab系统设计](./Tab-System-Design.md)
-- [状态管理指南](./State-Management.md)
-- [开发指南](./开发指南.md)
-
-## 📈 未来规划
-
-1. **组件库建设**: 将成熟模块发布为独立的组件库
-2. **性能优化**: 进一步优化组件渲染性能
-3. **测试覆盖**: 为每个模块添加完整的单元测试
-4. **文档完善**: 补充更详细的API文档和示例
-5. **工具支持**: 开发模块生成工具，提升开发效率
-
-## 🆕 更新日志
-- 2025-06-26 16:50:43 +08:00:
-  - 对照最新代码审计，确认 Sidebar、TabSystem、Header、ContentArea 等模块文件结构与职责未变。
-  - 补充 TabSystem “页面刷新加载状态” 与 `isOperatingRef` 防重复操作实现描述。
-  - 新增共享常量 `LAYOUT_CONSTANTS`、Loading 覆盖层样式说明。
-  - 文档标题保持不变，版本号未变动（仍 v1.0），但内容已与代码完全同步。
+```typescript
+// 渲染性能测试
+test('should not re-render unnecessarily', () => {
+  let renderCount = 0;
+  
+  const TestComponent = () => {
+    renderCount++;
+    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    return <div>{isAuthenticated ? 'Authenticated' : 'Not authenticated'}</div>;
+  };
+  
+  render(<TestComponent />);
+  
+  // 更新不相关的状态
+  act(() => {
+    useAuthStore.setState({ loading: true });
+  });
+  
+  // 验证没有重新渲染
+  expect(renderCount).toBe(1);
+});
+```
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025-06-24  
-**维护者**: SVT开发团队 
+## 🎯 总结
+
+SVT前端模块化架构通过以下设计实现了高质量的企业级应用：
+
+1. **清晰的架构分层**: 从路由到布局到业务的完整分层
+2. **模块化设计**: 按功能和职责划分的模块系统
+3. **类型安全**: 完整的TypeScript类型体系
+4. **性能优化**: 多层级的性能优化策略
+5. **开发规范**: 统一的代码规范和最佳实践
+6. **测试覆盖**: 完整的测试架构和策略
+
+## 📚 相关文档
+
+- [Tab系统设计](./Tab-System-Design.md)
+- [状态管理架构](./State-Management.md)
+- [组件结构设计](./Component-Structure.md)
+- [响应式布局系统](./Responsive-Layout-System.md)

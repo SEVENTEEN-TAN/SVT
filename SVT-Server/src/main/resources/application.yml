@@ -161,15 +161,6 @@ svt:
       enabled: ${SENSITIVE_ENABLED:true}
 
 # JWT 令牌配置
-# secret 和 expiration 必须在特定环境的 application-{profile}.yml 文件中提供
+# secret 和 expiration 在各环境的 application-{profile}.yml 文件中定义
 jwt:
-  secret: ${SVT_JWT_SECRET}
-  expiration: ${SVT_JWT_EXPIRATION} # in seconds
   issuer: svt-issuer
-  refresh-threshold-seconds: ${SVT_JWT_REFRESH_THRESHOLD} # in seconds
-
-# ----------------------------------------
-# 刷新阈值配置
-# ----------------------------------------
-# 1 hour in seconds
-refresh-threshold-seconds: 3600 

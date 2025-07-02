@@ -22,7 +22,10 @@ export const useUserStatus = () => {
     const verifyStatus = async () => {
       // 🔧 关键修复：只在已认证且有token的情况下才进行验证
       if (!isAuthenticated || !auth.token) {
-        DebugManager.log('用户未认证，跳过状态验证', { isAuthenticated, hasToken: !!auth.token });
+        DebugManager.log('🚫 [JWT智能续期测试] 用户未认证，跳过状态验证', { 
+          isAuthenticated, 
+          hasToken: !!auth.token 
+        }, { component: 'useUserStatus', action: 'skipVerify' });
         setLoading(false);
         return;
       }
@@ -31,22 +34,41 @@ export const useUserStatus = () => {
         setLoading(true);
         setError(null);
         
+        DebugManager.log('🔍 [JWT智能续期测试] 开始用户状态验证', { 
+          tokenPrefix: auth.token.substring(0, 20) + '...' 
+        }, { component: 'useUserStatus', action: 'startVerify' });
+        
         const status = await verifyUserStatus();
         setUserStatus(status);
         
+        DebugManager.log('✅ [JWT智能续期测试] 用户状态验证API调用成功', { 
+          isValid: status.isValid,
+          message: status.message 
+        }, { component: 'useUserStatus', action: 'verifySuccess' });
+        
         // 检查用户状态
         if (!status.isValid) {
+          DebugManager.warn('⚠️ [JWT智能续期测试] 用户状态无效，准备登出', { 
+            status: status.message 
+          }, { component: 'useUserStatus', action: 'invalidStatus' });
+          
           message.error(status.message || '用户状态异常，请联系管理员');
           await logout();
           navigate('/login');
           return;
         }
 
-        DebugManager.logSensitive('用户状态验证成功', status, { component: 'useUserStatus', action: 'verify' });
+        DebugManager.logSensitive('🎯 [JWT智能续期测试] 用户状态验证完全成功', status, { 
+          component: 'useUserStatus', 
+          action: 'verify' 
+        });
       } catch (err: any) {
         // 🔧 对于verify-user-status的错误，已由request拦截器统一处理
         // 这里只记录错误，不显示消息，避免重复提醒
-        DebugManager.warn('用户状态验证失败（由全局拦截器统一处理）', err, { component: 'useUserStatus', action: 'verify' });
+        DebugManager.warn('❌ [JWT智能续期测试] 用户状态验证失败（由全局拦截器统一处理）', err, { 
+          component: 'useUserStatus', 
+          action: 'verify' 
+        });
         setError(err.message || '验证失败');
       } finally {
         setLoading(false);
@@ -55,8 +77,20 @@ export const useUserStatus = () => {
 
     // 🔧 防止重复调用：只在组件首次挂载且已认证时调用
     if (isAuthenticated && auth.token && !hasVerifiedRef.current) {
+      DebugManager.log('🚀 [JWT智能续期测试] 满足用户状态验证条件，开始执行', { 
+        isAuthenticated, 
+        hasToken: !!auth.token,
+        hasVerified: hasVerifiedRef.current 
+      }, { component: 'useUserStatus', action: 'initVerify' });
+      
       hasVerifiedRef.current = true;
       verifyStatus();
+    } else {
+      DebugManager.log('⏸️ [JWT智能续期测试] 跳过用户状态验证', { 
+        isAuthenticated, 
+        hasToken: !!auth.token,
+        hasVerified: hasVerifiedRef.current 
+      }, { component: 'useUserStatus', action: 'skipVerify' });
     }
   }, [isAuthenticated, auth.token, logout, navigate]); // 🔧 移除hasVerified依赖，使用useRef避免重复调用
 

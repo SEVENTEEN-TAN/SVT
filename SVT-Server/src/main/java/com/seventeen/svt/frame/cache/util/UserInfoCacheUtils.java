@@ -130,7 +130,6 @@ public class UserInfoCacheUtils {
      * @param UserInfo 用户详情
      */
     public static void putUserInfo(String userId, UserInfo UserInfo) {
-        log.debug("尝试添加/更新{}用户信息:{}", userId, UserInfo);
         // 本地缓存
         putUserInfoToLocal(userId, UserInfo);
         // Redis缓存
@@ -143,13 +142,10 @@ public class UserInfoCacheUtils {
      * @param userId 用户ID
      */
     public static void removeUserInfo(String userId) {
-        log.debug("尝试删除{}用户缓存", userId);
         // 本地删除（优先执行，确保本地状态正确）
         userInfoCache.invalidate(userId);
         // Redis删除
         safeRedisOperation(() -> RedisUtils.del(CODE_KEY_PREFIX + userId), "removeUserInfo");
-
-        log.debug("Successfully removed UserInfo cache for id: {}", userId);
     }
 
     /**

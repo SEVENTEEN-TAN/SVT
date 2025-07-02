@@ -36,7 +36,7 @@ public class UserDetailCacheUtils {
     public UserDetailCacheUtils(RedisUtils redisUtils) {
         this.redisUtils = redisUtils;
         this.userDetailLocalCache = Caffeine.newBuilder()
-                .expireAfterWrite(10, TimeUnit.HOURS) // 可以考虑与JWT过期时间关联
+                .expireAfterWrite(expirationSeconds, TimeUnit.SECONDS) // 可以考虑与JWT过期时间关联
                 .removalListener((key, value, cause) ->
                         log.info("Key {} was removed from UserDetailCache, cause: {}", key, cause))
                 .recordStats()
@@ -75,9 +75,7 @@ public class UserDetailCacheUtils {
                 userDetailLocalCache.put(userId, userDetail);
             }
         }
-        log.debug("Attempting to get user detail for {}: {}", userId, userDetail);
         return userDetail;
-
     }
 
     /**
@@ -87,7 +85,6 @@ public class UserDetailCacheUtils {
      * @param userDetail 用户详情
      */
     public void putUserDetail(String userId, UserDetailCache userDetail) {
-        log.debug("Attempting to add/update user detail for {}: {}", userId, userDetail);
         userDetailLocalCache.put(userId, userDetail);
         safeRedisOperation(() -> redisUtils.set(USER_DETAIL_KEY_PREFIX + userId, userDetail, expirationSeconds), "putUserDetail");
     }
@@ -99,9 +96,7 @@ public class UserDetailCacheUtils {
      * @param userId 用户ID
      */
     public void removeUserDetail(String userId) {
-        log.debug("Attempting to remove user detail for {}", userId);
         userDetailLocalCache.invalidate(userId);
         safeRedisOperation(() -> redisUtils.del(USER_DETAIL_KEY_PREFIX + userId), "removeUserDetail");
-        log.debug("Successfully removed user detail cache for user: {}", userId);
     }
 }

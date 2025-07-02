@@ -61,8 +61,7 @@ export const useUserStore = create<UserState>()(
           const updatedUser = { ...user, ...userData };
           set({ user: updatedUser, error: null });
           
-          // 同步到localStorage（兼容性）
-          localStorage.setItem('user', JSON.stringify(updatedUser));
+                  // 🔧 移除重复的localStorage设置，只使用Zustand persist
           
           DebugManager.logSensitive('用户信息已更新', { 
             updatedFields: Object.keys(userData),
@@ -75,8 +74,7 @@ export const useUserStore = create<UserState>()(
       clearUser: () => {
         set({ user: null, error: null, loading: false });
         
-        // 清理localStorage中的用户信息
-        localStorage.removeItem('user');
+        // 🔧 移除手动localStorage清理，只使用Zustand persist清理
         
         DebugManager.log('用户信息已清除', undefined, { 
           component: 'userStore', 
@@ -120,9 +118,9 @@ export const useUserStore = create<UserState>()(
           });
           
           // 3. 选择第一个机构和角色获取详情
-          if (orgResponse.data.length > 0 && roleResponse.data.length > 0) {
-            const selectedOrg = orgResponse.data[0];
-            const selectedRole = roleResponse.data[0];
+          if (orgResponse.length > 0 && roleResponse.length > 0) {
+            const selectedOrg = orgResponse[0];
+            const selectedRole = roleResponse[0];
             
             DebugManager.logSensitive('选择机构和角色', {
               orgId: selectedOrg.orgId,
@@ -194,8 +192,7 @@ export const useUserStore = create<UserState>()(
 
         set({ user, error: null });
         
-        // 同步到localStorage（兼容性）
-        localStorage.setItem('user', JSON.stringify(user));
+        // 🔧 移除重复的localStorage设置，只使用Zustand persist
         
         DebugManager.logSensitive('用户信息已从详情设置', user, { 
           component: 'userStore', 

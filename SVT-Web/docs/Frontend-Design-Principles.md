@@ -1,564 +1,489 @@
-# SVT 前端设计原理文档
+# Frontend-Design-Principles 前端设计原则
 
-**项目**: SVT-Web 前端设计原理
-**版本**: v1.0
-**创建时间**: 2025-06-21
-**文档类型**: 前端设计原理
-**适用领域**: 保密性要求较高的企业内部系统
+基于实际代码分析的SVT-Web前端设计原则与架构模式文档。
 
-## 📋 文档说明
+## 1. 概述
 
-本文档详细阐述SVT前端的设计原理，包括架构设计思想、状态管理策略、安全机制实现和用户体验优化。所有设计都基于高安全性业务场景的特殊要求。
+SVT-Web前端采用现代化的React架构，遵循企业级应用开发的最佳实践，构建了一个类型安全、性能优化、易于维护的单页应用系统。
 
----
+### 1.1 技术栈
 
-## 🎯 前端设计目标
+- **核心框架**: React 19.1.0 + TypeScript 5.8.3
+- **构建工具**: Vite 6.3.5
+- **状态管理**: Zustand 5.0.5
+- **UI框架**: Ant Design 5.22.9
+- **HTTP客户端**: Axios 1.7.9
+- **路由管理**: React Router 7.1.2
 
-### 核心目标
-1. **安全性**: 确保前端数据传输和存储安全
-2. **可靠性**: 提供稳定可靠的用户界面
-3. **易用性**: 符合企业用户的操作习惯
-4. **性能**: 快速响应和流畅体验
-5. **可维护性**: 清晰的代码结构和组件设计
+### 1.2 设计理念
 
----
+- **类型优先**: 全面的TypeScript类型覆盖
+- **模块化架构**: 清晰的模块边界和职责分离
+- **性能优化**: 代码分割、懒加载、缓存策略
+- **安全设计**: 多层安全防护和数据加密
+- **开发体验**: 完善的调试工具和开发规范
 
-## 🏗️ 架构设计原理
+## 2. 架构设计原则
 
-### 技术选型理由
+### 2.1 分层架构
 
-#### React 19 - 核心框架
-```typescript
-// 选择理由
-1. 并发特性: 提升用户体验，特别是数据加载场景
-2. 生态成熟: 丰富的第三方库和工具链
-3. 团队熟悉: 降低学习成本和开发风险
-4. 企业级应用: 大量高安全性项目的成功实践
+```
+┌─────────────────────────────────────────┐
+│            Pages (页面层)                │
+├─────────────────────────────────────────┤
+│         Components (组件层)              │
+├─────────────────────────────────────────┤
+│           Hooks (钩子层)                 │
+├─────────────────────────────────────────┤
+│          Stores (状态层)                 │
+├─────────────────────────────────────────┤
+│            API (接口层)                  │
+├─────────────────────────────────────────┤
+│           Utils (工具层)                 │
+├─────────────────────────────────────────┤
+│           Types (类型层)                 │
+└─────────────────────────────────────────┘
 ```
 
-#### TypeScript 5 - 类型系统
+**分层职责**:
+- **Pages**: 路由级组件，组合业务逻辑
+- **Components**: 可复用UI组件
+- **Hooks**: 自定义React钩子，封装通用逻辑
+- **Stores**: Zustand状态管理
+- **API**: 后端接口封装
+- **Utils**: 通用工具函数
+- **Types**: TypeScript类型定义
+
+### 2.2 目录结构
+
+```
+src/
+├── api/                 # API服务层
+│   ├── auth.ts         # 认证相关API
+│   └── system/         # 系统模块API
+├── components/          # 组件库
+│   ├── Common/         # 通用组件
+│   ├── Layout/         # 布局组件
+│   └── DynamicPage/    # 动态页面组件
+├── config/             # 配置文件
+├── hooks/              # 自定义Hooks
+├── pages/              # 页面组件
+├── router/             # 路由配置
+├── stores/             # 状态管理
+├── styles/             # 样式文件
+├── types/              # 类型定义
+└── utils/              # 工具函数
+```
+
+## 3. 组件设计原则
+
+### 3.1 组件架构模式
+
+**单一职责原则**:
 ```typescript
-// 金融系统的类型安全要求
-interface UserInfo {
-  userId: string;
-  userName: string;
-  roles: Role[];
-  permissions: Permission[];
-  lastLoginTime: Date;
+// Good - 单一职责
+function UserAvatar({ userId }: { userId: string }) {
+  // 只负责显示用户头像
 }
 
-// 编译时错误检查，避免运行时业务数据错误
+function UserProfile({ user }: { user: User }) {
+  // 组合多个单一职责组件
+  return (
+    <>
+      <UserAvatar userId={user.id} />
+      <UserInfo user={user} />
+    </>
+  );
+}
 ```
 
-#### Zustand - 状态管理
+**组合优于继承**:
 ```typescript
-// 轻量级状态管理的优势
+// Layout组件的组合模式
+<LayoutProvider>
+  <LayoutStructure
+    header={<Header />}
+    sidebar={<Sidebar />}
+    content={<Content />}
+  />
+</LayoutProvider>
+```
+
+### 3.2 组件类型定义
+
+```typescript
+// 严格的Props类型定义
+interface ButtonProps {
+  type?: 'primary' | 'default' | 'danger';
+  loading?: boolean;
+  onClick?: (event: React.MouseEvent) => void;
+  children: React.ReactNode;
+}
+
+// 使用泛型增强复用性
+interface TableProps<T> {
+  data: T[];
+  columns: ColumnDef<T>[];
+  onRowClick?: (row: T) => void;
+}
+```
+
+### 3.3 组件性能优化
+
+```typescript
+// 使用React.memo避免不必要的渲染
+const ExpensiveComponent = React.memo(({ data }) => {
+  // 复杂渲染逻辑
+}, (prevProps, nextProps) => {
+  return prevProps.data.id === nextProps.data.id;
+});
+
+// 使用useMemo缓存计算结果
+const processedData = useMemo(() => {
+  return heavyComputation(rawData);
+}, [rawData]);
+```
+
+## 4. 状态管理原则
+
+### 4.1 Zustand最佳实践
+
+**Store设计原则**:
+```typescript
+// 领域驱动的Store设计
 interface AuthStore {
-  user: UserInfo | null;
+  // 状态
   token: string | null;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  
+  // 操作
+  login: (credentials: LoginRequest) => Promise<void>;
   logout: () => void;
-  refreshToken: () => Promise<void>;
+  
+  // 内部方法
+  _setToken: (token: string | null) => void;
 }
-
-// 相比Redux更简单，适合中型项目
 ```
 
----
-
-## 🔐 前端安全设计
-
-### 1. 用户状态验证机制
-
-#### 设计原理
-高安全性系统需要实时验证用户状态，确保会话安全性。
-
-#### 核心实现
+**状态持久化**:
 ```typescript
-// useUserStatus Hook - 防重复调用设计
-export const useUserStatus = () => {
-  const hasVerifiedRef = useRef(false);
-  const { isAuthenticated, token, logout } = useAuthStore();
-  
-  useEffect(() => {
-    // 关键设计：只在已认证且有token时验证
-    if (!isAuthenticated || !token) {
-      console.log('⚠️ 用户未认证，跳过状态验证');
-      setLoading(false);
-      return;
+// 选择性持久化
+const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      // store implementation
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({ token: state.token })
     }
+  )
+);
+```
 
-    // 防重复调用机制
-    if (isAuthenticated && token && !hasVerifiedRef.current) {
-      hasVerifiedRef.current = true;
-      verifyStatus();
+### 4.2 状态分层管理
+
+```typescript
+// 全局状态 - Zustand stores
+const userInfo = useUserStore(state => state.userInfo);
+
+// 组件状态 - useState
+const [isModalOpen, setIsModalOpen] = useState(false);
+
+// 派生状态 - useMemo
+const fullName = useMemo(
+  () => `${userInfo.firstName} ${userInfo.lastName}`,
+  [userInfo.firstName, userInfo.lastName]
+);
+```
+
+## 5. 类型安全原则
+
+### 5.1 严格类型定义
+
+```typescript
+// API响应类型
+interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+  timestamp: number;
+}
+
+// 避免any类型
+// Bad
+const processData = (data: any) => { };
+
+// Good
+const processData = <T extends BaseData>(data: T) => { };
+```
+
+### 5.2 类型组织
+
+```typescript
+// types/index.ts - 通用类型
+export interface BaseQuery {
+  page?: number;
+  size?: number;
+}
+
+// types/user.ts - 领域类型
+export interface User {
+  id: string;
+  username: string;
+  // ...
+}
+```
+
+## 6. API集成原则
+
+### 6.1 统一请求封装
+
+```typescript
+// 请求拦截器
+request.interceptors.request.use(
+  (config) => {
+    // 自动添加token
+    const token = tokenManager.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-  }, [isAuthenticated, token, logout, navigate]);
-};
-```
-
-#### 设计亮点
-1. **防重复调用**: 使用useRef避免循环依赖
-2. **智能检查**: 只在必要时进行状态验证
-3. **错误处理**: 统一的错误处理机制
-4. **性能优化**: 避免不必要的API调用
-
-### 2. AES加密通信
-
-#### 加密策略
-```typescript
-// 前端AES加密实现
-class AESCrypto {
-  private key: CryptoKey | null = null;
-  
-  async encrypt(data: string): Promise<EncryptedData> {
-    const iv = crypto.getRandomValues(new Uint8Array(16));
-    const encodedData = new TextEncoder().encode(data);
-    
-    const encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-CBC', iv },
-      this.key!,
-      encodedData
-    );
-    
-    return {
-      data: this.arrayBufferToBase64(encrypted),
-      iv: this.arrayBufferToBase64(iv),
-      timestamp: Date.now(),
-      version: '1.0'
-    };
+    return config;
   }
-}
+);
 ```
 
-#### 安全考量
-1. **密钥管理**: 环境变量管理，避免硬编码
-2. **IV随机性**: 每次加密使用新的随机IV
-3. **时间戳验证**: 防重放攻击保护
-4. **错误处理**: 加密失败的优雅降级
-
-### 3. Token管理策略
-
-#### 自动续期机制
-```typescript
-// Token自动续期设计
-class TokenManager {
-  private refreshTimer: NodeJS.Timeout | null = null;
-  
-  startAutoRefresh(token: string) {
-    const payload = this.parseJWT(token);
-    const expirationTime = payload.exp * 1000;
-    const currentTime = Date.now();
-    const timeUntilExpiry = expirationTime - currentTime;
-    
-    // 在过期前10分钟自动续期
-    const refreshTime = Math.max(timeUntilExpiry - 10 * 60 * 1000, 0);
-    
-    this.refreshTimer = setTimeout(() => {
-      this.refreshToken();
-    }, refreshTime);
-  }
-}
-```
-
----
-
-## 📊 状态管理设计
-
-### 1. 全局状态架构
-
-#### 状态分层设计
-
-```mermaid
-graph TB
-    subgraph "应用状态架构"
-        subgraph "全局共享状态"
-            AUTH["认证状态 (AuthState)<br/>• 登录状态<br/>• Token信息<br/>• 用户权限"]
-            USER["用户状态 (UserState)<br/>• 用户信息<br/>• 个人设置<br/>• 偏好配置"]
-        end
-
-        subgraph "组件级状态"
-            UI["UI状态 (UIState)<br/>• 加载状态<br/>• 错误信息<br/>• 界面控制"]
-        end
-
-        subgraph "模块级状态"
-            BIZ["业务状态 (BusinessState)<br/>• 业务数据<br/>• 表单状态<br/>• 临时数据"]
-        end
-    end
-
-    AUTH --> UI
-    USER --> UI
-    UI --> BIZ
-```
+### 6.2 类型安全的API调用
 
 ```typescript
-// 对应的TypeScript接口定义
-interface AppState {
-  auth: AuthState;      // 认证状态 - 全局共享
-  user: UserState;      // 用户状态 - 全局共享
-  ui: UIState;          // UI状态 - 组件级别
-  business: BusinessState; // 业务状态 - 模块级别
-}
-```
-
-#### 状态更新策略
-```typescript
-// 不可变状态更新
-const authStore = create<AuthState>((set, get) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  
-  login: async (credentials) => {
-    const response = await authApi.login(credentials);
-    set({
-      user: response.user,
-      token: response.token,
-      isAuthenticated: true
-    });
+// 完整的类型定义
+export const userApi = {
+  getList: (params: UserQuery): Promise<ApiResponse<PageData<User>>> => {
+    return request.get('/api/users', { params });
   },
   
-  logout: () => {
-    set({
-      user: null,
-      token: null,
-      isAuthenticated: false
-    });
+  create: (data: CreateUserDto): Promise<ApiResponse<User>> => {
+    return request.post('/api/users', data);
   }
-}));
-```
-
-### 2. 缓存策略
-
-#### 多级缓存设计
-
-```mermaid
-graph TB
-    subgraph "前端缓存架构"
-        L1["Level 1: 内存缓存<br/>• 组件状态<br/>• 临时数据<br/>• 最快访问"]
-        L2["Level 2: LocalStorage<br/>• 持久化存储<br/>• 用户设置<br/>• Token信息"]
-        L3["Level 3: SessionStorage<br/>• 会话级存储<br/>• 临时状态<br/>• 页面数据"]
-    end
-
-    L1 --> L2
-    L2 --> L3
-
-    subgraph "缓存特性"
-        SPEED["访问速度: L1 > L2 > L3"]
-        PERSIST["持久性: L2 > L3 > L1"]
-        SCOPE["作用域: L1(组件) L2(跨会话) L3(单会话)"]
-    end
-```
-
-```typescript
-// 对应的实现代码
-class CacheManager {
-  // Level 1: 内存缓存 (组件状态)
-  private memoryCache = new Map<string, any>();
-
-  // Level 2: LocalStorage (持久化)
-  private persistentCache = {
-    set: (key: string, value: any) => {
-      localStorage.setItem(key, JSON.stringify(value));
-    },
-    get: (key: string) => {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
-    }
-  };
-
-  // Level 3: SessionStorage (会话级)
-  private sessionCache = {
-    set: (key: string, value: any) => {
-      sessionStorage.setItem(key, JSON.stringify(value));
-    },
-    get: (key: string) => {
-      const item = sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
-    }
-  };
-}
-```
-
----
-
-## 🎨 用户体验设计
-
-### 1. 错误处理策略
-
-#### 全局错误边界
-```typescript
-// 错误边界组件设计
-class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
-  
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // 记录错误到监控系统
-    errorReporter.captureException(error, {
-      extra: errorInfo,
-      tags: { component: 'ErrorBoundary' }
-    });
-  }
-  
-  render() {
-    if (this.state.hasError) {
-      return <ErrorFallback error={this.state.error} />;
-    }
-    
-    return this.props.children;
-  }
-}
-```
-
-### 2. 加载状态管理
-
-#### 统一Loading设计
-```typescript
-// 全局Loading状态管理
-interface LoadingState {
-  global: boolean;
-  components: Record<string, boolean>;
-  requests: Record<string, boolean>;
-}
-
-const useLoading = () => {
-  const [loading, setLoading] = useState<LoadingState>({
-    global: false,
-    components: {},
-    requests: {}
-  });
-  
-  const setComponentLoading = (component: string, isLoading: boolean) => {
-    setLoading(prev => ({
-      ...prev,
-      components: {
-        ...prev.components,
-        [component]: isLoading
-      }
-    }));
-  };
-  
-  return { loading, setComponentLoading };
 };
 ```
 
-### 3. 消息提示系统
+## 7. 错误处理原则
 
-#### 全局消息管理
+### 7.1 全局错误处理
+
 ```typescript
-// MessageManager - 解决Context警告
-class MessageManager {
-  private messageApi: MessageInstance | null = null;
-  
-  setMessageApi(api: MessageInstance) {
-    this.messageApi = api;
-  }
-  
-  error(content: string, duration: number = 5) {
-    if (this.messageApi) {
-      this.messageApi.error(content, duration);
+// 响应拦截器中的统一错误处理
+response.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // 认证错误处理
+      handleAuthError();
     } else {
-      console.error('MessageAPI not initialized:', content);
+      // 业务错误处理
+      messageManager.error(error.message);
     }
+    return Promise.reject(error);
   }
-  
-  success(content: string, duration: number = 3) {
-    if (this.messageApi) {
-      this.messageApi.success(content, duration);
-    }
-  }
-}
-
-export const messageManager = new MessageManager();
+);
 ```
 
----
+### 7.2 组件错误边界
 
-## 🚀 性能优化策略
-
-### 1. 组件优化
-
-#### 懒加载设计
 ```typescript
-// 路由级别懒加载
-const Dashboard = lazy(() => import('../pages/Dashboard'));
-const UserManagement = lazy(() => import('../pages/UserManagement'));
+class ErrorBoundary extends React.Component {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    DebugManager.error('组件错误', error, {
+      component: errorInfo.componentStack
+    });
+  }
+}
+```
 
-// 组件级别懒加载
-const HeavyComponent = lazy(() => import('../components/HeavyComponent'));
+## 8. 性能优化原则
+
+### 8.1 代码分割
+
+```typescript
+// 路由级代码分割
+const HomePage = lazy(() => import('@/pages/Home/HomePage'));
+const MenuPage = lazy(() => import('@/pages/System/Menu'));
 
 // 使用Suspense包装
-<Suspense fallback={<Loading />}>
+<Suspense fallback={<PageLoading />}>
   <Routes>
-    <Route path="/dashboard" element={<Dashboard />} />
-    <Route path="/users" element={<UserManagement />} />
+    <Route path="/home" element={<HomePage />} />
   </Routes>
 </Suspense>
 ```
 
-#### 渲染优化
+### 8.2 渲染优化
+
 ```typescript
-// React.memo优化
-const UserCard = React.memo<UserCardProps>(({ user, onEdit }) => {
-  return (
-    <Card>
-      <h3>{user.name}</h3>
-      <p>{user.email}</p>
-      <Button onClick={() => onEdit(user.id)}>编辑</Button>
-    </Card>
-  );
-}, (prevProps, nextProps) => {
-  // 自定义比较函数
-  return prevProps.user.id === nextProps.user.id &&
-         prevProps.user.name === nextProps.user.name;
-});
+// 避免内联函数
+// Bad
+<Button onClick={() => handleClick(id)}>Click</Button>
+
+// Good
+const handleButtonClick = useCallback(() => {
+  handleClick(id);
+}, [id]);
+<Button onClick={handleButtonClick}>Click</Button>
 ```
 
-### 2. 网络优化
+### 8.3 资源优化
 
-#### 请求优化
 ```typescript
-// 请求去重和缓存
-class RequestManager {
-  private pendingRequests = new Map<string, Promise<any>>();
-  private cache = new Map<string, { data: any; timestamp: number }>();
+// 图片懒加载
+const LazyImage = ({ src, alt }) => {
+  const [isIntersecting, ref] = useIntersectionObserver();
   
-  async request<T>(url: string, options?: RequestOptions): Promise<T> {
-    const cacheKey = this.getCacheKey(url, options);
-    
-    // 检查缓存
-    const cached = this.getFromCache(cacheKey);
-    if (cached) return cached;
-    
-    // 检查是否有相同请求正在进行
-    if (this.pendingRequests.has(cacheKey)) {
-      return this.pendingRequests.get(cacheKey)!;
-    }
-    
-    // 发起新请求
-    const promise = this.makeRequest<T>(url, options);
-    this.pendingRequests.set(cacheKey, promise);
-    
-    try {
-      const result = await promise;
-      this.setCache(cacheKey, result);
-      return result;
-    } finally {
-      this.pendingRequests.delete(cacheKey);
-    }
+  return (
+    <div ref={ref}>
+      {isIntersecting && <img src={src} alt={alt} />}
+    </div>
+  );
+};
+```
+
+## 9. 安全设计原则
+
+### 9.1 认证安全
+
+```typescript
+// 路由保护
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+```
+
+### 9.2 数据安全
+
+```typescript
+// AES加密传输
+const encryptedRequest = async (url: string, data: any) => {
+  const encrypted = await AESUtils.encrypt(JSON.stringify(data));
+  return request.post(url, { encrypted });
+};
+```
+
+## 10. 开发体验原则
+
+### 10.1 调试支持
+
+```typescript
+// 统一的调试管理
+DebugManager.log('组件渲染', { props }, {
+  component: 'UserList',
+  action: 'render'
+});
+
+// 环境感知的日志
+if (import.meta.env.DEV) {
+  console.log('Development only log');
+}
+```
+
+### 10.2 开发工具
+
+```typescript
+// TypeScript严格模式
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true
+  }
+}
+
+// ESLint配置
+{
+  "extends": ["react-app", "react-app/jest"],
+  "rules": {
+    "no-console": "warn",
+    "prefer-const": "error"
   }
 }
 ```
 
----
+## 11. 测试策略
 
-## 📱 响应式设计
+### 11.1 单元测试原则
 
-### 1. 布局适配
-
-#### 响应式断点
 ```typescript
-// 响应式断点定义
-const breakpoints = {
-  xs: '480px',
-  sm: '768px', 
-  md: '992px',
-  lg: '1200px',
-  xl: '1600px'
-};
+// 组件测试
+describe('Button Component', () => {
+  it('should render correctly', () => {
+    const { getByText } = render(<Button>Click me</Button>);
+    expect(getByText('Click me')).toBeInTheDocument();
+  });
+});
 
-// 响应式Hook
-const useResponsive = () => {
-  const [screenSize, setScreenSize] = useState<ScreenSize>('lg');
-  
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      if (width < 480) setScreenSize('xs');
-      else if (width < 768) setScreenSize('sm');
-      else if (width < 992) setScreenSize('md');
-      else if (width < 1200) setScreenSize('lg');
-      else setScreenSize('xl');
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
-  return screenSize;
-};
+// Hook测试
+const { result } = renderHook(() => useUserStatus());
+expect(result.current.isLoggedIn).toBe(false);
 ```
 
----
+### 11.2 集成测试原则
 
-## 🔧 开发体验优化
-
-### 1. 开发工具配置
-
-#### 环境配置策略
 ```typescript
-// 环境变量管理
-interface EnvConfig {
-  API_BASE_URL: string;
-  AES_ENABLED: boolean;
-  AES_KEY?: string;
-  DEBUG_MODE: boolean;
-}
-
-const getEnvConfig = (): EnvConfig => {
-  return {
-    API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-    AES_ENABLED: import.meta.env.VITE_AES_ENABLED === 'true',
-    AES_KEY: import.meta.env.VITE_AES_KEY,
-    DEBUG_MODE: import.meta.env.DEV
-  };
-};
+// API测试
+it('should fetch user data', async () => {
+  const users = await userApi.getList({ page: 1 });
+  expect(users.data).toHaveLength(10);
+});
 ```
 
-### 2. 调试支持
+## 12. 最佳实践总结
 
-#### 开发环境调试
-```typescript
-// 开发环境调试工具
-if (import.meta.env.DEV) {
-  // 全局调试对象
-  (window as any).__SVT_DEBUG__ = {
-    authStore,
-    messageManager,
-    cryptoUtils,
-    requestManager
-  };
-  
-  // 请求日志
-  console.log('🚀 SVT开发模式启动');
-  console.log('📡 API地址:', import.meta.env.VITE_API_BASE_URL);
-  console.log('🔐 AES加密:', import.meta.env.VITE_AES_ENABLED);
-}
-```
+### 12.1 代码组织
+
+1. **模块化**: 按功能模块组织代码
+2. **单一职责**: 每个文件/组件只做一件事
+3. **依赖管理**: 明确的依赖关系和导入路径
+4. **命名规范**: 一致的文件和变量命名
+
+### 12.2 性能优化
+
+1. **懒加载**: 路由和组件级别的代码分割
+2. **缓存策略**: 合理使用memo和缓存
+3. **批量更新**: 避免频繁的状态更新
+4. **虚拟化**: 长列表使用虚拟滚动
+
+### 12.3 可维护性
+
+1. **类型安全**: 完整的TypeScript覆盖
+2. **文档完善**: 关键逻辑添加注释
+3. **错误处理**: 统一的错误处理机制
+4. **代码复用**: 提取通用逻辑到hooks和utils
+
+### 12.4 安全性
+
+1. **认证授权**: 完善的权限控制
+2. **数据加密**: 敏感数据加密传输
+3. **输入验证**: 前端输入验证
+4. **XSS防护**: 避免直接渲染HTML
+
+## 13. 未来改进方向
+
+1. **测试覆盖**: 增加单元测试和集成测试
+2. **性能监控**: 添加性能监控和分析
+3. **微前端**: 探索微前端架构
+4. **SSR/SSG**: 考虑服务端渲染优化
+5. **PWA支持**: 添加离线功能支持
 
 ---
 
-**相关文档**:
-- [组件结构说明](./Component-Structure.md)
-- [状态管理指南](./State-Management.md)
-- [环境变量配置](./环境变量配置说明.md)
+## 📚 相关文档
+
+- [模块化架构](./Modular-Architecture.md)
+- [组件结构](./Component-Structure.md)
+- [状态管理](./State-Management.md)
 - [开发指南](./开发指南.md)
-- [AES加密实现](./API-Encryption-AES.md)
-
-**文档维护**: 本文档随前端架构演进持续更新  
-**最后更新**: 2025-06-21  
-**下次审查**: 2025-08-21  
-**前端责任人**: 前端架构师 + UI/UX设计师
-
-## 🆕 更新日志
-- 2025-06-26 16:50:43 +08:00:
-  - 补充 Token 自动续期具体实现、页面刷新覆盖层 Loading 说明，与最新代码保持一致。

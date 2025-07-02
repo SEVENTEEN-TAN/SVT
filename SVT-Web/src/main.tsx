@@ -47,7 +47,10 @@ console.error = (...args) => {
 };
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // React.StrictMode 在开发环境会故意双重调用useEffect等钩子来检测副作用
+  // 这会导致API被调用两次，在测试JWT续期功能时可能会干扰测试
+  // 生产环境中不存在这个问题，可以根据需要决定是否启用
+  // <React.StrictMode>
     <ConfigProvider
       theme={{
         // 配置主题
@@ -60,5 +63,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <App />
       </AntdApp>
     </ConfigProvider>
-  </React.StrictMode>,
+  // </React.StrictMode>,
 );

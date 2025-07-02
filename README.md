@@ -1,345 +1,570 @@
-# SVT (Secure Vision Tesseract) 项目
+# SVT 企业级风险管理系统
 
-## 📋 项目概述
+一个基于现代化技术栈构建的企业级风险管理系统，采用前后端分离架构，提供完整的用户权限管理、组织机构管理、菜单管理等核心功能。
 
-SVT是一个采用现代化前后端分离架构的企业级Web应用系统，专为保密性要求较高的企业内部使用而设计。系统集成了完整的安全加密体系、JWT认证和权限管理功能，经过多轮安全优化和用户体验改进，实现了生产级的安全认证流程。
+## 🎯 项目特色
 
-### 🏗️ 系统架构
+- **技术栈先进**：Spring Boot 3.3.2 + React 19.1.0 + Java 21 + TypeScript 5.8.3
+- **安全机制完善**：JWT智能续期 + AES-256加密 + Argon2密码哈希 + 敏感数据脱敏
+- **架构设计优秀**：分层模块化 + 职责分离 + 高内聚低耦合 + AOP横切关注点
+- **性能优化到位**：Redis分布式缓存 + Caffeine本地缓存 + 代码分割 + 异步处理
+- **开发体验优良**：TypeScript类型安全 + 热重载 + 自动化构建 + API文档自动生成
 
-```Mermaid
-graph LR
-    A["SVT-Web (React 19)<br/>• React Router<br/>• Ant Design<br/>• Zustand<br/>• CryptoJS"]
-    B["AES加密通道 (端到端加密)<br/>• AES-256-CBC<br/>• JWT黑名单<br/>• 防重放攻击<br/>• 消息管理器"]
-    C["SVT-Server (Spring Boot)<br/>• Spring Security<br/>• Mybatis-Flex<br/>• Redis缓存<br/>• Argon2哈希"]
+## 🚀 技术架构
 
-    A <--> B
-    B <--> C
-```
+### 后端技术栈 (SVT-Server)
+- **核心框架**：Spring Boot 3.3.2 + Java 21
+- **持久层框架**：MyBatis-Flex 1.10.9（现代化ORM框架）
+- **数据库**：Microsoft SQL Server + Druid 1.2.24 连接池
+- **缓存系统**：Redis（分布式缓存）+ Caffeine 3.1.8（本地缓存）
+- **安全框架**：Spring Security + JWT (jjwt 0.11.5) + Argon2
+- **加密算法**：AES-256-CBC（API传输加密）+ Jasypt 3.0.5（配置加密）
+- **文档工具**：Knife4j 4.5.0（基于OpenAPI 3.0）
+- **日志系统**：Log4j2 + Disruptor 3.4.4（异步日志）
+- **工具类库**：Hutool 5.8.16 + Guava 32.1.3 + BouncyCastle 1.69
 
-
-
-## 🔒 核心安全特性
-
-### 1. JWT认证 + 安全黑名单机制 ⭐ 
-**重大设计亮点**: 智能区分系统颁发Token vs 恶意Token
-
-- **多层验证**: Token签名→黑名单→IP检查→Token一致性
-- **安全黑名单**: 仅对系统合法Token进行黑名单管理，防止恶意Token无限膨胀
-- **Token失效流程**: verify-user-status(401) → 直接清理状态 → 跳转login → 顶部toast消息
-- **防重复调用**: BasicLayout统一验证，避免多次API调用
-- **本地缓存**: Caffeine高性能缓存 + Session Sticky负载均衡
-
-### 2. AES-256-CBC端到端加密
-- **完整的API加密**: 请求响应数据全程加密传输
-- **调试模式支持**: 开发环境可选择明文传输，便于调试
-- **智能配置检测**: 前端自动检测密钥配置，智能启用加密
-- **时间戳防重放**: 10分钟容差保护，防止重放攻击
-- **响应头支持**: 自动处理`X-Encrypted`加密标识头
-
-### 3. 用户状态验证系统 ⭐ 
-**2025-06-20 全面重构**: 解决Token失效验证问题
-- **统一验证入口**: BasicLayout负责所有页面的用户状态验证
-- **防重复调用机制**: useRef防重复+依赖优化，确保verify-user-status只调用1次
-- **智能错误处理**: 401时先跳转再显示消息，避免全屏错误页面
-- **消息管理器**: 解决Ant Design静态消息Context警告，支持顶部toast提示
-- **安全退出机制**: Token过期时直接清理本地状态，不调用后端logout API
-
-### 4. 配置文件加密 (Jasypt)
-- **敏感信息保护**: 数据库密码、JWT密钥等使用AES-256加密
-- **环境变量管理**: 通过`JASYPT_ENCRYPTOR_PASSWORD`统一管理
-- **多环境支持**: 开发、UAT、生产环境独立加密配置
-
-### 5. 密码安全 (Argon2)
-- **现代哈希算法**: 替代传统MD5/SHA，抗彩虹表攻击
-- **自适应成本**: 可调节计算复杂度，应对硬件发展
-- **盐值保护**: 每个密码使用独立随机盐值
-
-## 🚀 技术栈
-
-### 后端技术栈
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| Spring Boot | 3.3.2 | 主框架，JDK 21支持 |
-| Spring Security | 6.2+ | 安全框架 + JWT认证 |
-| MyBatis-Flex | 1.10.9 | 高性能数据访问层 |
-| Caffeine + Redis | 3.1.8 | 多级缓存策略 |
-| BouncyCastle | 1.69 | AES-256-CBC加密 |
-| Argon2 | - | 现代化密码哈希 |
-| Jasypt | 3.0+ | 配置文件加密 |
-
-### 前端技术栈
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| React | 19.x | 现代化UI框架 |
-| TypeScript | 5.x | 类型安全 |
-| Vite | 6.x | 极速构建工具 |
-| Ant Design | 5.x | 企业级UI组件 |
-| Zustand | 5.x | 轻量状态管理 |
-| React Router | 7.x | 声明式路由 |
-| CryptoJS | 4.x | AES-256-CBC |
+### 前端技术栈 (SVT-Web)
+- **核心框架**：React 19.1.0 + TypeScript 5.8.3
+- **UI组件库**：Ant Design 5.25.4
+- **状态管理**：Zustand 5.0.5（轻量级状态管理）
+- **路由管理**：React Router DOM 7.6.2
+- **构建工具**：Vite 6.3.5（极速构建）
+- **HTTP客户端**：Axios 1.9.0 + 智能请求拦截器
+- **表单管理**：React Hook Form 7.57.0
+- **数据获取**：TanStack React Query 5.80.6
+- **类型验证**：Zod 3.25.57
+- **加密工具**：crypto-js 4.2.0
+- **拖拽功能**：@dnd-kit 系列（用于菜单排序）
 
 ## 📁 项目结构
 
-```mermaid
-graph TB
-    subgraph "SVT 项目结构"
-        ROOT["SVT/<br/>📄 README.md - 项目总览"]
-
-        subgraph "后端服务"
-            SERVER["SVT-Server/<br/>📄 README.md - 后端操作手册"]
-            SERVER_DOCS["docs/<br/>📚 技术文档"]
-            SERVER_SRC["src/<br/>💻 源代码"]
-
-            subgraph "后端源码结构"
-                COMMON["common/<br/>🔧 公共基础组件"]
-                FRAME["frame/<br/>🏗️ 框架核心层"]
-                MODULES["modules/<br/>📦 业务功能模块"]
-                RESOURCES["resources/<br/>⚙️ 配置文件"]
-            end
-        end
-
-        subgraph "前端应用"
-            WEB["SVT-Web/<br/>📄 README.md - 前端开发指南"]
-            WEB_DOCS["docs/<br/>📚 前端文档"]
-            WEB_SRC["src/<br/>💻 源代码"]
-
-            subgraph "前端源码结构"
-                API["api/<br/>🌐 API接口层"]
-                COMPONENTS["components/<br/>🧩 组件库"]
-                PAGES["pages/<br/>📱 页面组件"]
-                STORES["stores/<br/>🗃️ 状态管理"]
-                UTILS["utils/<br/>🛠️ 工具函数"]
-            end
-        end
-
-        subgraph "项目文档"
-            DOCS["project_document/<br/>📋 项目文档"]
-            ARCH["architecture/<br/>🏛️ 架构设计文档"]
-        end
-    end
-
-    ROOT --> SERVER
-    ROOT --> WEB
-    ROOT --> DOCS
-
-    SERVER --> SERVER_DOCS
-    SERVER --> SERVER_SRC
-    SERVER_SRC --> COMMON
-    SERVER_SRC --> FRAME
-    SERVER_SRC --> MODULES
-    SERVER_SRC --> RESOURCES
-
-    WEB --> WEB_DOCS
-    WEB --> WEB_SRC
-    WEB_SRC --> API
-    WEB_SRC --> COMPONENTS
-    WEB_SRC --> PAGES
-    WEB_SRC --> STORES
-    WEB_SRC --> UTILS
-
-    DOCS --> ARCH
+```
+SVT/
+├── SVT-Server/                         # 后端服务
+│   ├── src/main/java/com/seventeen/svt/
+│   │   ├── RiskManagementApplication.java         # 主程序入口
+│   │   ├── common/                                # 通用基础层
+│   │   │   ├── annotation/                        # 自定义注解
+│   │   │   │   ├── audit/                         # 审计注解(@Audit, @SensitiveLog)
+│   │   │   │   ├── dbkey/                         # 分布式ID注解(@DistributedId)
+│   │   │   │   ├── field/                         # 字段自动填充(@AutoFill)
+│   │   │   │   ├── permission/                    # 权限控制(@RequiresPermission)
+│   │   │   │   └── transaction/                   # 事务管理(@AutoTransaction)
+│   │   │   ├── config/                            # 配置类
+│   │   │   │   ├── AESConfig.java                 # AES加密配置
+│   │   │   │   ├── JasyptConfig.java              # 配置文件加密
+│   │   │   │   ├── RedisConfig.java               # Redis配置
+│   │   │   │   ├── SVTArgon2PasswordEncoder.java  # Argon2密码编码器
+│   │   │   │   └── transaction/                   # 事务管理配置
+│   │   │   ├── exception/                         # 全局异常处理
+│   │   │   ├── filter/                            # 过滤器
+│   │   │   │   ├── AESCryptoFilter.java           # AES加解密过滤器
+│   │   │   │   └── RequestWrapperFilter.java      # 请求包装过滤器
+│   │   │   ├── interceptor/                       # 拦截器
+│   │   │   ├── response/                          # 统一响应格式
+│   │   │   └── util/                              # 工具类
+│   │   ├── frame/                                 # 框架层
+│   │   │   ├── aspect/                            # AOP切面
+│   │   │   │   ├── AuditAspect.java               # 审计切面
+│   │   │   │   ├── AutoTransactionAspect.java     # 自动事务切面
+│   │   │   │   ├── PermissionAspect.java          # 权限切面
+│   │   │   │   └── TransactionMonitorAspect.java  # 事务监控切面
+│   │   │   ├── cache/                             # 缓存管理
+│   │   │   │   ├── entity/                        # 缓存实体
+│   │   │   │   └── util/                          # 缓存工具类
+│   │   │   ├── dbkey/                             # 分布式ID生成器
+│   │   │   ├── handler/                           # MyBatis类型处理器
+│   │   │   ├── listener/                          # 事件监听器
+│   │   │   └── security/                          # 安全框架
+│   │   │       ├── config/                        # Security配置
+│   │   │       ├── controller/                    # 认证控制器
+│   │   │       ├── dto/                           # 认证DTO
+│   │   │       ├── filter/                        # JWT过滤器
+│   │   │       ├── service/                       # 认证服务
+│   │   │       └── utils/                         # JWT工具类
+│   │   └── modules/                               # 业务模块层
+│   │       └── system/                            # 系统管理模块
+│   │           ├── controller/                    # 控制层
+│   │           │   ├── MenuManagementController.java    # 菜单管理
+│   │           │   ├── RoleManagementController.java    # 角色管理
+│   │           │   └── SystemAuthController.java       # 系统认证
+│   │           ├── dto/                           # 数据传输对象
+│   │           ├── entity/                        # 实体类
+│   │           │   ├── UserInfo.java              # 用户信息
+│   │           │   ├── RoleInfo.java              # 角色信息
+│   │           │   ├── MenuInfo.java              # 菜单信息
+│   │           │   ├── OrgInfo.java               # 组织信息
+│   │           │   ├── PermissionInfo.java        # 权限信息
+│   │           │   └── AuditLog.java              # 审计日志
+│   │           └── service/                       # 业务层
+│   ├── src/main/resources/
+│   │   ├── application*.yml                       # 多环境配置
+│   │   ├── config/                                # 配置文件
+│   │   │   ├── log4j2-spring.xml                  # 日志配置
+│   │   │   └── messages.properties                # 国际化消息
+│   │   └── db/init/                               # 数据库初始化脚本
+│   │       ├── ddl.sql                            # 数据库结构
+│   │       └── dml.sql                            # 初始数据
+│   └── docs/                                      # 后端文档
+│
+├── SVT-Web/                            # 前端应用
+│   ├── src/
+│   │   ├── api/                        # API接口层
+│   │   │   ├── auth.ts                 # 认证API
+│   │   │   └── system/                 # 系统管理API
+│   │   ├── components/                 # 组件库
+│   │   │   ├── Layout/                 # 布局系统
+│   │   │   │   ├── BasicLayout.tsx     # 基础布局
+│   │   │   │   ├── core/               # 核心Provider和结构
+│   │   │   │   ├── modules/            # 模块化组件
+│   │   │   │   │   ├── Header/         # 头部（面包屑、用户下拉）
+│   │   │   │   │   ├── Sidebar/        # 侧边栏（Logo、菜单树）
+│   │   │   │   │   └── TabSystem/      # 标签页系统
+│   │   │   │   └── shared/             # 共享工具和类型
+│   │   │   ├── Loading/                # 加载组件
+│   │   │   ├── Common/                 # 通用组件
+│   │   │   └── DynamicPage/            # 动态页面组件
+│   │   ├── config/                     # 配置文件
+│   │   │   ├── crypto.ts               # 加密配置
+│   │   │   └── env.ts                  # 环境配置
+│   │   ├── hooks/                      # 自定义Hooks
+│   │   │   ├── useTokenStatus.ts       # Token状态管理
+│   │   │   └── useUserStatus.ts        # 用户状态管理
+│   │   ├── pages/                      # 页面组件
+│   │   │   ├── Auth/                   # 认证页面
+│   │   │   │   └── LoginPage.tsx       # 登录页面
+│   │   │   ├── System/                 # 系统管理页面
+│   │   │   │   ├── Menu/               # 菜单管理
+│   │   │   │   ├── Role/               # 角色管理
+│   │   │   │   └── User/               # 用户管理
+│   │   │   ├── Home/                   # 首页
+│   │   │   └── Error/                  # 错误页面
+│   │   ├── router/                     # 路由配置
+│   │   │   ├── index.tsx               # 路由定义
+│   │   │   └── ProtectedRoute.tsx      # 路由守卫
+│   │   ├── stores/                     # 状态管理（Zustand）
+│   │   │   ├── authStore.ts            # 认证状态
+│   │   │   ├── userStore.ts            # 用户状态
+│   │   │   └── sessionStore.ts         # 会话状态
+│   │   ├── styles/                     # 样式文件
+│   │   ├── types/                      # TypeScript类型定义
+│   │   └── utils/                      # 工具函数
+│   │       ├── crypto.ts               # 加密工具
+│   │       ├── tokenManager.ts         # Token管理器
+│   │       ├── messageManager.ts       # 消息管理器
+│   │       ├── modalManager.ts         # 弹窗管理器
+│   │       ├── sessionManager.ts       # 会话管理器
+│   │       ├── debugManager.ts         # 调试管理器
+│   │       └── localStorageManager.ts  # 本地存储管理器
+│   └── docs/                           # 前端文档
+│
+└── docs/                               # 项目文档
+    └── architecture/                   # 架构设计文档
 ```
 
-## 🚀 快速开始
+## 🏃‍♂️ 快速开始
 
 ### 环境要求
-- **后端**: Java 21+, Maven 3.6+, SQL Server, Redis
-- **前端**: Node.js 18+, npm 8+
-- **环境变量**: `JASYPT_ENCRYPTOR_PASSWORD` (配置文件解密)
 
-### 启动步骤
+- **Java 21+**（推荐使用OpenJDK或Oracle JDK 21）
+- **Node.js 18+**（推荐使用LTS版本）
+- **Maven 3.6+**
+- **Microsoft SQL Server 2019+**
+- **Redis 6.0+**
+- **Git**
 
-1. **配置环境变量**
+### 克隆项目
+
+```bash
+git clone <repository-url>
+cd SVT
+```
+
+### 后端服务启动
+
+1. **数据库准备**
    ```bash
-   # 必需：Jasypt配置文件解密密钥
-   export JASYPT_ENCRYPTOR_PASSWORD=your-jasypt-password
+   # 1. 创建数据库（建议命名为 svt_db）
+   # 2. 执行初始化脚本
+   # SVT-Server/src/main/resources/db/init/ddl.sql
+   # SVT-Server/src/main/resources/db/init/dml.sql
    ```
 
-2. **启动后端服务**
+2. **环境变量配置**
+   ```bash
+   # Windows
+   set JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_password
+   set SVT_AES_KEY=your_32_char_aes_key_1234567890123456
+
+   # Linux/Mac
+   export JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_password
+   export SVT_AES_KEY=your_32_char_aes_key_1234567890123456
+   ```
+
+3. **配置文件调整**
+   ```yaml
+   # 编辑 SVT-Server/src/main/resources/application-dev.yml
+   # 配置数据库连接、Redis连接等
+   spring:
+     datasource:
+       url: jdbc:sqlserver://localhost:1433;databaseName=svt_db
+       username: your_username
+       password: your_password
+     data:
+       redis:
+         host: localhost
+         port: 6379
+         password: your_redis_password
+   ```
+
+4. **启动服务**
    ```bash
    cd SVT-Server
+   mvn clean install
    mvn spring-boot:run
-   # 默认端口: 8080
    ```
 
-3. **启动前端应用**
+   服务启动成功后：
+   - API接口：`http://localhost:8080/api`
+   - API文档：`http://localhost:8080/doc.html`
+
+### 前端应用启动
+
+1. **安装依赖**
    ```bash
    cd SVT-Web
    npm install
-   npm run dev        # 开发环境
-   npm run dev:uat    # UAT环境
-   npm run dev:prod   # 生产配置测试
-   # 默认端口: 5173
    ```
 
-## 🔧 Token失效验证流程 (2025-06-20)
+2. **环境配置**
+   ```bash
+   # 复制并编辑环境配置文件
+   cp .env.development .env.local
+   # 根据实际后端地址调整 VITE_API_BASE_URL
+   ```
 
-### 正常验证流程
+3. **启动开发服务器**
+   ```bash
+   # 开发环境
+   npm run dev
 
-```mermaid
-graph TD
-    A["用户访问 /dashboard"] --> B["BasicLayout.useUserStatus()<br/>调用 verify-user-status (1次)"]
-    B --> C{Token验证}
-    C -->|有效| D["正常展示页面"]
-    C -->|无效| E["返回401"] --> F["messageManager显示顶部提示"] --> G["跳转/login"]
-```
+   # UAT环境
+   npm run dev:uat
 
-### 关键修复点
-1. **统一验证入口**: BasicLayout负责所有页面验证，避免重复调用
-2. **防重复机制**: useRef存储hasVerified状态，不加入useEffect依赖
-3. **安全退出**: 401时直接清理本地状态，不调用logout API
-4. **UX优化**: 顶部toast消息替代全屏错误页面
+   # 生产环境
+   npm run dev:prod
+   ```
 
-## 🛡️ 安全设计亮点
+   应用启动成功后访问：`http://localhost:5173`
 
-### JWT黑名单机制 (2025-06-20 重大安全升级)
-```java
-// JwtUtils.java - 安全验证逻辑
-public boolean isValidSystemToken(String token) {
-    try {
-        // 1. 验证JWT签名和格式
-        Jws<Claims> claimsJws = Jwts.parserBuilder()
-            .setSigningKey(getSecretKey())
-            .build()
-            .parseClaimsJws(token);
-            
-        // 2. 验证是否为系统颁发的Token
-        Claims claims = claimsJws.getBody();
-        String issuer = claims.getIssuer();
-        
-        return SYSTEM_ISSUER.equals(issuer);
-    } catch (Exception e) {
-        return false; // 恶意或无效Token
-    }
-}
-```
+### 默认账户
 
-### 前端消息管理器 (2025-06-20)
-```typescript
-// messageManager.ts - 全局消息管理
-class MessageManager {
-  private messageApi: any = null;
-  
-  init(messageApi: any) {
-    this.messageApi = messageApi;
-  }
-  
-  error(content: string) {
-    if (this.messageApi) {
-      this.messageApi.error(content);
-    }
-  }
-}
-```
+- **用户名**：admin
+- **密码**：请查看数据库初始化脚本 `dml.sql` 中的用户数据
 
-### 用户状态验证Hook (2025-06-20)
-```typescript
-// useUserStatus.ts - 防重复调用机制
-export const useUserStatus = () => {
-  const hasVerifiedRef = useRef(false); // 关键：使用useRef避免循环依赖
+## 🔧 核心功能
 
-  useEffect(() => {
-    // 只在已认证且有token的情况下才进行验证
-    if (!isAuthenticated || !token) {
-      setLoading(false);
-      return;
-    }
+### 已实现功能 ✅
 
-    if (isAuthenticated && token && !hasVerifiedRef.current) {
-      hasVerifiedRef.current = true;
-      verifyStatus();
-    }
-  }, [isAuthenticated, token, logout, navigate]); // 依赖认证状态
-};
-```
+#### 用户认证与权限
+- **JWT智能续期机制**：基于用户活跃度自动续期，无感知续期体验
+- **单点登录支持**：自动失效旧Token，保证账户安全
+- **RBAC权限模型**：基于角色的访问控制，支持精细化权限管理
+- **组织机构权限**：支持多级组织架构的权限隔离
 
-## 🌍 多环境支持
+#### 系统管理
+- **菜单管理**：完整的菜单CRUD、树形结构、拖拽排序、状态控制
+- **用户管理**：用户信息维护、状态管理、角色分配
+- **角色管理**：角色定义、权限分配、用户关联
+- **组织管理**：四级组织架构（总部/分部/支部/组）
 
-| 环境 | 后端端口 | AES加密 | JWT黑名单 | 数据脱敏 | 配置文件 |
-|------|----------|---------|-----------|----------|----------|
-| **开发** | 8080 | 可选 | 启用 | 禁用 | application-dev.yml |
-| **UAT** | 8080 | 启用 | 启用 | 启用 | application-uat.yml |
-| **生产** | 8080 | 启用 | 启用 | 启用 | application-prod.yml |
+#### 安全机制
+- **AES-256-CBC加密**：API请求/响应数据端到端加密
+- **Argon2密码哈希**：业界最安全的密码存储算法
+- **配置文件加密**：Jasypt保护敏感配置信息
+- **审计日志**：完整的操作审计，敏感数据自动脱敏
+- **敏感数据脱敏**：支持多种脱敏策略（手机号、身份证、银行卡等）
 
-## 📚 详细文档导航
+#### 系统特性
+- **分布式ID生成**：雪花算法变种，支持日期重置和字母扩展
+- **多级缓存策略**：Redis分布式缓存 + Caffeine本地缓存
+- **自动事务管理**：基于注解的智能事务处理
+- **链路追踪**：TraceId全链路追踪，便于问题排查
+- **异步日志**：基于Disruptor的高性能异步日志系统
 
-### 🏗️ 架构设计
-- **[核心架构设计文档](./project_document/SVT_核心架构设计文档_2025-06-20.md)** - 整体架构概览
-- **[架构设计决策记录 (ADR)](./docs/architecture/ADR.md)** - 关键架构决策的背景和理由
+### 前端特色功能 ✨
 
-### 🔙 后端文档
-- **[后端操作手册](./SVT-Server/README.md)** - 完整的部署和开发文档
-- **[后端安全设计原理](./SVT-Server/docs/Security-Design-Principles.md)** - 完整的安全架构设计原理
-- **[AES加密实现](./SVT-Server/docs/API-Encryption-AES.md)** - 后端加密详细设计
-- **[JWT认证系统](./SVT-Server/docs/Authentication-and-Security.md)** - 认证和安全机制
+#### 布局系统
+- **模块化布局设计**：Header、Sidebar、TabSystem独立模块
+- **智能标签页系统**：多标签管理、右键菜单、状态持久化、防重复开启
+- **响应式设计**：支持桌面端和移动端适配
+- **可折叠侧边栏**：节省屏幕空间，提升用户体验
+- **智能面包屑导航**：动态生成，支持路由跳转
 
-### 🔜 前端文档
-- **[前端开发指南](./SVT-Web/README.md)** - 完整的前端开发文档
-- **[前端设计原理](./SVT-Web/docs/Frontend-Design-Principles.md)** - 前端架构和安全机制
-- **[状态管理说明](./SVT-Web/docs/State-Management.md)** - Zustand状态管理
+#### 用户体验
+- **分级加载状态**：页面级、组件级、按钮级加载状态管理
+- **智能会话提醒**：Token即将过期自动提醒用户
+- **错误边界处理**：React错误边界，友好的错误处理
+- **防抖节流优化**：搜索、提交等操作的性能优化
 
-### 📋 项目沟通记录
-- **[JWT安全修复](./project_document/SVT_JWT安全黑名单修复任务_2025-06-20.md)** - 黑名单机制设计
-- **[用户状态验证修复](./project_document/SVT_用户状态验证修复任务_2025-06-20.md)** - Token失效问题解决方案
+#### 开发体验
+- **TypeScript严格模式**：完整的类型安全保障
+- **调试管理系统**：分级日志输出，开发生产环境智能切换
+- **热重载开发**：Vite极速开发体验
+- **代码分割优化**：按需加载，减少首屏加载时间
 
-### 💡 设计说明
-新增的设计文档补充了原有文档中缺失的设计思想和决策过程：
-- **ADR文档**: 记录了5个关键架构决策的完整背景和理由
-- **安全设计原理**: 详细阐述了金融级安全设计的完整原理
-- **前端设计原理**: 说明了前端架构设计和用户体验优化策略
+#### 状态管理
+- **认证状态管理**：JWT Token、登录状态、过期时间管理
+- **用户状态管理**：用户信息、权限、组织信息缓存
+- **会话状态管理**：页面状态、表单状态持久化
+- **本地存储管理**：智能清理、版本控制、过期处理
 
-## ⚡ 性能特性
+### 开发中功能 🚧
 
-- **前端**: Vite构建，React 19并发特性，代码分割，消息管理器优化
-- **后端**: Caffeine本地缓存，Redis分布式缓存，JWT黑名单优化
-- **加密**: 硬件加速AES，密钥缓存，批量处理
-- **网络**: 请求拦截器优化，防重复调用机制
+- **业务流程管理**：工作流引擎、流程设计器
+- **数据报表系统**：图表组件、报表设计器
+- **文件管理系统**：文件上传、下载、预览
+- **消息通知系统**：站内信、邮件通知、短信通知
+- **数据导入导出**：Excel导入导出、模板管理
 
-## 🏆 项目亮点
+## 📖 详细文档
 
-### 安全性 (A+级别)
-1. **多层认证防护**: JWT + 黑名单 + 签名验证 + IP检查
-2. **恶意Token防护**: 智能区分系统Token vs 恶意Token，防止黑名单攻击
-3. **端到端加密**: AES-256-CBC全链路数据保护
-4. **现代密码哈希**: Argon2抗GPU攻击
+### 开发文档
+- [后端开发指南](./SVT-Server/README.md) - Spring Boot开发规范、API设计、安全实践
+- [前端开发指南](./SVT-Web/README.md) - React开发规范、组件设计、状态管理
 
-### 用户体验 (A级别)
-1. **统一状态验证**: BasicLayout集中处理，避免重复验证
-2. **智能消息提示**: 顶部toast替代全屏错误，用户体验友好
-3. **无感刷新**: Token自动续期，用户无感知
-4. **快速响应**: 多级缓存策略，毫秒级响应
+### 技术文档
+- [架构设计文档](./docs/architecture/) - 系统架构、技术选型、设计原理
+- [后端技术文档](./SVT-Server/docs/) - API加密、密码哈希、审计日志等
+- [前端技术文档](./SVT-Web/docs/) - 组件架构、状态管理、Tab系统等
 
-### 架构设计 (A级别)
-1. **现代化技术栈**: React 19 + Spring Boot 3 + JDK 21
-2. **模块化设计**: 前后端完全分离，组件化架构
-3. **可扩展性**: 支持微服务演进，容器化部署
-4. **文档完整性**: 全面的开发和运维文档
+## 🔨 开发指南
 
-## 🔍 验证指南
+### 后端开发规范
 
-### Token失效验证流程测试
+1. **模块开发**
+   ```java
+   // 实体类注解使用示例
+   @DistributedId()  // 自动生成分布式ID
+   @Column(value = "user_id", comment = "用户ID")
+   private String userId;
+   
+   @AutoFill(type = FillType.TIME, operation = OperationType.INSERT)
+   @Column(value = "create_time", comment = "创建时间")
+   private String createTime;
+   
+   @SensitiveLog(strategy = SensitiveStrategy.PASSWORD)
+   @Column(value = "password", comment = "密码")
+   private String password;
+   ```
+
+2. **API设计**
+   ```java
+   // 控制器设计示例
+   @Tag(name = "菜单管理", description = "菜单管理相关接口")
+   @RestController
+   @RequestMapping("/system/menu")
+   public class MenuManagementController {
+   
+       @PostMapping("/get-all-menu-tree")
+       @Operation(summary = "获取菜单树", description = "获取完整的菜单树结构")
+       public Result<?> getAllMenuTree() {
+           return Result.success(menuInfoService.getAllMenuTree());
+       }
+   }
+   ```
+
+3. **安全开发**
+   ```java
+   // 审计和权限注解使用
+   @Audit(module = "菜单管理", operation = "删除菜单")
+   @RequiresPermission("system:menu:delete")
+   @AutoTransaction(type = TransactionType.REQUIRED)
+   public void deleteMenu(String menuId) {
+       // 业务逻辑
+   }
+   ```
+
+### 前端开发规范
+
+1. **组件开发**
+   ```typescript
+   // 组件定义示例
+   interface Props {
+     data: MenuDetailDTO[];
+     loading?: boolean;
+     onUpdate?: (menu: MenuDetailDTO) => void;
+   }
+   
+   const MenuTree: React.FC<Props> = ({ data, loading, onUpdate }) => {
+     // 组件逻辑
+   };
+   ```
+
+2. **状态管理**
+   ```typescript
+   // Zustand Store示例
+   interface AuthState {
+     token: string | null;
+     isAuthenticated: boolean;
+     login: (credentials: LoginRequest) => Promise<void>;
+   }
+   
+   export const useAuthStore = create<AuthState>()(
+     persist((set) => ({
+       // 状态定义
+     }), { name: 'auth-storage' })
+   );
+   ```
+
+3. **API调用**
+   ```typescript
+   // API接口调用示例
+   export const menuApi = {
+     getAllMenuTree: (): Promise<TreeUtils.MenuTreeVO[]> =>
+       request.post('/system/menu/get-all-menu-tree'),
+     
+     updateMenuStatus: (data: UpdateMenuStatusDTO): Promise<void> =>
+       request.post('/system/menu/update-menu-status', data),
+   };
+   ```
+
+## 📦 构建部署
+
+### 本地构建
+
 ```bash
-# 1. 正常登录
-访问 http://localhost:5173/login → 登录成功 → 跳转/dashboard
+# 后端打包
+cd SVT-Server
+mvn clean package -Dmaven.test.skip=true
 
-# 2. Token失效测试
-登录后 → 手动让后端Token失效 → 刷新/dashboard页面
-期望结果：
-- verify-user-status调用1次返回401
-- 跳转到/login页面  
-- 顶部显示toast消息（非全屏错误）
-- 无重复API调用
+# 前端打包 - 生产环境
+cd SVT-Web
+npm run build:prod
 
-# 3. 恶意Token防护测试
-修改localStorage中token为随机字符串 → 访问/dashboard
-期望结果：
-- 恶意token不加入黑名单
-- 正常跳转login页面
-- 系统日志记录恶意访问
+# 前端打包 - UAT环境
+npm run build:uat
 ```
+
+### 生产部署
+
+```bash
+# 后端服务部署
+java -jar SVT-Server/target/SVT-Server-*.jar \
+  --spring.profiles.active=prod \
+  --server.port=8080
+
+# 前端静态文件部署（Nginx配置示例）
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /path/to/SVT-Web/dist;
+    index index.html;
+    
+    location /api {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+    
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+## ⚠️ 重要说明
+
+### 必需环境变量
+系统启动前必须配置以下环境变量：
+```bash
+# 配置文件加密密钥（用于Jasypt加密）
+JASYPT_ENCRYPTOR_PASSWORD=your_secure_password
+
+# API数据加密密钥（32字符，用于AES加密）
+SVT_AES_KEY=your_32_char_aes_key_1234567890123456
+
+# 敏感数据脱敏开关（可选，默认true）
+SENSITIVE_ENABLED=true
+```
+
+### 数据库初始化
+首次部署必须执行：
+1. 创建数据库（推荐命名：`svt_db`）
+2. 执行DDL脚本：`SVT-Server/src/main/resources/db/init/ddl.sql`
+3. 执行DML脚本：`SVT-Server/src/main/resources/db/init/dml.sql`
+
+### 依赖服务
+- **Redis**：系统强依赖Redis，用于JWT缓存、用户会话等
+- **SQL Server**：主数据库，建议使用SQL Server 2019+
+
+### 安全配置
+- AES密钥必须是32字符长度
+- 生产环境请使用强密码和随机密钥
+- 建议定期轮换加密密钥
+- HTTPS部署时调整CORS配置
+
+## 🤝 贡献指南
+
+### 开发流程
+1. Fork本仓库
+2. 创建特性分支：`git checkout -b feature/新功能`
+3. 遵循代码规范进行开发
+4. 添加必要的测试
+5. 提交更改：`git commit -m 'feat: 添加新功能'`
+6. 推送分支：`git push origin feature/新功能`
+7. 创建Pull Request
+
+### 代码规范
+- **后端**：遵循阿里巴巴Java开发手册
+- **前端**：遵循Airbnb TypeScript规范
+- **提交信息**：使用Conventional Commits规范
+  - `feat:` 新功能
+  - `fix:` 问题修复
+  - `docs:` 文档更新
+  - `style:` 代码格式调整
+  - `refactor:` 代码重构
+  - `test:` 测试代码
+  - `chore:` 构建过程或辅助工具的变动
+
+### 代码质量
+- 后端代码覆盖率 > 80%
+- 前端TypeScript严格模式
+- ESLint规则检查通过
+- 单元测试和集成测试
+
+## 📊 系统监控
+
+### 性能指标
+- API响应时间 < 100ms（90%分位）
+- 页面首屏加载 < 1s
+- 内存使用率 < 80%
+- CPU使用率 < 70%
+
+### 日志管理
+- 错误日志：`logs/error.log`
+- 系统日志：`logs/system.log`
+- 用户操作日志：`logs/users/{userId}/`
+
+### 健康检查
+- 后端健康检查：`GET /api/actuator/health`
+- 数据库连接检查：自动监控连接池状态
+- Redis连接检查：缓存服务可用性监控
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+## 📞 联系方式
+
+如有问题或建议，请通过以下方式联系：
+- 提交Issue：项目问题反馈
+- 发起讨论：功能建议和技术交流
+- 邮件联系：技术支持
 
 ---
 
-**最后更新**: 2025-06-20 18:46:54 +08:00  
-**项目状态**: 生产就绪  
-**安全等级**: A+ 🛡️ 
+**项目状态**：✅ 生产就绪  
+**最后更新**：2025年7月  
+**版本**：v1.0.1-SNAPSHOT  
+**维护团队**：SVT开发团队

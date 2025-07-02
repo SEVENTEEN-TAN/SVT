@@ -1,215 +1,376 @@
-# 认证、授权与安全体系
+# JWT认证与安全架构
 
-本文档详细阐述了SVT项目的综合安全体系，涵盖用户认证、授权、密码学策略和会话管理。
+基于实际代码分析的SVT后端JWT认证系统设计与实现。
 
-## 目录
-1. [整体安全架构](#1-整体安全架构)
-2. [用户认证流程 (JWT)](#2-用户认证流程-jwt)
-3. [授权与访问控制 (RBAC)](#3-授权与访问控制-rbac)
-4. [密码学策略](#4-密码学策略)
-    - [Argon2密码哈希](#41-argon2密码哈希)
-    - [Jasypt配置文件加密](#42-jasypt配置文件加密)
-    - [AES API加密](#43-aes-api加密)
-5. [会话与缓存管理](#5-会话与缓存管理)
-    - [双层缓存架构](#51-双层缓存架构)
-    - [Token黑名单机制](#52-token黑名单机制)
-    - [IP与设备校验](#53-ip与设备校验)
-6. [核心组件](#6-核心组件)
+## 1. JWT智能续期机制
 
----
+### 架构概述
+SVT采用基于活跃度的JWT智能续期机制，实现无感知认证体验：
+- **JWT Token**: 标准JWT令牌，包含用户身份信息
+- **智能续期**: 基于用户活跃度自动延长有效期
+- **单点登录**: 确保用户同一时间只有一个有效会话
+- **安全增强**: 9步安全验证流程
 
-## 1. 整体安全架构
+### JWT配置
 
-项目的安全架构是一个多层次的深度防御体系，旨在保护数据和API的机密性、完整性和可用性。
-
-```mermaid
-graph TD
-    A[客户端] -->|HTTPS| B(负载均衡/网关)
-    B -->|请求| C{SVT后端应用}
-    
-    subgraph C [Spring Security Filter Chain]
-        D(AESCryptoFilter) --> E(JwtAuthenticationFilter) --> F(Controller)
-    end
-    
-    subgraph F
-        G[@RequiresPermission] --> H{Service层}
-    end
-
-    C --> I[Redis缓存]
-    C --> J[数据库]
-
-    style F fill:#f9f,stroke:#333,stroke-width:2px
-```
-
-- **通信层**: 所有外部通信强制使用HTTPS。
-- **解密层 (`AESCryptoFilter`)**: 在请求进入业务逻辑前，对加密的请求体进行解密。
-- **认证层 (`JwtAuthenticationFilter`)**: 校验JWT的有效性，并从中解析出用户信息，构建安全上下文。
-- **授权层 (`PermissionAspect`)**: 在方法执行前，通过AOP切面检查`@RequiresPermission`注解，判断用户是否具备操作权限。
-
----
-
-## 2. 用户认证流程 (JWT)
-
-系统采用 **JSON Web Tokens (JWT)** 作为无状态认证的核心机制。
-
-### 2.1 登录流程
-1.  用户提交用户名和**明文密码**。
-2.  后端`AuthService`使用**Argon2密码哈希**验证凭据。
-3.  验证成功后，`JwtUtils`生成一个包含用户ID、用户名、角色等信息的JWT。
-4.  `JwtCacheUtils`将生成的Token与用户信息存入Redis缓存，并设置有效期（如10小时）。
-5.  将JWT返回给客户端。
-
-### 2.2 请求校验流程 (`JwtAuthenticationFilter`)
-1.  过滤器从`Authorization: Bearer <token>`请求头中提取JWT。
-2.  **黑名单检查**: 查询Redis，确认Token是否已登出或失效。
-3.  **基础校验**: `JwtUtils`校验Token的签名和是否过期。
-4.  **缓存校验**: 从Redis中获取缓存的用户会话信息，进行IP地址、设备绑定等检查。
-5.  **上下文构建**: 所有校验通过后，构建`CustomAuthentication`对象并存入`SecurityContextHolder`，完成认证。
-
----
-
-## 3. 授权与访问控制 (RBAC)
-
-系统实现了基于角色的访问控制（Role-Based Access Control）。
-
-### 3.1 权限声明
-
-通过在Controller或Service方法上添加`@RequiresPermission`注解来声明所需权限。
-
-**示例:**
-```java
-// 需要"system:user:view"权限
-@RequiresPermission("system:user:view")
-@GetMapping("/list")
-public Result<?> listUsers() { ... }
-
-// 需要"system:user:add" 或 "system:user:edit"权限
-@RequiresPermission("system:user:add,system:user:edit")
-@PostMapping("/save")
-public Result<?> saveUser() { ... }
-
-// 需要"system:user:delete" 和 "system:role:assign"两个权限
-@RequiresPermission(value = "system:user:delete,system:role:assign", requireAll = true)
-@DeleteMapping("/{id}")
-public Result<?> deleteUserAndRoles() { ... }
-```
-
-### 3.2 权限校验 (`PermissionAspect`)
-- AOP切面`PermissionAspect`会拦截所有标记了`@RequiresPermission`注解的方法。
-- 从`SecurityContextHolder`获取当前用户的权限列表。
-- 将用户拥有的权限与注解声明的权限进行比对。
-- 如果权限不足，则抛出`BusinessException`，全局异常处理器会捕获并返回`403 Forbidden`响应。
-
-### 3.3 权限命名规范
-推荐使用`模块:实体:操作`的格式，例如`system:user:create`。
-
----
-
-## 4. 密码学策略
-
-### 4.1 Argon2密码哈希
-
-- **算法**: Argon2id (2019年密码哈希竞赛获胜者)
-- **用途**: 用于安全存储数据库中的用户密码哈希
-- **安全参数**:
-  - `saltLength`: 16字节 (128位随机盐)
-  - `hashLength`: 32字节 (256位哈希输出)
-  - `parallelism`: 1 (并行度)
-  - `memory`: 4096KB (内存使用量)
-  - `iterations`: 3 (迭代次数)
-- **实现**: `SVTArgon2PasswordEncoder`实现了Spring Security的`PasswordEncoder`接口
-- **安全特性**:
-  - **不可逆**: 单向哈希，无法从哈希值推导出原始密码
-  - **抗彩虹表**: 每个密码使用唯一随机盐
-  - **抗暴力破解**: 计算成本高，减缓攻击速度
-  - **内存困难**: 需要大量内存，抵御ASIC攻击
-
-**使用示例:**
-```java
-@Autowired
-private PasswordEncoder passwordEncoder;
-
-// 密码哈希 (注册时)
-String hashedPassword = passwordEncoder.encode("plainPassword");
-// 输出格式: $argon2id$v=19$m=4096,t=3,p=1$saltBase64$hashBase64
-
-// 密码验证 (登录时)
-boolean matches = passwordEncoder.matches("plainPassword", hashedPassword);
-```
-
-### 4.2 Jasypt配置文件加密
-
-- **算法**: PBEWITHHMACSHA512ANDAES_256 (PBKDF2 + HMAC-SHA512 + AES-256)
-- **用途**: 加密配置文件中的敏感信息（数据库密码、Redis密码、密钥等）
-- **密钥管理**: 通过环境变量`JASYPT_ENCRYPTOR_PASSWORD`提供加密密钥
-- **实现**: `JasyptConfig`配置类 + `JasyptEncryptionUtils`工具类
-
-**配置文件使用:**
 ```yaml
 # application.yml
-spring:
-  datasource:
-    password: ENC(encrypted_password_here)  # 加密后的密码
-  data:
-    redis:
-      password: ENC(encrypted_redis_password)  # 加密后的Redis密码
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key}
+  expiration: 36000  # 10小时 (秒)
+  issuer: SVT-Server
 ```
 
-**加密工具使用:**
+### JWT工具类实现
+
+**位置**: `com.seventeen.svt.frame.security.utils.JwtUtils`
+
 ```java
-// 通过测试类获取加密值
-@Test
-void testJasyptConfigEncryption() {
-    String plainText = "mySecretPassword";
-    String encrypted = JasyptEncryptionUtils.encrypt(plainText);
-    System.out.println("加密值: " + encrypted);
+@Component
+public class JwtUtils {
     
-    String decrypted = JasyptEncryptionUtils.decrypt(encrypted);
-    System.out.println("解密值: " + decrypted);
+    @Value("${jwt.secret}")
+    private String secret;
+    
+    @Value("${jwt.expiration}")
+    private Long expiration; // 秒
+    
+    @Value("${jwt.issuer}")
+    private String issuer;
+    
+    /**
+     * 生成JWT Token
+     */
+    public String generateToken(CustomAuthentication auth) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", auth.getUserId());
+        claims.put("userName", auth.getName());
+        
+        return Jwts.builder()
+            .setClaims(claims)
+            .setSubject(auth.getUsername())
+            .setIssuer(issuer)
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
+            .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+            .compact();
+    }
+    
+    /**
+     * 验证Token是否为系统颁发的合法Token
+     * 注意：只验证签名和格式，不验证过期时间
+     */
+    public boolean isValidSystemToken(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            
+            String userId = claims.get("userId", String.class);
+            String userName = claims.get("userName", String.class);
+            String issuerClaim = claims.getIssuer();
+            
+            return userId != null && userName != null && issuer.equals(issuerClaim);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    /**
+     * 获取Token剩余有效期（秒）
+     */
+    public long getTokenRemainingTime(String token) {
+        Date expiration = getExpirationDateFromToken(token);
+        return (expiration.getTime() - System.currentTimeMillis()) / 1000;
+    }
 }
 ```
 
-**安全特性:**
-- **分离存储**: 加密密钥与配置文件分离存储
-- **环境隔离**: 不同环境使用不同的加密密钥
-- **透明解密**: 应用启动时自动解密，业务代码无感知
-- **防泄露**: 配置文件泄露不会直接暴露敏感信息
+## 2. JWT过滤器九步验证
 
-### 4.3 AES API加密
+**位置**: `com.seventeen.svt.frame.security.filter.JwtAuthenticationFilter`
 
-- **算法**: AES-256-CBC + PKCS5Padding
-- **用途**: 对客户端与服务器之间的API请求和响应体进行端到端加密
-- **IV长度**: 16字节 (128位)
-- **实现**: 详见`API-Encryption-AES.md`文档
+### 验证流程
 
----
+1. **Token有效性验证**: 验证Token是否为系统颁发的合法Token
+2. **黑名单检查**: 检查Token是否已被加入黑名单
+3. **缓存验证**: 确保JWT缓存存在（服务重启安全机制）
+4. **IP地址验证**: 检查IP地址是否发生变化
+5. **Token一致性验证**: 验证Token是否已更改（单点登录）
+6. **活跃度过期检查**: 检查会话活跃度超时
+7. **智能续期**: 基于活跃度的智能续期机制
+8. **会话状态计算**: 计算并设置响应头状态
+9. **活跃度更新**: 更新最后活跃时间戳
 
-## 5. 会话与缓存管理
+### 智能续期配置
 
-为了在无状态的JWT模型中实现有状态的功能（如强制下线、单点登录），系统采用了一套基于Redis的双层缓存方案。
+```java
+// 活跃度续期配置
+public static final long ACTIVITY_TIMEOUT = 30 * 60 * 1000;  // 30分钟
+public static final long RENEWAL_THRESHOLD = 15 * 60 * 1000; // 15分钟
 
-### 5.1 双层缓存架构
-- **第一层 (逻辑层):** `JwtCacheUtils`提供了对用户会话缓存的操作API。
-- **第二层 (物理层):** **Redis**作为分布式缓存，存储所有用户的会话信息、Token黑名单等。
-- **数据结构**: 在Redis中，每个登录用户对应一个`JwtCache`对象，包含当前有效的Token、IP地址、最后活跃时间等。
+// 续期逻辑
+if (needsActivityRenewal(loginId)) {
+    ActivityRenewalResult result = renewActivityWithTokenLimit(loginId);
+    if (result.isSuccess()) {
+        // 活跃期延长，在Token生命周期内
+    }
+}
+```
 
-### 5.2 Token黑名单机制
-- **场景**: 用户主动登出、管理员强制下线、密码修改等。
-- **实现**: 当Token需要失效时，会将其加入Redis的一个`Set`结构（黑名单）中，并设置与原Token相同的过期时间。`JwtAuthenticationFilter`在校验时会优先检查黑名单。
+### 会话状态枚举
 
-### 5.3 IP与设备校验
-- **IP地址变更检测**: `JwtCache`中记录了用户首次登录的IP。如果后续请求的IP发生变化，系统可以配置为自动使Token失效，防止会话劫持。
-- **单点登录**: `JwtCache`中只保存用户最新的一个有效Token。如果用户在另一设备登录，旧设备持有的Token在下一次请求时会因为与缓存中的Token不匹配而认证失败。
+**位置**: `com.seventeen.svt.frame.security.constants.SessionStatusHeader`
 
----
+```java
+public enum SessionStatusHeader {
+    ACTIVE,      // 会话活跃
+    WARNING,     // 即将过期警告
+    CRITICAL,    // 临界状态
+    EXPIRED      // 已过期
+}
+```
 
-## 6. 核心组件
-- **`SecurityConfig`**: Spring Security的主配置类，负责组装过滤器链。
-- **`JwtAuthenticationFilter`**: JWT认证核心过滤器。
-- **`PermissionAspect`**: AOP切面，负责权限校验。
-- **`JwtUtils`**: JWT生成与解析的工具类。
-- **`JwtCacheUtils`**: 用户会话缓存管理工具类。
-- **`SVTArgon2PasswordEncoder`**: Argon2密码哈希编码器。
-- **`JasyptConfig`**: Jasypt配置文件加密配置类。
-- **`JasyptEncryptionUtils`**: Jasypt加密解密工具类。
-- **`AESCryptoFilter`**: API加解密过滤器。 
+### 响应头状态信息
+
+系统通过响应头实时告知前端会话状态：
+
+```http
+X-Session-Status: ACTIVE|WARNING|CRITICAL|EXPIRED
+X-Session-Remaining: <毫秒>
+X-Session-Warning: <警告消息>
+```
+
+**状态说明:**
+- `ACTIVE`: 会话正常，无需处理
+- `WARNING`: 会话即将过期，建议提醒用户
+- `CRITICAL`: 会话处于临界状态，需要紧急续期
+- `EXPIRED`: 会话已过期，需要重新登录
+
+**前端处理建议:**
+```javascript
+// 检查响应头状态
+const sessionStatus = response.headers['x-session-status'];
+const remaining = response.headers['x-session-remaining'];
+
+switch(sessionStatus) {
+    case 'WARNING':
+        showSessionWarning(remaining);
+        break;
+    case 'CRITICAL':
+        showSessionRenewalPrompt();
+        break;
+    case 'EXPIRED':
+        redirectToLogin();
+        break;
+}
+```
+
+## 3. RBAC权限控制
+
+### 权限注解定义
+
+**位置**: `com.seventeen.svt.common.annotation.permission.RequiresPermission`
+
+```java
+@Target({ElementType.METHOD, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface RequiresPermission {
+    /**
+     * 所需权限（逗号分隔）
+     * 格式：module:entity:operation
+     * 示例：system:user:view,system:user:edit
+     */
+    String value();
+    
+    /**
+     * 权限验证逻辑
+     * true: 需要所有权限 (AND逻辑)
+     * false: 需要任一权限 (OR逻辑)
+     */
+    boolean requireAll() default false;
+}
+```
+
+### 权限切面实现
+
+**位置**: `com.seventeen.svt.frame.aspect.PermissionAspect`
+
+权限验证通过AOP切面自动处理，支持：
+- 方法级权限控制
+- 类级权限控制
+- 多权限AND/OR逻辑
+- 权限层级继承
+- 缓存优化
+
+### 使用示例
+
+```java
+// 单个权限验证
+@RequiresPermission("system:user:view")
+@GetMapping("/users")
+public Result<?> listUsers() {
+    return Result.success(userService.listUsers());
+}
+
+// 多权限OR逻辑（满足任一权限即可）
+@RequiresPermission("system:user:add,system:user:edit")
+@PostMapping("/save")
+public Result<?> saveUser(@RequestBody UserDTO user) {
+    return Result.success(userService.save(user));
+}
+
+// 多权限AND逻辑（必须同时具备所有权限）
+@RequiresPermission(value = "system:user:delete,system:role:assign", requireAll = true)
+@DeleteMapping("/{id}")
+public Result<?> deleteUserWithRoles(@PathVariable String id) {
+    userService.deleteUserAndRoles(id);
+    return Result.success();
+}
+
+// 类级权限（作用于整个Controller）
+@RequiresPermission("system:admin")
+@RestController
+@RequestMapping("/admin")
+public class AdminController {
+    // 所有方法都需要system:admin权限
+}
+```
+
+### 权限格式规范
+
+**标准格式**: `模块:实体:操作`
+
+**系统管理模块:**
+- `system:user:view` - 查看用户
+- `system:user:create` - 创建用户
+- `system:user:edit` - 编辑用户
+- `system:user:delete` - 删除用户
+- `system:role:view` - 查看角色
+- `system:role:assign` - 分配角色
+- `system:menu:view` - 查看菜单
+- `system:menu:edit` - 编辑菜单
+
+**业务模块:**
+- `business:order:view` - 查看订单
+- `business:order:approve` - 审批订单
+- `business:report:export` - 导出报表
+
+## 4. 密码安全机制
+
+### Argon2密码哈希
+
+**位置**: `com.seventeen.svt.common.config.SVTArgon2PasswordEncoder`
+
+**算法配置:**
+- **算法**: Argon2id（最安全的Argon2变种）
+- **内存使用**: 4096KB
+- **迭代次数**: 3
+- **盐值**: 16字节随机生成
+- **哈希长度**: 32字节
+- **并行度**: 1（适合单线程环境）
+
+**优势:**
+- 抗时间攻击
+- 抗侧信道攻击
+- 内存难函数，抗ASIC攻击
+- 2015年密码哈希竞赛获胜者
+
+```java
+@Configuration
+public class SVTArgon2PasswordEncoder implements PasswordEncoder {
+    
+    private final Argon2 argon2 = Argon2Factory.create(
+        Argon2Types.ARGON2id,
+        32,    // 哈希长度
+        16     // 盐值长度
+    );
+    
+    @Override
+    public String encode(CharSequence rawPassword) {
+        return argon2.hash(3, 4096, 1, rawPassword.toString().toCharArray());
+    }
+    
+    @Override
+    public boolean matches(CharSequence rawPassword, String encodedPassword) {
+        return argon2.verify(encodedPassword, rawPassword.toString().toCharArray());
+    }
+}
+```
+
+### 配置文件加密 (Jasypt)
+
+**位置**: `com.seventeen.svt.common.config.JasyptConfig`
+
+```yaml
+# 加密的配置值
+spring:
+  datasource:
+    password: ENC(encrypted_value_here)
+  data:
+    redis:
+      password: ENC(encrypted_redis_password)
+```
+
+**环境变量**: `JASYPT_ENCRYPTOR_PASSWORD`
+
+**加密工具**: `com.seventeen.svt.common.util.JasyptEncryptionUtils`
+
+## 5. 会话管理策略
+
+### 本地缓存策略
+
+**实现方式**: Caffeine本地缓存
+- **负载均衡**: 会话粘性（IP哈希）
+- **容量限制**: 最大1000个用户会话
+- **重启策略**: 服务重启后用户需重新登录
+- **缓存过期**: 基于用户活跃度自动清理
+
+### Token黑名单机制
+
+**Token加入黑名单的情况:**
+- 用户主动登出
+- 管理员强制登出
+- 用户密码变更
+- 检测到安全违规行为
+- IP地址异常变更
+- 会话超时清理
+
+**黑名单存储**: Redis分布式存储，确保多实例一致性
+
+### 核心安全特性
+
+1. **IP变更检测**: IP地址变更时会话立即失效
+2. **单点登录**: 每个用户同时只能有一个活跃会话
+3. **活跃度超时**: 30分钟无活动自动登出
+4. **智能续期**: 活跃用户自动续期，无感知体验
+5. **Token生命周期限制**: 续期不能超过原始Token过期时间
+6. **会话状态监控**: 实时计算会话状态并通知前端
+
+## 6. 安全最佳实践
+
+### 部署安全
+1. **HTTPS强制**: 所有通信必须使用HTTPS
+2. **JWT密钥管理**: 使用环境变量安全存储JWT密钥
+3. **权限命名规范**: 遵循`模块:实体:操作`格式
+4. **失败监控**: 监控认证失败次数，实施防暴力破解
+5. **权限审计**: 定期审计用户权限分配
+6. **限流策略**: 对登录接口实施速率限制
+
+### 开发安全
+1. **密码复杂度**: 强制密码复杂度要求
+2. **会话超时**: 合理设置会话超时时间
+3. **权限最小化**: 遵循最小权限原则
+4. **日志记录**: 完整记录认证和授权日志
+5. **异常处理**: 避免敏感信息泄露
+6. **定期更新**: 及时更新安全相关依赖
+
+### 监控告警
+1. **异常登录**: 监控异地登录、异常时间登录
+2. **权限变更**: 监控权限分配变更
+3. **Token异常**: 监控Token伪造、篡改尝试
+4. **会话异常**: 监控会话劫持、异常续期
+5. **性能监控**: 监控认证性能，及时优化

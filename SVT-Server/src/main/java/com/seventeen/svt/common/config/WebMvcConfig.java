@@ -22,7 +22,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns("*")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .exposedHeaders("X-Encrypted", "Content-Type") // 暴露自定义响应头
+                .exposedHeaders(
+                    "X-Encrypted", 
+                    "Content-Type",
+                    // 🔧 修复：添加JWT智能续期机制响应头
+                    "X-Session-Status",
+                    "X-Session-Remaining", 
+                    "X-Session-Warning",
+                    "X-Trace-Id"
+                ) // 暴露自定义响应头
                 .allowCredentials(true)
                 .maxAge(3600);
     }
