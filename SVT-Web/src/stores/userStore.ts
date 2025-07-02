@@ -1,31 +1,53 @@
 /**
- * 用户信息Store - 职责分离版本
+ * 用户信息Store - 合并session功能版本
  * 
  * 职责：
  * - 管理用户详细信息
+ * - 管理会话状态（机构角色选择、登录流程）
  * - 处理用户信息的获取和更新
- * - 管理用户相关的加载状态
- * - 与认证Store协作，但保持独立
+ * - 统一用户相关的所有状态管理
  * 
  * @author SVT Team
- * @since 2025-06-29
- * @version 1.0.0
+ * @since 2025-07-02
+ * @version 2.0.0 - 合并session功能
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { SecureStorage } from '@/utils/secureStorage';
 import * as authApi from '@/api/auth';
 import type { User } from '@/types/user';
 import type { UserDetailCache } from '@/types/org-role';
 import { DebugManager } from '@/utils/debugManager';
 import { useAuthStore } from './authStore';
 
-// 用户信息状态接口
+// 机构角色数据接口
+interface OrgRoleData {
+  orgId: string;
+  orgNameZh: string;
+  orgNameEn: string;
+  roleId: string;
+  roleNameZh: string;
+  roleNameEn: string;
+  selectedAt: string;
+}
+
+// 会话状态接口
+interface SessionState {
+  hasSelectedOrgRole: boolean;
+  orgRoleData: OrgRoleData | null;
+  loginStep: 'initial' | 'authenticated' | 'org-role-selection' | 'completed';
+}
+
+// 用户信息状态接口（包含session）
 interface UserState {
   // 用户信息状态
   user: User | null;
   loading: boolean;
   error: string | null;
+  
+  // 🔥 新增：会话状态（从sessionStore合并过来）
+  session: SessionState;
   
   // 用户信息操作
   setUser: (user: User) => void;
@@ -33,6 +55,13 @@ interface UserState {
   clearUser: () => void;
   refreshUserInfo: () => Promise<void>;
   setUserFromDetails: (userDetails: UserDetailCache) => void;
+  
+  // 🔥 新增：会话管理操作（从sessionStore合并过来）
+  setOrgRoleSelection: (orgRoleData: OrgRoleData) => void;
+  completeOrgRoleSelection: (userDetails: UserDetailCache) => void;
+  clearSession: () => void;
+  setLoginStep: (step: SessionState['loginStep']) => void;
+  resetLoginFlow: () => void;
 }
 
 // 创建用户信息状态管理
@@ -43,6 +72,13 @@ export const useUserStore = create<UserState>()(
       user: null,
       loading: false,
       error: null,
+      
+      // 🔥 新增：会话状态初始值
+      session: {
+        hasSelectedOrgRole: false,
+        orgRoleData: null,
+        loginStep: 'initial'
+      },
 
       // 设置用户信息
       setUser: (user: User) => {
@@ -199,20 +235,189 @@ export const useUserStore = create<UserState>()(
           action: 'setUserFromDetails' 
         });
       },
+
+      // 🔥 新增：会话管理方法（从sessionStore合并过来）
+      
+      // 设置机构角色选择
+      setOrgRoleSelection: (orgRoleData: OrgRoleData) => {
+        set({ 
+          session: {
+            ...get().session,
+            orgRoleData,
+            hasSelectedOrgRole: true,
+            loginStep: 'org-role-selection'
+          }
+        });
+        
+        DebugManager.logSensitive('机构角色已选择', orgRoleData, { 
+          component: 'userStore', 
+          action: 'setOrgRoleSelection' 
+        });
+      },
+
+      // 完成机构角色选择
+      completeOrgRoleSelection: (userDetails: UserDetailCache) => {
+        const orgRoleData: OrgRoleData = {
+          orgId: userDetails.orgId,
+          orgNameZh: userDetails.orgNameZh,
+          orgNameEn: userDetails.orgNameEn,
+          roleId: userDetails.roleId,
+          roleNameZh: userDetails.roleNameZh,
+          roleNameEn: userDetails.roleNameEn,
+          selectedAt: new Date().toISOString()
+        };
+
+        set({ 
+          session: {
+            hasSelectedOrgRole: true,
+            orgRoleData,
+            loginStep: 'completed'
+          }
+        });
+
+        DebugManager.logSensitive('机构角色选择已完成', {
+          orgId: orgRoleData.orgId,
+          orgName: orgRoleData.orgNameZh,
+          roleId: orgRoleData.roleId,
+          roleName: orgRoleData.roleNameZh
+        }, { component: 'userStore', action: 'completeOrgRoleSelection' });
+      },
+
+      // 清除会话状态
+      clearSession: () => {
+        set({ 
+          session: {
+            hasSelectedOrgRole: false,
+            orgRoleData: null,
+            loginStep: 'initial'
+          }
+        });
+        
+        DebugManager.log('会话状态已清除', undefined, { 
+          component: 'userStore', 
+          action: 'clearSession' 
+        });
+      },
+
+      // 设置登录步骤
+      setLoginStep: (step: SessionState['loginStep']) => {
+        set({ 
+          session: {
+            ...get().session,
+            loginStep: step
+          }
+        });
+        
+        DebugManager.log('登录步骤已更新', { step }, { 
+          component: 'userStore', 
+          action: 'setLoginStep' 
+        });
+      },
+
+      // 重置登录流程
+      resetLoginFlow: () => {
+        set({ 
+          session: {
+            hasSelectedOrgRole: false,
+            orgRoleData: null,
+            loginStep: 'initial'
+          }
+        });
+        
+        DebugManager.log('登录流程已重置', undefined, { 
+          component: 'userStore', 
+          action: 'resetLoginFlow' 
+        });
+      },
     }),
     {
-      name: 'user-storage', // 独立的storage key
-      // 只持久化用户信息
+      name: 'user_data', // 🔥 使用SecureStorage的key
+      // 🔥 持久化用户信息和会话状态
       partialize: (state: UserState) => ({
         user: state.user,
+        session: state.session,
       }),
-      // 从localStorage恢复状态时的处理
+      // 🔥 自定义存储引擎 - 使用加密存储
+      storage: {
+        getItem: async (key: string): Promise<string | null> => {
+          try {
+            const data = await SecureStorage.getItem<{user: User | null, session: SessionState}>(key);
+            return data ? JSON.stringify({ state: data }) : null;
+          } catch (error) {
+            DebugManager.error('从安全存储读取用户数据失败', error as Error, { 
+              component: 'userStore', 
+              action: 'secureStorageRead' 
+            });
+            return null;
+          }
+        },
+        setItem: async (key: string, value: string): Promise<void> => {
+          try {
+            // Zustand persist中间件传递的value可能已经是对象或字符串
+            let dataToStore;
+            if (typeof value === 'string') {
+              try {
+                const parsedValue = JSON.parse(value);
+                dataToStore = parsedValue.state || parsedValue;
+              } catch {
+                // 如果解析失败，直接使用原值
+                dataToStore = value;
+              }
+            } else {
+              // 如果已经是对象，直接使用
+              dataToStore = value;
+            }
+            
+            await SecureStorage.setItem(key, dataToStore, { encrypt: true });
+            DebugManager.log('用户数据已加密存储', { key }, { 
+              component: 'userStore', 
+              action: 'secureStorageWrite' 
+            });
+          } catch (error) {
+            DebugManager.error('保存用户数据到安全存储失败', error as Error, { 
+              component: 'userStore', 
+              action: 'secureStorageWrite' 
+            });
+          }
+        },
+        removeItem: async (key: string): Promise<void> => {
+          try {
+            SecureStorage.removeItem(key);
+            DebugManager.log('用户数据已从安全存储移除', { key }, { 
+              component: 'userStore', 
+              action: 'secureStorageRemove' 
+            });
+          } catch (error) {
+            DebugManager.error('从安全存储移除用户数据失败', error as Error, { 
+              component: 'userStore', 
+              action: 'secureStorageRemove' 
+            });
+          }
+        }
+      } as any, // 绕过Zustand persist的类型检查
+      // 从安全存储恢复状态时的处理
       onRehydrateStorage: () => (state: UserState | undefined) => {
         if (state?.user) {
-          DebugManager.log('用户信息已恢复', { 
+          DebugManager.log('用户信息已从加密存储恢复', { 
             userId: state.user.id,
-            username: state.user.username 
+            username: state.user.username,
+            hasSession: !!state.session
           }, { component: 'userStore', action: 'onRehydrateStorage' });
+        }
+        
+        // 🔥 检查会话状态的一致性
+        if (state?.session) {
+          const { hasSelectedOrgRole, orgRoleData } = state.session;
+          if (hasSelectedOrgRole && !orgRoleData) {
+            DebugManager.warn('会话状态不一致，重置会话', undefined, { 
+              component: 'userStore', 
+              action: 'onRehydrateStorage' 
+            });
+            
+            // 重置不一致的会话状态
+            state.session.hasSelectedOrgRole = false;
+            state.session.loginStep = 'initial';
+          }
         }
       },
     }

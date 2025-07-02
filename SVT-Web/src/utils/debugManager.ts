@@ -148,9 +148,7 @@ export class DebugManager {
     const logMessage = this.formatMessage('PERF', message, context);
     const perfMessage = duration ? `${logMessage} (${duration}ms)` : logMessage;
     
-    console.time && console.timeEnd ? 
-      console.info(`⚡ ${perfMessage}`) : 
-      console.info(`⚡ ${perfMessage}`);
+    console.info(`⚡ ${perfMessage}`);
   }
   
   /**

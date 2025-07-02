@@ -13,7 +13,6 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { tokenManager } from '@/utils/tokenManager';
 import * as authApi from '@/api/auth';
 import type { LoginRequest } from '@/types/user';
@@ -24,6 +23,7 @@ import {
   cleanupLegacyStorage,
   STORAGE_KEYS
 } from '@/utils/localStorageManager';
+import { SecureStorage, secureStorage } from '@/utils/secureStorage';
 import { message } from 'antd';
 import { DebugManager } from '@/utils/debugManager';
 import { sessionManager } from '@/utils/sessionManager';
@@ -44,10 +44,8 @@ interface AuthState {
   refreshToken: () => Promise<void>;
 }
 
-// 创建纯认证状态管理
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
+// 创建纯认证状态管理 - 🔥 不使用persist，只用安全存储
+export const useAuthStore = create<AuthState>()((set, get) => ({
       // 初始状态
       token: null,
       isAuthenticated: false,
@@ -100,6 +98,15 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             loading: false,
             expiryDate: calculatedExpiryDate,
+          });
+
+          // 🔐 使用安全存储保存Token（强制加密）
+          await secureStorage.setToken(accessToken);
+          DebugManager.log('🔐 [安全存储] Token已加密存储', { 
+            tokenLength: accessToken.length 
+          }, { 
+            component: 'authStore', 
+            action: 'secureTokenStorage' 
           });
 
           // 启动Token管理器
@@ -199,17 +206,16 @@ export const useAuthStore = create<AuthState>()(
           action: 'localStorageCleared' 
         });
         
-        // 🔧 关键修复：清理所有Zustand persist存储
-        // 清理session-storage (机构角色选择状态)
-        localStorage.removeItem('session-storage');
-        DebugManager.log('🧹 [JWT智能续期测试] session-storage已清理', {}, { 
+        // 🔐 清理安全存储的Token
+        secureStorage.removeToken();
+        DebugManager.log('🔐 [安全存储] 加密Token已清理', {}, { 
           component: 'authStore', 
-          action: 'sessionStorageCleared' 
+          action: 'secureTokenCleared' 
         });
         
-        // 清理user-storage (用户详情状态)  
-        localStorage.removeItem('user-storage');
-        DebugManager.log('🧹 [JWT智能续期测试] user-storage已清理', {}, { 
+        // 🔥 清理用户加密存储（现在session已合并在其中）
+        SecureStorage.removeItem('user_data');
+        DebugManager.log('🧹 [JWT智能续期测试] 用户加密存储已清理', {}, { 
           component: 'authStore', 
           action: 'userStorageCleared' 
         });
@@ -239,6 +245,15 @@ export const useAuthStore = create<AuthState>()(
         if (expiryDate) {
           localStorage.setItem(STORAGE_KEYS.EXPIRY_DATE, expiryDate);
         }
+        
+        // 🔐 使用安全存储保存Token
+        secureStorage.setToken(token);
+        DebugManager.log('🔐 [安全存储] Token已更新加密存储', { 
+          tokenLength: token.length 
+        }, { 
+          component: 'authStore', 
+          action: 'setTokenSecure' 
+        });
         
         // 启动Token管理器
         tokenManager.start();
@@ -273,38 +288,4 @@ export const useAuthStore = create<AuthState>()(
           throw error;
         }
       },
-    }),
-    {
-      name: 'auth-storage', // 使用标准的storage key
-      // 只持久化认证相关状态
-      partialize: (state: AuthState) => ({
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-        expiryDate: state.expiryDate,
-      }),
-      // 从localStorage恢复状态时的处理
-      onRehydrateStorage: () => (state: AuthState | undefined) => {
-        cleanupLegacyStorage();
-        
-        if (state) {
-          if (state.token && state.isAuthenticated) {
-            // 恢复认证状态时启动Token管理器
-            tokenManager.start();
-            
-            DebugManager.log('认证状态已恢复', { 
-              hasToken: !!state.token,
-              isAuthenticated: state.isAuthenticated 
-            }, { component: 'authStore', action: 'onRehydrateStorage' });
-          } else {
-            // 清除无效状态
-            state.token = null;
-            state.isAuthenticated = false;
-            state.expiryDate = null;
-            localStorage.removeItem(STORAGE_KEYS.EXPIRY_DATE);
-            cleanupLegacyStorage();
-          }
-        }
-      },
-    }
-  )
-);
+    }));

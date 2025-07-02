@@ -1,7 +1,7 @@
 import { message } from 'antd';
 import type { AxiosResponse } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
-import { useSessionStore } from '@/stores/sessionStore';
+// 🔥 sessionStore已合并到userStore中
 import { useUserStore } from '@/stores/userStore';
 import { clearStorageOnTokenExpired } from './localStorageManager';
 import { DebugManager } from './debugManager';
@@ -217,11 +217,9 @@ class SessionManager {
   private performAuthStateCleanup(): void {
     console.log('🧹 [SessionManager-简化版] 开始执行认证状态清理');
     
-    // 🔧 强制清理所有Zustand persist存储，确保重新登录时必须重新选择机构角色
-    localStorage.removeItem('session-storage'); // 机构角色选择状态
-    localStorage.removeItem('user-storage');    // 用户详情状态
-    localStorage.removeItem('auth-storage');    // 认证状态
-    console.log('🧹 [SessionManager-简化版] 强制清理所有存储完成');
+    // 🔧 强制清理localStorage中的旧存储（如果存在）
+    localStorage.removeItem('user-storage');    // 清理可能存在的旧明文存储
+    console.log('🧹 [SessionManager-简化版] 旧存储清理完成');
     
     // 清除其他相关存储
     clearStorageOnTokenExpired();
@@ -229,16 +227,15 @@ class SessionManager {
     
     // 🔧 关键修复：重置所有Store的内存状态，确保重新登录时强制选择机构角色
     const authStore = useAuthStore.getState();
-    const sessionStore = useSessionStore.getState();
     const userStore = useUserStore.getState();
     
     // 清除认证状态（这会重置Zustand状态）
     authStore.clearAuthState();
     console.log('🧹 [SessionManager-简化版] authStore已重置');
     
-    // 重置会话状态，强制用户重新选择机构角色
-    sessionStore.clearSession();
-    console.log('🧹 [SessionManager-简化版] sessionStore已重置');
+    // 🔥 重置会话状态（现在在userStore中）
+    userStore.clearSession();
+    console.log('🧹 [SessionManager-简化版] session状态已重置');
     
     // 清理用户状态
     userStore.clearUser();
