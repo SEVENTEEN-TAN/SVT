@@ -110,4 +110,10 @@ public class UserDetailDTO implements Serializable {
 
     @Schema(description = "备注")
     private String remark;
+
+    @Schema(description = "用户角色列表（显示用）")
+    private String roleNames;
+
+    @Schema(description = "用户机构列表（显示用）")
+    private String orgNames;
 }

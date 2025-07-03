@@ -19,7 +19,7 @@ import java.io.Serializable;
 @Data
 public class PermissionInfo implements Serializable {
 
-    @DistributedId
+    @DistributedId(prefix = "P")
     @Column(value = "permission_id", comment = "权限ID")
     private String permissionId;
 

@@ -88,7 +88,12 @@ public class AuditAspect {
             // 记录异常信息
             auditLog.setOperationResult("1");
             if (audit.recordException()) {
-                auditLog.setErrorMsg(e.getMessage());
+                String errorMsg = e.getMessage();
+                // 限制错误消息长度，避免数据库字段截断
+                if (errorMsg != null && errorMsg.length() > 950) {
+                    errorMsg = errorMsg.substring(0, 950) + "...[截断]";
+                }
+                auditLog.setErrorMsg(errorMsg);
             }
             throw e;
 

@@ -54,10 +54,79 @@ public interface RoleInfoService extends IService<RoleInfo> {
     void insertOrUpdateRole(InsertOrUpdateRoleDetailDTO editRoleDetailDTO);
 
     /**
-     * 获取角色用户列表
+     * 更新角色状态
      *
      * @param roleId 角色ID
-     * @return 角色用户列表
+     * @param status 状态（0：启用，1：停用）
      */
-    List<UserDetailDTO> getRoleUserList(String roleId);
+    void updateRoleStatus(String roleId, String status);
+
+    /**
+     * 删除角色
+     *
+     * @param roleId 角色ID
+     */
+    void deleteRole(String roleId);
+
+    /**
+     * 批量更新角色状态
+     *
+     * @param roleIds 角色ID列表
+     * @param status 状态（0：启用，1：停用）
+     */
+    void batchUpdateStatus(List<String> roleIds, String status);
+
+    /**
+     * 批量删除角色
+     *
+     * @param roleIds 角色ID列表
+     */
+    void batchDelete(List<String> roleIds);
+
+    /**
+     * 获取角色关联的用户ID列表
+     *
+     * @param roleId 角色ID
+     * @return 用户ID列表
+     */
+    List<String> getRoleUserList(String roleId);
+
+    /**
+     * 获取角色关联的用户详细信息列表
+     *
+     * @param roleId 角色ID
+     * @return 用户详细信息列表
+     */
+    List<UserDetailDTO> getRoleUserDetailList(String roleId);
+
+    /**
+     * 获取角色关联的权限列表
+     *
+     * @param roleId 角色ID
+     * @return 权限详细信息列表
+     */
+    List<com.seventeen.svt.modules.system.dto.response.PermissionDetailDTO> getRolePermissionList(String roleId);
+
+    /**
+     * 分配角色权限
+     *
+     * @param roleId 角色ID
+     * @param permissionIds 权限ID列表
+     */
+    void assignRolePermissions(String roleId, List<String> permissionIds);
+
+    /**
+     * 获取所有权限列表
+     *
+     * @return 权限详细信息列表
+     */
+    List<com.seventeen.svt.modules.system.dto.response.PermissionDetailDTO> getAllPermissions();
+
+    /**
+     * 分配角色用户
+     *
+     * @param roleId 角色ID
+     * @param userIds 用户ID列表
+     */
+    void assignRoleUsers(String roleId, List<String> userIds);
 }

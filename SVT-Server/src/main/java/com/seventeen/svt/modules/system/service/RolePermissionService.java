@@ -17,4 +17,11 @@ public interface RolePermissionService extends IService<RolePermission> {
      * @return 权限列表
      */
     List<PermissionInfo> selectPermissionListByRoleId(String roleId);
+
+    /**
+     * 批量插入角色权限关联
+     * @param permissionIds 权限ID列表
+     * @param roleId 角色ID
+     */
+    void batchInsertRolePermission(List<String> permissionIds, String roleId);
 }

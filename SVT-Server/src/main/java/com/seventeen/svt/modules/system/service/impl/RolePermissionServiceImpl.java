@@ -1,6 +1,7 @@
 package com.seventeen.svt.modules.system.service.impl;
 
 import com.mybatisflex.core.query.QueryWrapper;
+import com.mybatisflex.core.update.UpdateChain;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.seventeen.svt.common.constant.SystemConstant;
 import com.seventeen.svt.modules.system.entity.PermissionInfo;
@@ -32,6 +33,26 @@ public class RolePermissionServiceImpl extends ServiceImpl<RolePermissionMapper,
                 .where(ROLE_PERMISSION.ROLE_ID.eq(roleId))
                 .orderBy(PERMISSION_INFO.PERMISSION_SORT, true);
         return mapper.selectListByQueryAs(queryWrapper,PermissionInfo.class);
+    }
+
+    @Override
+    public void batchInsertRolePermission(List<String> permissionIds, String roleId) {
+        // 先删除现有的角色权限关联
+        UpdateChain.of(RolePermission.class)
+                .set(RolePermission::getDelFlag, SystemConstant.DelFlag.DELETED)
+                .where(ROLE_PERMISSION.ROLE_ID.eq(roleId))
+                .update();
+
+        // 添加新的权限关联
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            for (String permissionId : permissionIds) {
+                com.seventeen.svt.modules.system.entity.RolePermission rolePermission =
+                        new com.seventeen.svt.modules.system.entity.RolePermission();
+                rolePermission.setRoleId(roleId);
+                rolePermission.setPermissionId(permissionId);
+                mapper.insertSelective(rolePermission);
+            }
+        }
     }
 
 }

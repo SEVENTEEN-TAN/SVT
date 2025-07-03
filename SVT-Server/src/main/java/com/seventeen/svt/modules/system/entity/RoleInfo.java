@@ -33,7 +33,7 @@ public class RoleInfo implements Serializable {
     private String roleNameEn;
 
     @Column(value = "role_sort", comment = "显示顺序")
-    private String roleSort;
+    private Integer roleSort;
 
     @Column(value = "status", comment = "状态（0：正常，1：停用）")
     private String status;

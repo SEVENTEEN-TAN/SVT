@@ -19,7 +19,7 @@ import java.io.Serializable;
 @Data
 public class OrgInfo implements Serializable {
 
-    @DistributedId
+    @DistributedId(prefix = "G")
     @Column(value = "org_id", comment = "机构ID")
     private String orgId;
 

@@ -69,11 +69,11 @@ svt:
 # 开发环境JWT配置 (临时使用明文，用于测试)
 jwt:
   secret: ENC(JWlmelw38npHv2mTU/XgpfViufiA7dAqaqhKS69qz1fi0LAqZz4bixTr/I7VGgsllihWCA7SCCeuANvfTPmxZEriKKavH4xjQqnSaKaspe5ckohCLE7HyRtCAgpUYNII)
-  expiration: 300 # 5分钟 (真正的session过期时间)
+  expiration: 28800 # 10小时 (真正的session过期时间)
   issuer: svt-issuer
 
   # 开发环境智能续期配置
   smart-renewal:
     enabled: true                      # 启用智能续期
-    activity-cycle-seconds: 60    # 1钟活跃度周期（用户无操作1分钟=不活跃）
+    activity-cycle-seconds: 600    # 10钟活跃度周期（用户无操作10分钟=不活跃）
     activity-renewal-threshold: 20     # 20%续期阈值（最后20秒内操作才刷新缓存，避免频繁写入）
