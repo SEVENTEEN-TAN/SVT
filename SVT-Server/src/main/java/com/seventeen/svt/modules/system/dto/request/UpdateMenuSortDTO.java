@@ -1,7 +1,7 @@
 package com.seventeen.svt.modules.system.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,6 +24,6 @@ public class UpdateMenuSortDTO implements Serializable {
     private String menuId;
 
     @Schema(description = "排序", example = "0", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "排序不能为空")
-    private String sort;
+    @NotNull(message = "排序不能为空")
+    private Integer sort;
 }

@@ -36,7 +36,7 @@ public class PermissionInfo implements Serializable {
     private String permissionGroup;
 
     @Column(value = "permission_sort", comment = "显示顺序")
-    private String permissionSort;
+    private Integer permissionSort;
 
     @Column(value = "status", comment = "状态（0：正常，1：停用）")
     private String status;

@@ -34,7 +34,7 @@ public class PermissionDetailDTO implements  Serializable {
     private String permissionGroup;
 
     @Schema(description = "权限排序")
-    private String permissionSort;
+    private Integer permissionSort;
 
     @Schema(description = "状态")
     private String status;

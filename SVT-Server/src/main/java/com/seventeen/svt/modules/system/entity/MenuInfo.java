@@ -40,7 +40,7 @@ public class MenuInfo implements Serializable {
     private String menuIcon;
 
     @Column(value = "menu_sort", comment = "显示顺序")
-    private String menuSort;
+    private Integer menuSort;
 
     @Column(value = "status", comment = "状态（0：正常，1：停用）")
     private String status;

@@ -38,7 +38,7 @@ public class InsertOrUpdateMenuDTO implements Serializable {
     private String menuIcon;
 
     @Schema(description = "显示顺序", example = "1")
-    private String menuSort;
+    private Integer menuSort;
 
     @Schema(description = "状态", example = "0")
     private String status;

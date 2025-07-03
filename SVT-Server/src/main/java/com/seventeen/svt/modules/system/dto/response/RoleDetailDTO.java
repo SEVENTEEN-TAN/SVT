@@ -32,7 +32,7 @@ public class RoleDetailDTO implements Serializable {
     private String roleNameEn;
 
     @Schema(description = "显示顺序")
-    private String roleSort;
+    private Integer roleSort;
 
     @Schema(description = "状态")
     private String status;
@@ -113,5 +113,8 @@ public class RoleDetailDTO implements Serializable {
 
     @Schema(description = "备注")
     private String remark;
+
+    @Schema(description = "关联用户数量")
+    private Integer userCount;
 
 }

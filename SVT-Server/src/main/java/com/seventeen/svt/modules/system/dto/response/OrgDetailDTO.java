@@ -39,7 +39,7 @@ public class OrgDetailDTO implements Serializable {
     private String orgType;
 
     @Schema(description = "机构排序")
-    private String orgSort;
+    private Integer orgSort;
 
     @Schema(description = "状态")
     private String status;

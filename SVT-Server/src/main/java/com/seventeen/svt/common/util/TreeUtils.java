@@ -80,7 +80,7 @@ public class TreeUtils {
         /**
          * 显示顺序
          */
-        private String menuSort;
+        private Integer menuSort;
 
         /**
          * 状态（0：正常，1：停用）

@@ -1,0 +1,26 @@
+{
+  "apiKeyHelper": "echo 'sk-ULWUO0WzwDCrFEUnWzJQjKamI75TMroX'",
+  "env": {
+    "ANTHROPIC_API_KEY": "sk-ULWUO0WzwDCrFEUnWzJQjKamI75TMroX",
+    "ANTHROPIC_BASE_URL": "https://api.packycode.com",
+    "DISABLE_TELEMETRY": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(mv:*)",
+      "Bash(npx tsc:*)",
+      "Bash(rm:*)",
+      "Bash(npm run build:dev:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(git reset:*)",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(npm install)",
+      "Bash(git commit:*)",
+      "mcp__sequential-thinking__sequentialthinking"
+    ],
+    "deny": []
+  }
+}

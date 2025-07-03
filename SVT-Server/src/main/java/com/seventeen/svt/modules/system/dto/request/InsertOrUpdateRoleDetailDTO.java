@@ -28,7 +28,7 @@ public class InsertOrUpdateRoleDetailDTO implements Serializable {
     private String roleNameEn;
 
     @Schema(description = "显示顺序")
-    private String roleSort;
+    private Integer roleSort;
 
     @Schema(description = "状态")
     private String status;

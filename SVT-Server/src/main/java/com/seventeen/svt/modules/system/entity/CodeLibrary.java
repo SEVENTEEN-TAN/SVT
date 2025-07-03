@@ -28,7 +28,7 @@ public class CodeLibrary implements Serializable {
     private String codeName;
 
     @Column(value = "code_sort", comment = "显示顺序")
-    private String codeSort;
+    private Integer codeSort;
 
     @Column(value = "code_desc", comment = "码值描述")
     private String codeDesc;

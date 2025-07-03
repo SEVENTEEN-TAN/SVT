@@ -40,7 +40,7 @@ public class MenuDetailDTO implements Serializable {
     private String menuIcon;
 
     @Schema(description = "菜单排序")
-    private String menuSort;
+    private Integer menuSort;
 
     @Schema(description = "状态")
     private String status;

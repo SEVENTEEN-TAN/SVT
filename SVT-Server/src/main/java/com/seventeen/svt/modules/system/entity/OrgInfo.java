@@ -39,7 +39,7 @@ public class OrgInfo implements Serializable {
     private String orgType;
 
     @Column(value = "org_sort", comment = "机构排序")
-    private String orgSort;
+    private Integer orgSort;
 
     @Column(value = "status", comment = "状态（0：正常，1：停用）")
     private String status;
