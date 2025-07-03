@@ -3,7 +3,7 @@
 -- 创建用户表
 DROP TABLE IF EXISTS user_info;
 CREATE TABLE user_info (
-   user_id NVARCHAR(32) PRIMARY KEY,
+   user_id NVARCHAR(32),
    login_id NVARCHAR(32) NOT NULL,
    password NVARCHAR(100) NOT NULL,
    user_name_zh NVARCHAR(50),
@@ -17,8 +17,8 @@ CREATE TABLE user_info (
    update_org_id NVARCHAR(32),
    update_time DATETIME DEFAULT GETDATE(),
    remark NVARCHAR(500),
-   -- 添加唯一约束
-   CONSTRAINT uk_user_login_id UNIQUE (login_id)
+   -- 添加主键约束
+   PRIMARY KEY (user_id, login_id)
 );
 
 -- 添加表注释
@@ -43,13 +43,13 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建机构表
 DROP TABLE IF EXISTS org_info;
 CREATE TABLE org_info (
-      org_id NVARCHAR(32) PRIMARY KEY,
-      org_key NVARCHAR(32),
+      org_id NVARCHAR(32),
+      org_key NVARCHAR(32) NOT NULL,
       org_name_zh NVARCHAR(100) NOT NULL,
       org_name_en NVARCHAR(100) NOT NULL,
       parent_id NVARCHAR(32),
       org_type NVARCHAR(8),
-      org_sort NVARCHAR(32) NOT NULL,
+      org_sort INT NOT NULL DEFAULT 1,
       status CHAR(1) DEFAULT '0',
       del_flag CHAR(1) DEFAULT '0',
       create_by NVARCHAR(32),
@@ -59,8 +59,8 @@ CREATE TABLE org_info (
       update_org_id NVARCHAR(32),
       update_time DATETIME DEFAULT GETDATE(),
       remark NVARCHAR(500),
-      -- 添加唯一约束
-      CONSTRAINT uk_org_key UNIQUE (org_key)
+      -- 添加主键约束
+      PRIMARY KEY (org_id, org_key)
 );
 
 -- 添加表注释
@@ -122,11 +122,11 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建角色表
 DROP TABLE IF EXISTS role_info;
 CREATE TABLE role_info (
-    role_id NVARCHAR(32) PRIMARY KEY,
+    role_id NVARCHAR(32),
     role_code NVARCHAR(32) NOT NULL,
     role_name_zh NVARCHAR(100) NOT NULL,
     role_name_en NVARCHAR(100) NOT NULL,
-    role_sort NVARCHAR(32),
+    role_sort INT DEFAULT 1,
     status CHAR(1) DEFAULT '0',
     del_flag CHAR(1) DEFAULT '0',
     create_by NVARCHAR(32),
@@ -136,8 +136,8 @@ CREATE TABLE role_info (
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
     remark NVARCHAR(500),
-    -- 添加唯一约束
-    CONSTRAINT uk_role_code UNIQUE (role_code)
+    -- 添加主键约束
+    PRIMARY KEY (role_id, role_code)
 );
 
 -- 添加表注释
@@ -196,13 +196,13 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建菜单表
 DROP TABLE IF EXISTS menu_info;
 CREATE TABLE menu_info (
-    menu_id NVARCHAR(32) PRIMARY KEY,
+    menu_id NVARCHAR(32),
     parent_id NVARCHAR(32),
     menu_name_zh NVARCHAR(100) NOT NULL,
     menu_name_en NVARCHAR(100) NOT NULL,
-    menu_path NVARCHAR(200),
+    menu_path NVARCHAR(200) NOT NULL,
     menu_icon NVARCHAR(100),
-    menu_sort NVARCHAR(32),
+    menu_sort INT DEFAULT 1,
     status CHAR(1) DEFAULT '0',
     del_flag CHAR(1) DEFAULT '0',
     create_by NVARCHAR(32),
@@ -211,7 +211,9 @@ CREATE TABLE menu_info (
     update_by NVARCHAR(32),
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
-    remark NVARCHAR(500)
+    remark NVARCHAR(500),
+    -- 添加主键约束
+    PRIMARY KEY (menu_id, menu_path)
 );
 
 -- 添加表注释
@@ -268,12 +270,12 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建权限表
 DROP TABLE IF EXISTS permission_info;
 CREATE TABLE permission_info (
-    permission_id NVARCHAR(32) PRIMARY KEY,
+    permission_id NVARCHAR(32),
     permission_key NVARCHAR(100) NOT NULL,
     permission_name_zh NVARCHAR(100) NOT NULL,
     permission_name_en NVARCHAR(100) NOT NULL,
     permission_group NVARCHAR(32) NOT NULL,
-    permission_sort NVARCHAR(32),
+    permission_sort INT DEFAULT 1,
     status CHAR(1) DEFAULT '0',
     del_flag CHAR(1) DEFAULT '0',
     create_by NVARCHAR(32),
@@ -283,8 +285,8 @@ CREATE TABLE permission_info (
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
     remark NVARCHAR(500),
-    -- 添加唯一约束
-    CONSTRAINT uk_permission_key UNIQUE (permission_key)
+    -- 添加主键约束
+    PRIMARY KEY (permission_id, permission_key)
 );
 
 -- 添加表注释
@@ -381,7 +383,7 @@ CREATE TABLE code_library (
     code_type NVARCHAR(32) NOT NULL,
     code_value NVARCHAR(32) NOT NULL,
     code_name NVARCHAR(100) NOT NULL,
-    code_sort NVARCHAR(32),
+    code_sort INT DEFAULT 1,
     status CHAR(1) DEFAULT '0',
     del_flag CHAR(1) DEFAULT '0',
     code_desc NVARCHAR(500),
