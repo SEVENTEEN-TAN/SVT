@@ -46,7 +46,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 防止页面级滚动 */
+  overflow: auto; /* 允许页面级滚动，确保分页可见 */
   background: #fff;
   padding: 2%;
   box-sizing: border-box;

@@ -130,8 +130,7 @@ public class SystemStartupListener implements CommandLineRunner {
              this.checkTableInitialization("role_menu");
              this.checkTableInitialization("role_permission");
              this.checkTableInitialization("user_info");
-             this.checkTableInitialization("user_org");
-             this.checkTableInitialization("user_role");
+             this.checkTableInitialization("user_org_role");
         } catch (DataAccessException e) {
             log.error("系统关键表未初始化: 失败 X", e);
             throw new RuntimeException("系统关键表未初始化", e);

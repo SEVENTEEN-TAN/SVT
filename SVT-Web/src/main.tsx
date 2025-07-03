@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import App from './App';
 import './index.css';
+import 'virtual:uno.css';
 
 import { DebugManager } from './utils/debugManager';
 

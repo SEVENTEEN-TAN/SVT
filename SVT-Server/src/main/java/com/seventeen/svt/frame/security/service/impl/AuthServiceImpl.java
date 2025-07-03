@@ -11,9 +11,9 @@ import com.seventeen.svt.frame.cache.util.JwtCacheUtils;
 import com.seventeen.svt.frame.cache.util.UserDetailCacheUtils;
 import com.seventeen.svt.frame.security.config.CustomAuthentication;
 import com.seventeen.svt.frame.security.dto.request.LoginRequestDTO;
+import com.seventeen.svt.frame.security.dto.response.TokenDTO;
 import com.seventeen.svt.frame.security.service.AuthService;
 import com.seventeen.svt.frame.security.utils.JwtUtils;
-import com.seventeen.svt.frame.security.dto.response.TokenDTO;
 import com.seventeen.svt.modules.system.entity.UserInfo;
 import com.seventeen.svt.modules.system.service.UserInfoService;
 import lombok.RequiredArgsConstructor;
@@ -72,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
                 .userNameEn(userInfo.getUserNameEn())
                 .loginIp(RequestContextUtils.getIpAddress())
                 .loginTime(LocalDateTime.now()).build();
-        userDetailCacheUtils.putUserDetail(userInfo.getUserId(),userDetailCache);
+        userDetailCacheUtils.putUserDetail(userInfo.getUserId(), userDetailCache);
 
         // 构建并返回TokenDTO
         return TokenDTO.builder()
@@ -82,9 +82,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Result<?> logout(String requestUserId) {
+    public void logout(String requestUserId) {
         jwtCacheUtils.removeJwt(requestUserId);
         userDetailCacheUtils.removeUserDetail(requestUserId);
-        return Result.success(MessageUtils.getMessage("auth.logout.success"));
+        Result.success(MessageUtils.getMessage("auth.logout.success"));
     }
 }

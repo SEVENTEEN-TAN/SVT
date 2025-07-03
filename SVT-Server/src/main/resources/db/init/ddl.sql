@@ -3,8 +3,8 @@
 -- 创建用户表
 DROP TABLE IF EXISTS user_info;
 CREATE TABLE user_info (
-   user_id NVARCHAR(32),
-   login_id NVARCHAR(32) NOT NULL,
+   user_id NVARCHAR(32) PRIMARY KEY,
+   login_id NVARCHAR(32) NOT NULL UNIQUE,
    password NVARCHAR(100) NOT NULL,
    user_name_zh NVARCHAR(50),
    user_name_en NVARCHAR(50),
@@ -16,9 +16,7 @@ CREATE TABLE user_info (
    update_by NVARCHAR(32),
    update_org_id NVARCHAR(32),
    update_time DATETIME DEFAULT GETDATE(),
-   remark NVARCHAR(500),
-   -- 添加主键约束
-   PRIMARY KEY (user_id, login_id)
+   remark NVARCHAR(500)
 );
 
 -- 添加表注释
@@ -43,8 +41,8 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建机构表
 DROP TABLE IF EXISTS org_info;
 CREATE TABLE org_info (
-      org_id NVARCHAR(32),
-      org_key NVARCHAR(32) NOT NULL,
+      org_id NVARCHAR(32) PRIMARY KEY,
+      org_key NVARCHAR(32) NOT NULL UNIQUE,
       org_name_zh NVARCHAR(100) NOT NULL,
       org_name_en NVARCHAR(100) NOT NULL,
       parent_id NVARCHAR(32),
@@ -58,9 +56,7 @@ CREATE TABLE org_info (
       update_by NVARCHAR(32),
       update_org_id NVARCHAR(32),
       update_time DATETIME DEFAULT GETDATE(),
-      remark NVARCHAR(500),
-      -- 添加主键约束
-      PRIMARY KEY (org_id, org_key)
+      remark NVARCHAR(500)
 );
 
 -- 添加表注释
@@ -87,8 +83,8 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建用户机构关联表
 DROP TABLE IF EXISTS user_org;
 CREATE TABLE user_org (
-    user_id NVARCHAR(32),
-    org_id NVARCHAR(32),
+    user_id NVARCHAR(32) NOT NULL,
+    org_id NVARCHAR(32) NOT NULL,
     is_primary CHAR(1) DEFAULT '0',
     status CHAR(1) DEFAULT '0',
     del_flag CHAR(1) DEFAULT '0',
@@ -122,8 +118,8 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建角色表
 DROP TABLE IF EXISTS role_info;
 CREATE TABLE role_info (
-    role_id NVARCHAR(32),
-    role_code NVARCHAR(32) NOT NULL,
+    role_id NVARCHAR(32) PRIMARY KEY,
+    role_code NVARCHAR(32) NOT NULL UNIQUE,
     role_name_zh NVARCHAR(100) NOT NULL,
     role_name_en NVARCHAR(100) NOT NULL,
     role_sort INT DEFAULT 1,
@@ -135,9 +131,7 @@ CREATE TABLE role_info (
     update_by NVARCHAR(32),
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
-    remark NVARCHAR(500),
-    -- 添加主键约束
-    PRIMARY KEY (role_id, role_code)
+    remark NVARCHAR(500)
 );
 
 -- 添加表注释
@@ -160,11 +154,13 @@ EXEC sp_addextendedproperty N'MS_Description', N'更新时间', N'SCHEMA', N'dbo
 EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'TABLE', N'role_info', N'COLUMN', N'remark';
 
 
--- 创建用户角色关联表
-DROP TABLE IF EXISTS user_role;
-CREATE TABLE user_role (
-    user_id NVARCHAR(32),
-    role_id NVARCHAR(32),
+-- 创建用户机构角色关联表
+DROP TABLE IF EXISTS user_org_role;
+CREATE TABLE user_org_role (
+    user_id NVARCHAR(32) NOT NULL,
+    org_id NVARCHAR(32) NOT NULL,
+    role_id NVARCHAR(32) NOT NULL,
+    is_default CHAR(1) DEFAULT '0',
     status CHAR(1) DEFAULT '0',
     del_flag CHAR(1) DEFAULT '0',
     create_by NVARCHAR(32),
@@ -174,33 +170,35 @@ CREATE TABLE user_role (
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
     remark NVARCHAR(500),
-    PRIMARY KEY (user_id, role_id)
+    PRIMARY KEY (user_id, org_id, role_id)
 );
 
 -- 添加表注释
-EXEC sp_addextendedproperty N'MS_Description', N'用户角色关联表', N'SCHEMA', N'dbo', N'TABLE', N'user_role';
+EXEC sp_addextendedproperty N'MS_Description', N'用户机构角色关联表', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role';
 
 -- 添加列注释
-EXEC sp_addextendedproperty N'MS_Description', N'用户ID', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'user_id';
-EXEC sp_addextendedproperty N'MS_Description', N'角色ID', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'role_id';
-EXEC sp_addextendedproperty N'MS_Description', N'状态（0：正常，1：停用）', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'status';
-EXEC sp_addextendedproperty N'MS_Description', N'删除标志（0：存在，1：删除）', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'del_flag';
-EXEC sp_addextendedproperty N'MS_Description', N'创建者', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'create_by';
-EXEC sp_addextendedproperty N'MS_Description', N'创建者机构ID', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'create_org_id';
-EXEC sp_addextendedproperty N'MS_Description', N'创建时间', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'create_time';
-EXEC sp_addextendedproperty N'MS_Description', N'更新者', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'update_by';
-EXEC sp_addextendedproperty N'MS_Description', N'更新者机构ID', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'update_org_id';
-EXEC sp_addextendedproperty N'MS_Description', N'更新时间', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'update_time';
-EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'TABLE', N'user_role', N'COLUMN', N'remark';
+EXEC sp_addextendedproperty N'MS_Description', N'用户ID', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'user_id';
+EXEC sp_addextendedproperty N'MS_Description', N'机构ID', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'org_id';
+EXEC sp_addextendedproperty N'MS_Description', N'角色ID', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'role_id';
+EXEC sp_addextendedproperty N'MS_Description', N'是否默认角色（0：否，1：是）', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'is_default';
+EXEC sp_addextendedproperty N'MS_Description', N'状态（0：正常，1：停用）', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'status';
+EXEC sp_addextendedproperty N'MS_Description', N'删除标志（0：存在，1：删除）', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'del_flag';
+EXEC sp_addextendedproperty N'MS_Description', N'创建者', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'create_by';
+EXEC sp_addextendedproperty N'MS_Description', N'创建者机构ID', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'create_org_id';
+EXEC sp_addextendedproperty N'MS_Description', N'创建时间', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'create_time';
+EXEC sp_addextendedproperty N'MS_Description', N'更新者', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'update_by';
+EXEC sp_addextendedproperty N'MS_Description', N'更新者机构ID', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'update_org_id';
+EXEC sp_addextendedproperty N'MS_Description', N'更新时间', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'update_time';
+EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'TABLE', N'user_org_role', N'COLUMN', N'remark';
 
 -- 创建菜单表
 DROP TABLE IF EXISTS menu_info;
 CREATE TABLE menu_info (
-    menu_id NVARCHAR(32),
+    menu_id NVARCHAR(32) PRIMARY KEY,
     parent_id NVARCHAR(32),
     menu_name_zh NVARCHAR(100) NOT NULL,
     menu_name_en NVARCHAR(100) NOT NULL,
-    menu_path NVARCHAR(200) NOT NULL,
+    menu_path NVARCHAR(200) NOT NULL UNIQUE,
     menu_icon NVARCHAR(100),
     menu_sort INT DEFAULT 1,
     status CHAR(1) DEFAULT '0',
@@ -211,9 +209,7 @@ CREATE TABLE menu_info (
     update_by NVARCHAR(32),
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
-    remark NVARCHAR(500),
-    -- 添加主键约束
-    PRIMARY KEY (menu_id, menu_path)
+    remark NVARCHAR(500)
 );
 
 -- 添加表注释
@@ -237,11 +233,11 @@ EXEC sp_addextendedproperty N'MS_Description', N'更新者机构ID', N'SCHEMA', 
 EXEC sp_addextendedproperty N'MS_Description', N'更新时间', N'SCHEMA', N'dbo', N'TABLE', N'menu_info', N'COLUMN', N'update_time';
 EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'TABLE', N'menu_info', N'COLUMN', N'remark';
 
--- 创建菜单角色关联表
+-- 创建角色菜单关联表
 DROP TABLE IF EXISTS role_menu;
 CREATE TABLE role_menu (
-    menu_id NVARCHAR(32),
-    role_id NVARCHAR(32),
+    role_id NVARCHAR(32) NOT NULL,
+    menu_id NVARCHAR(32) NOT NULL,
     create_by NVARCHAR(32),
     create_org_id NVARCHAR(32),
     create_time DATETIME DEFAULT GETDATE(),
@@ -249,7 +245,7 @@ CREATE TABLE role_menu (
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
     remark NVARCHAR(500),
-    PRIMARY KEY (menu_id, role_id)
+    PRIMARY KEY (role_id, menu_id)
 );
 
 -- 添加表注释
@@ -270,8 +266,8 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建权限表
 DROP TABLE IF EXISTS permission_info;
 CREATE TABLE permission_info (
-    permission_id NVARCHAR(32),
-    permission_key NVARCHAR(100) NOT NULL,
+    permission_id NVARCHAR(32) PRIMARY KEY,
+    permission_key NVARCHAR(100) NOT NULL UNIQUE,
     permission_name_zh NVARCHAR(100) NOT NULL,
     permission_name_en NVARCHAR(100) NOT NULL,
     permission_group NVARCHAR(32) NOT NULL,
@@ -284,9 +280,7 @@ CREATE TABLE permission_info (
     update_by NVARCHAR(32),
     update_org_id NVARCHAR(32),
     update_time DATETIME DEFAULT GETDATE(),
-    remark NVARCHAR(500),
-    -- 添加主键约束
-    PRIMARY KEY (permission_id, permission_key)
+    remark NVARCHAR(500)
 );
 
 -- 添加表注释
@@ -313,8 +307,8 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 -- 创建角色权限关联表
 DROP TABLE IF EXISTS role_permission;
 CREATE TABLE role_permission (
-    role_id NVARCHAR(32),
-    permission_id NVARCHAR(32),
+    role_id NVARCHAR(32) NOT NULL,
+    permission_id NVARCHAR(32) NOT NULL,
     status CHAR(1) DEFAULT '0',
     del_flag CHAR(1) DEFAULT '0',
     create_by NVARCHAR(32),
@@ -440,7 +434,7 @@ CREATE TABLE db_key (
     record_date DATE,
     current_letter_position INT NOT NULL DEFAULT 0,
     last_update_time DATETIME NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT uk_db_key_table_name UNIQUE (table_name),
+    CONSTRAINT uk_db_key_table_name UNIQUE (table_name)
 );
 
 -- 添加表注释
@@ -486,8 +480,9 @@ CREATE INDEX idx_code_type_status ON code_library(code_type, status, del_flag);
 CREATE INDEX idx_code_type_value ON code_library(code_type, code_value, status, del_flag);
 
 -- 关联表索引
-CREATE INDEX idx_user_role_user ON user_role(user_id, status, del_flag);
-CREATE INDEX idx_user_role_role ON user_role(role_id, status, del_flag);
+CREATE INDEX idx_user_org_role_user ON user_org_role(user_id, status, del_flag);
+CREATE INDEX idx_user_org_role_org ON user_org_role(org_id, status, del_flag);
+CREATE INDEX idx_user_org_role_role ON user_org_role(role_id, status, del_flag);
 CREATE INDEX idx_user_org_user ON user_org(user_id, status, del_flag);
 CREATE INDEX idx_user_org_org ON user_org(org_id, status, del_flag);
 CREATE INDEX idx_role_menu_role ON role_menu(role_id,menu_id);

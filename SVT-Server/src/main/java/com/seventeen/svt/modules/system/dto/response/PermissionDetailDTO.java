@@ -5,16 +5,14 @@ import com.seventeen.svt.frame.cache.util.UserInfoCacheUtils;
 import com.seventeen.svt.modules.system.entity.OrgInfo;
 import com.seventeen.svt.modules.system.entity.UserInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
 
 @Data
 @Schema(description = "权限详情")
-public class PermissionDetailDTO implements  Serializable {
+public class PermissionDetailDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 

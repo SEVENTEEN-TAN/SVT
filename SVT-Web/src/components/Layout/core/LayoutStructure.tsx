@@ -45,7 +45,7 @@ const useLayoutStyles = (sidebarCollapsed: boolean) => {
     pageContent: {
       flex: 1,
       position: 'relative' as const,
-      overflow: 'auto',
+      overflow: 'hidden',
       marginTop: `${LAYOUT_CONSTANTS.HEADER_HEIGHT + LAYOUT_CONSTANTS.TABS_HEIGHT}px`,
       minHeight: 0
     }

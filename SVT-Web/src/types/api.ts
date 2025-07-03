@@ -18,6 +18,13 @@ export interface PageParams {
   order?: 'asc' | 'desc';
 }
 
+// 分页查询参数（通用）
+export interface PageQuery<T = unknown> {
+  pageNumber: number;
+  pageSize: number;
+  condition?: T;
+}
+
 // 分页响应数据
 export interface PageData<T = unknown> {
   records: T[];
@@ -27,6 +34,15 @@ export interface PageData<T = unknown> {
   pages: number;
   hasNext: boolean;
   hasPrevious: boolean;
+}
+
+// 分页响应数据（通用）
+export interface PageResult<T = unknown> {
+  records: T[];
+  current: number;
+  size: number;
+  total: number;
+  pages: number;
 }
 
 // 查询条件基类

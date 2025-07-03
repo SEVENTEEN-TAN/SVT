@@ -1,6 +1,5 @@
 package com.seventeen.svt.frame.security.service;
 
-import com.seventeen.svt.common.response.Result;
 import com.seventeen.svt.frame.security.dto.request.LoginRequestDTO;
 import com.seventeen.svt.frame.security.dto.response.TokenDTO;
 
@@ -16,8 +15,7 @@ public interface AuthService {
 
     /**
      * 用户登出
-     * @param requestUserId
-     * @return
+     *
      */
-    Result<?> logout(String requestUserId);
+    void logout(String requestUserId);
 }

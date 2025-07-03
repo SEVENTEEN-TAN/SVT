@@ -1,7 +1,7 @@
 -- 清空关联表数据
 TRUNCATE TABLE role_permission;
 TRUNCATE TABLE role_menu;
-TRUNCATE TABLE user_role;
+TRUNCATE TABLE user_org_role;
 TRUNCATE TABLE user_org;
 TRUNCATE TABLE permission_info;
 TRUNCATE TABLE menu_info;
@@ -148,42 +148,42 @@ VALUES
 (N'USER024', N'210000', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
 (N'USER025', N'100000', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null);
 
--- 初始化用户角色关联
-INSERT INTO user_role (user_id, role_id, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)
+-- 初始化用户机构角色关联
+INSERT INTO user_org_role (user_id, org_id, role_id, is_default, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark)
 VALUES 
 -- 系统管理员
-(N'admin', N'ROLE001', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'admin', N'000000', N'ROLE001', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
 -- 分部管理员
-(N'USER001', N'ROLE002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'USER002', N'ROLE002', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'USER001', N'100000', N'ROLE002', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'USER002', N'200000', N'ROLE002', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
 -- 支部管理员
-(N'USER003', N'ROLE003', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'USER004', N'ROLE003', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
-(N'USER005', N'ROLE003', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'USER003', N'110000', N'ROLE003', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'USER004', N'120000', N'ROLE003', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
+(N'USER005', N'210000', N'ROLE003', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null),
 -- 技术组角色
-(N'USER006', N'ROLE005', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术主管
-(N'USER007', N'ROLE008', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术工程师
-(N'USER008', N'ROLE008', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术工程师
-(N'USER009', N'ROLE008', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术工程师
-(N'USER010', N'ROLE008', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术工程师
+(N'USER006', N'111000', N'ROLE005', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术主管
+(N'USER007', N'111000', N'ROLE008', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术工程师
+(N'USER008', N'111000', N'ROLE008', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术工程师
+(N'USER009', N'111000', N'ROLE008', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术工程师
+(N'USER010', N'111000', N'ROLE008', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 技术工程师
 -- 业务组角色
-(N'USER011', N'ROLE006', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务主管
-(N'USER012', N'ROLE009', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务专员
-(N'USER013', N'ROLE009', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务专员
-(N'USER014', N'ROLE009', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务专员
-(N'USER015', N'ROLE009', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务专员
+(N'USER011', N'112000', N'ROLE006', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务主管
+(N'USER012', N'112000', N'ROLE009', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务专员
+(N'USER013', N'112000', N'ROLE009', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务专员
+(N'USER014', N'112000', N'ROLE009', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务专员
+(N'USER015', N'112000', N'ROLE009', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 业务专员
 -- 风控组角色
-(N'USER016', N'ROLE007', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 风控主管
-(N'USER017', N'ROLE010', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 风控分析师
-(N'USER018', N'ROLE010', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 风控分析师
-(N'USER019', N'ROLE010', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 风控分析师
+(N'USER016', N'113000', N'ROLE007', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 风控主管
+(N'USER017', N'113000', N'ROLE010', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 风控分析师
+(N'USER018', N'113000', N'ROLE010', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 风控分析师
+(N'USER019', N'113000', N'ROLE010', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 风控分析师
 -- 其他员工角色
-(N'USER020', N'ROLE011', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 审计员
-(N'USER021', N'ROLE013', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 操作员
-(N'USER022', N'ROLE013', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 操作员
-(N'USER023', N'ROLE004', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 普通用户
-(N'USER024', N'ROLE014', N'1', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 查看者(停用)
-(N'USER025', N'ROLE004', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null); -- 普通用户
+(N'USER020', N'110000', N'ROLE011', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 审计员
+(N'USER021', N'110000', N'ROLE013', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 操作员
+(N'USER022', N'120000', N'ROLE013', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 操作员
+(N'USER023', N'120000', N'ROLE004', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 普通用户
+(N'USER024', N'210000', N'ROLE014', N'1', N'1', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null), -- 查看者(停用)
+(N'USER025', N'100000', N'ROLE004', N'1', N'0', N'0', N'System', N'000000', GETDATE(), N'System', N'000000', GETDATE(), null); -- 普通用户
 
 -- 初始化菜单数据
 INSERT INTO menu_info (menu_id, parent_id, menu_name_zh, menu_name_en, menu_path, menu_icon, menu_sort, status, del_flag, create_by, create_org_id, create_time, update_by, update_org_id, update_time, remark) VALUES (N'M001', null, N'系统管理', N'System Management', N'/System', N'setting', N'2', N'0', N'0', N'System', N'000000', N'2025-06-25 13:52:14.650', N'System', N'000000', N'2025-06-25 13:52:14.650', null);

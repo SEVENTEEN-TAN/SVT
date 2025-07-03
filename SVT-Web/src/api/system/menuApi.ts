@@ -17,7 +17,7 @@ export interface UpdateMenuStatusRequest {
 // 更新菜单排序请求参数
 export interface UpdateMenuSortRequest {
   menuId: string;
-  sort: string;
+  sort: number;
 }
 
 // 编辑菜单请求参数
@@ -28,7 +28,7 @@ export interface EditMenuRequest {
   menuNameEn?: string;
   menuPath?: string;
   menuIcon?: string;
-  menuSort?: string;
+  menuSort?: number;
   status?: string;
   remark?: string;
   roleIds?: string[];

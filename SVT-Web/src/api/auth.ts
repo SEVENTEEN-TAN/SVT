@@ -75,16 +75,17 @@ export const validateToken = async (): Promise<boolean> => {
  * @returns 机构列表
  */
 export const getUserOrgList = async (): Promise<UserOrgInfo[]> => {
-  const response = await api.get<UserOrgInfo[]>('/auth/get-user-org-list');
+  const response = await api.post<UserOrgInfo[]>('/auth/get-user-org-list');
   return response;
 };
 
 /**
- * 获取当前用户的角色列表
+ * 获取当前用户在指定机构下的角色列表
+ * @param orgId 机构ID
  * @returns 角色列表
  */
-export const getUserRoleList = async (): Promise<UserRoleInfo[]> => {
-  const response = await api.get<UserRoleInfo[]>('/auth/get-user-role');
+export const getUserRoleList = async (orgId: string): Promise<UserRoleInfo[]> => {
+  const response = await api.post<UserRoleInfo[]>(`/auth/get-user-role?orgId=${orgId}`);
   return response;
 };
 

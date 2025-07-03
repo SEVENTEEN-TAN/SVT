@@ -32,15 +32,22 @@ const LoginPage: React.FC = () => {
   // 机构角色选择弹窗相关状态
   const [showOrgRoleModal, setShowOrgRoleModal] = useState(false);
   const [orgRoleLoading, setOrgRoleLoading] = useState(false);
+  const [roleLoading, setRoleLoading] = useState(false);
   const [orgRoleSubmitting, setOrgRoleSubmitting] = useState(false);
   const [orgList, setOrgList] = useState<UserOrgInfo[]>([]);
   const [roleList, setRoleList] = useState<UserRoleInfo[]>([]);
+  const [hasError, setHasError] = useState(false);
 
   // 显示机构角色选择弹窗
   const showOrgRoleSelection = useCallback(async () => {
     try {
       setOrgRoleLoading(true);
+      setHasError(false);
       setShowOrgRoleModal(true);
+      
+      // 清空之前的选择和角色列表
+      orgRoleForm.resetFields();
+      setRoleList([]);
 
       // 等待token设置完成
       let currentToken = authHook.auth.token;
@@ -57,34 +64,54 @@ const LoginPage: React.FC = () => {
         throw new Error('无法获取认证token，请重新登录');
       }
 
-      // 并行加载机构和角色列表
-      const [orgList, roleList] = await Promise.all([
-        getUserOrgList(),
-        getUserRoleList()
-      ]);
-
+      // 只加载机构列表
+      const orgList = await getUserOrgList();
       setOrgList(orgList || []);
-      setRoleList(roleList || []);
 
-      // 如果只有一个机构或角色，自动选择
-      if (orgList?.length === 1) {
+      // 如果只有一个机构，自动选择并加载对应的角色
+      if (orgList?.length === 1 && orgList[0]?.orgId) {
         orgRoleForm.setFieldValue('orgId', orgList[0].orgId);
-      }
-      if (roleList?.length === 1) {
-        orgRoleForm.setFieldValue('roleId', roleList[0].roleId);
+        await handleOrgChange(orgList[0].orgId);
       }
 
     } catch (error) {
-      console.error('加载机构角色列表失败:', error);
-      messageApi.error('加载机构和角色列表失败，将退出登录');
-      // 🔧 如果加载失败，退出登录而不是跳转到dashboard
+      console.error('加载机构列表失败:', error);
+      setHasError(true);
+      messageApi.error('加载机构列表失败，将退出登录');
+      // 如果加载失败，退出登录而不是跳转到dashboard
       setShowOrgRoleModal(false);
       await logout();
       navigate('/login', { replace: true });
     } finally {
       setOrgRoleLoading(false);
     }
-  }, [navigate, orgRoleForm, logout]);
+  }, [navigate, orgRoleForm, logout, authHook.auth.token, messageApi]);
+
+  // 处理机构选择变化
+  const handleOrgChange = useCallback(async (orgId: string) => {
+    try {
+      // 清空角色选择
+      orgRoleForm.setFieldValue('roleId', undefined);
+      setRoleList([]);
+      
+      if (!orgId) return;
+      
+      setRoleLoading(true);
+      // 根据选择的机构加载对应的角色列表
+      const roles = await getUserRoleList(orgId);
+      setRoleList(roles || []);
+      
+      // 如果只有一个角色，自动选择
+      if (roles?.length === 1 && roles[0]?.roleId) {
+        orgRoleForm.setFieldValue('roleId', roles[0].roleId);
+      }
+    } catch (error) {
+      console.error('加载角色列表失败:', error);
+      messageApi.error('加载角色列表失败，请重试');
+    } finally {
+      setRoleLoading(false);
+    }
+  }, [orgRoleForm, messageApi]);
 
   useEffect(() => {
     if (isAuthenticated && !hasSelectedOrgRole) {
@@ -293,6 +320,10 @@ const LoginPage: React.FC = () => {
               <Spin size="large" />
               <div style={{ marginTop: 16, color: '#666' }}>正在加载机构和角色信息...</div>
             </div>
+          ) : hasError ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <div style={{ color: '#ff4d4f', marginBottom: 16 }}>加载失败，正在重新登录...</div>
+            </div>
           ) : (
             <Form
               form={orgRoleForm}
@@ -309,9 +340,10 @@ const LoginPage: React.FC = () => {
                 <Select
                   placeholder="请选择机构"
                   size="large"
-                  disabled={orgRoleSubmitting || orgList.length === 0}
+                  disabled={orgRoleSubmitting || !orgList || orgList.length === 0}
                   suffixIcon={<BankOutlined />}
                   showSearch
+                  onChange={handleOrgChange}
                   filterOption={(input, option) => {
                     const label = option?.label;
                     if (typeof label === 'string') {
@@ -320,7 +352,7 @@ const LoginPage: React.FC = () => {
                     return false;
                   }}
                 >
-                  {orgList.map(org => (
+                  {orgList?.filter(org => org && org.orgId).map(org => (
                     <Option key={org.orgId} value={org.orgId} label={org.orgNameZh}>
                       {org.orgNameZh}
                       {org.orgNameEn && org.orgNameEn !== org.orgNameZh && (
@@ -339,9 +371,10 @@ const LoginPage: React.FC = () => {
                 rules={[{ required: true, message: '请选择您的角色' }]}
               >
                 <Select
-                  placeholder="请选择角色"
+                  placeholder={roleLoading ? "正在加载角色列表..." : (roleList.length === 0 ? "请先选择机构" : "请选择角色")}
                   size="large"
-                  disabled={orgRoleSubmitting || roleList.length === 0}
+                  disabled={orgRoleSubmitting || roleList.length === 0 || roleLoading}
+                  loading={roleLoading}
                   suffixIcon={<UserOutlined />}
                   showSearch
                   filterOption={(input, option) => {
@@ -352,7 +385,7 @@ const LoginPage: React.FC = () => {
                     return false;
                   }}
                 >
-                  {roleList.map(role => (
+                  {roleList?.filter(role => role && role.roleId).map(role => (
                     <Option key={role.roleId} value={role.roleId} label={role.roleNameZh}>
                       {role.roleNameZh}
                       {role.roleNameEn && role.roleNameEn !== role.roleNameZh && (
@@ -370,7 +403,7 @@ const LoginPage: React.FC = () => {
                   type="primary"
                   htmlType="submit"
                   loading={orgRoleSubmitting}
-                  disabled={orgList.length === 0 || roleList.length === 0}
+                  disabled={!orgList || !roleList || orgList.length === 0 || roleList.length === 0}
                   icon={<CheckCircleOutlined />}
                   block
                   size="large"

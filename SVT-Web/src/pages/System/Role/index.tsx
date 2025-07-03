@@ -1,237 +1,403 @@
-﻿import React, { useState } from 'react';
+// {{CHENGQI:
+// Action: Modified; Timestamp: 2025-07-03 14:30:00 +08:00; Reason: 恢复Table内置分页，优化高度计算和CSS布局; Principle_Applied: 组件一体化设计;
+// }}
+
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import {
   Button,
   Space,
   Switch,
-  Dropdown,
   message,
   Modal,
   Form,
   Input,
+  InputNumber,
   Select,
   Card,
   Collapse,
-  Row,
-  Col,
   Table,
-  Drawer,
   Tag,
+  App,
+  Spin,
+  Transfer,
+  Popconfirm,
+  Pagination,
 } from 'antd';
+import type { TransferDirection } from 'antd/es/transfer';
+import type { Key } from 'react';
 import {
-  PlusOutlined,
-  CheckOutlined,
-  StopOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
-  DownOutlined,
   EyeOutlined,
   EditOutlined,
-  SearchOutlined,
-  TeamOutlined,
+  DeleteOutlined,
+  ExclamationCircleFilled,
+  UserOutlined,
 } from '@ant-design/icons';
+
+// 导入样式
 import '@/styles/PageContainer.css';
 import './RoleManagement.css';
 
-// 角色数据类型定义
-interface RoleData {
-  roleId: string;
-  roleName: string;
-  roleCode: string;
-  roleDesc: string;
-  status: '0' | '1'; // 0-启用 1-停用
-  createTime: string;
-  updateTime: string;
-  userCount: number; // 关联用户数
-  permissions: string[]; // 权限列表
-}
+// 导入hooks和组件
+import { useMobile } from '@/hooks/useMobile';
+import RoleSearch from './components/RoleSearch';
+import TableHeaderOperation from './components/TableHeaderOperation';
 
-// 模拟角色数据
-const mockRoleData: RoleData[] = [
-  {
-    roleId: 'R001',
-    roleName: '系统管理员',
-    roleCode: 'ADMIN',
-    roleDesc: '系统最高权限管理员，拥有所有功能权限',
-    status: '0',
-    createTime: '2024-01-15 10:30:00',
-    updateTime: '2024-06-20 14:20:00',
-    userCount: 2,
-    permissions: ['system:user:*', 'system:role:*', 'system:menu:*', 'system:log:*']
-  },
-  {
-    roleId: 'R002',
-    roleName: '业务管理员',
-    roleCode: 'BUSINESS_ADMIN',
-    roleDesc: '业务模块管理员，负责业务数据管理',
-    status: '0',
-    createTime: '2024-02-10 09:15:00',
-    updateTime: '2024-06-18 16:45:00',
-    userCount: 5,
-    permissions: ['business:data:*', 'business:report:view', 'system:user:view']
-  },
-  {
-    roleId: 'R003',
-    roleName: '普通用户',
-    roleCode: 'USER',
-    roleDesc: '普通用户角色，只能查看基础信息',
-    status: '0',
-    createTime: '2024-03-05 11:20:00',
-    updateTime: '2024-06-15 10:30:00',
-    userCount: 15,
-    permissions: ['system:profile:view', 'business:data:view']
-  },
-  {
-    roleId: 'R004',
-    roleName: '审核员',
-    roleCode: 'AUDITOR',
-    roleDesc: '负责业务数据审核的角色',
-    status: '1',
-    createTime: '2024-04-12 14:10:00',
-    updateTime: '2024-06-10 09:25:00',
-    userCount: 3,
-    permissions: ['business:audit:*', 'business:data:view']
-  },
-  {
-    roleId: 'R005',
-    roleName: '财务专员',
-    roleCode: 'FINANCE',
-    roleDesc: '财务相关功能操作权限',
-    status: '0',
-    createTime: '2024-05-08 16:30:00',
-    updateTime: '2024-06-25 11:15:00',
-    userCount: 4,
-    permissions: ['finance:*', 'business:report:view']
-  }
-];
+// 导入API和类型
+import roleApi, { 
+  type RoleData, 
+  type RoleConditionDTO, 
+  type InsertOrUpdateRoleDetailDTO,
+  type UserDetailDTO as RoleUserDetailDTO,
+  type PermissionDetailDTO
+} from '@/api/system/roleApi';
+import userApi, { type UserData } from '@/api/system/userApi';
+import type { PageQuery } from '@/types/api';
+
+// 懒加载抽屉组件
+const RoleOperateDrawer = lazy(() => import('./components/RoleOperateDrawer'));
 
 const RoleManagement: React.FC = () => {
-  // 状态管理
-  const [roleData] = useState<RoleData[]>(mockRoleData);
-  const [selectedRows, setSelectedRows] = useState<RoleData[]>([]);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('view');
+  const { modal } = App.useApp();
+  const isMobile = useMobile();
 
-  // 表单实例
+  // 基础状态
+  const [roleData, setRoleData] = useState<RoleData[]>([]);
+  const [selectedRole, setSelectedRole] = useState<RoleData | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // 抽屉状态
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view'>('view');
+  const [currentRecord, setCurrentRecord] = useState<RoleData | null>(null);
+
+  // 权限配置弹窗状态
+  const [permissionModalOpen, setPermissionModalOpen] = useState(false);
+  const [permissionLoading, setPermissionLoading] = useState(false);
+  const [allPermissions, setAllPermissions] = useState<PermissionDetailDTO[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<string[]>([]);
+  const [currentPermissionRole, setCurrentPermissionRole] = useState<RoleData | null>(null);
+
+  // 关联用户弹窗状态
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userLoading, setUserLoading] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserData[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState<RoleData | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [targetKeys, setTargetKeys] = useState<string[]>([]);
+
+  // 分页状态
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total: number, range: [number, number]) => `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+    // 强制显示分页器，即使只有一页
+    hideOnSinglePage: false,
+  });
+
+  // 搜索相关
+  const [currentSearchParams, setCurrentSearchParams] = useState<RoleConditionDTO>({});
   const [searchForm] = Form.useForm();
   const [drawerForm] = Form.useForm();
+  const [permissionForm] = Form.useForm();
+
+  // 加载角色数据
+  const loadRoleData = async (searchParams?: RoleConditionDTO, pageNum?: number, pageSize?: number) => {
+    setLoading(true);
+    try {
+      // 如果提供了新的搜索参数，保存它们
+      const searchCondition = searchParams !== undefined ? searchParams : currentSearchParams;
+      if (searchParams !== undefined) {
+        setCurrentSearchParams(searchParams);
+      }
+
+      // 过滤掉空值和空字符串
+      const filteredCondition = Object.fromEntries(
+        Object.entries(searchCondition).filter(([_, value]) => 
+          value !== undefined && value !== null && value !== ''
+        )
+      );
+
+      const params: PageQuery<RoleConditionDTO> = {
+        pageNumber: pageNum || pagination.current,
+        pageSize: pageSize || pagination.pageSize,
+        condition: filteredCondition
+      };
+      
+      const result = await roleApi.getRoleList(params);
+      
+      setRoleData(result.records || []);
+      setPagination(prev => ({
+        ...prev,
+        current: pageNum || prev.current,
+        pageSize: pageSize || prev.pageSize,
+        total: result.total || 0
+      }));
+    } catch (error: any) {
+      console.error('加载角色数据失败:', error);
+      message.error(error.message || '加载角色数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 组件初始化时加载数据
+  useEffect(() => {
+    loadRoleData();
+  }, []);
+
 
   // 处理搜索
-  const handleSearch = () => {
-    searchForm.validateFields().then((values) => {
-      console.log('搜索参数:', values);
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        message.success('搜索完成');
-      }, 1000);
-    });
+  const handleSearch = async () => {
+    try {
+      // 获取表单值，不需要验证，因为搜索可以是空条件
+      const values = searchForm.getFieldsValue();
+      await loadRoleData(values, 1); // 重置到第一页
+    } catch (error: any) {
+      console.error('搜索失败:', error);
+      message.error(error.message || '搜索失败');
+    }
   };
 
   // 处理重置
   const handleReset = () => {
     searchForm.resetFields();
-    handleSearch();
+    setCurrentSearchParams({});
+    loadRoleData({}, 1); // 清空搜索条件并重置到第一页
   };
 
   // 刷新数据
   const refreshData = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      message.success('数据刷新成功');
-    }, 1000);
+    loadRoleData(); // 使用当前搜索条件刷新
   };
 
-  // 批量状态更新
-  const batchUpdateStatus = async (status: '0' | '1') => {
-    if (selectedRows.length === 0) {
-      message.warning('请先选择要操作的角色');
-      return;
-    }
-
-    Modal.confirm({
-      title: `确认${status === '0' ? '启用' : '停用'}选中的角色吗？`,
-      content: `将${status === '0' ? '启用' : '停用'} ${selectedRows.length} 个角色`,
-      onOk: () => {
-        message.success(`批量${status === '0' ? '启用' : '停用'}成功`);
-        setSelectedRows([]);
-        setSelectedRowKeys([]);
-      }
-    });
-  };
-
-  // 批量删除
-  const batchDelete = () => {
-    if (selectedRows.length === 0) {
-      message.warning('请先选择要删除的角色');
-      return;
-    }
-
-    Modal.confirm({
-      title: '确认删除选中的角色吗？',
-      content: `将删除 ${selectedRows.length} 个角色，此操作不可恢复`,
-      okType: 'danger',
-      onOk: () => {
-        message.success('批量删除成功');
-        setSelectedRows([]);
-        setSelectedRowKeys([]);
-      }
-    });
-  };
-
-  // 处理行选择
-  const handleSelectionChange = (selectedRowKeys: React.Key[], selectedRows: RoleData[]) => {
-    setSelectedRows(selectedRows);
-    setSelectedRowKeys(selectedRowKeys);
-  };
 
   // 处理行查看
-  const handleRowView = (record: RoleData) => {
+  const handleRowView = async (record: RoleData) => {
     setDrawerMode('view');
+    setCurrentRecord(record);
     setDrawerOpen(true);
-    drawerForm.setFieldsValue(record);
+    setDrawerLoading(true);
+
+    try {
+      const roleDetail = await roleApi.getRoleDetail(record.roleId);
+      drawerForm.setFieldsValue(roleDetail);
+    } catch (error: any) {
+      console.error('获取角色详情失败:', error);
+      message.error(error.message || '获取角色详情失败');
+      // 如果获取失败，使用当前记录的数据
+      drawerForm.setFieldsValue(record);
+    } finally {
+      setDrawerLoading(false);
+    }
   };
 
   // 处理行编辑
-  const handleRowEdit = (record: RoleData) => {
+  const handleRowEdit = async (record: RoleData) => {
     setDrawerMode('edit');
+    setCurrentRecord(record);
     setDrawerOpen(true);
-    drawerForm.setFieldsValue(record);
+    setDrawerLoading(true);
+
+    try {
+      const roleDetail = await roleApi.getRoleDetail(record.roleId);
+      drawerForm.setFieldsValue(roleDetail);
+    } catch (error: any) {
+      console.error('获取角色详情失败:', error);
+      message.error(error.message || '获取角色详情失败');
+      // 如果获取失败，使用当前记录的数据
+      drawerForm.setFieldsValue(record);
+    } finally {
+      setDrawerLoading(false);
+    }
   };
 
-  // 处理删除
+  // 处理删除 (显示用户数量)
   const handleDelete = (record: RoleData) => {
-    Modal.confirm({
-      title: `确定删除角色 [${record.roleName}] 吗?`,
-      content: '此操作不可逆，请谨慎操作。',
-      onOk: () => {
-        message.success('删除成功');
+    const userCount = record.userCount || 0;
+    const hasUsers = userCount > 0;
+    
+    modal.confirm({
+      title: `确定删除角色 [${record.roleNameZh}] 吗?`,
+      content: hasUsers 
+        ? `该角色下还有 ${userCount} 个用户，删除角色将同时移除这些用户的角色关联。此操作不可逆，请谨慎操作。`
+        : '此操作不可逆，请谨慎操作。',
+      icon: <ExclamationCircleFilled />,
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await roleApi.deleteRole(record.roleId);
+          message.success('删除成功');
+          await loadRoleData();
+        } catch (error: any) {
+          console.error('删除失败:', error);
+          message.error(error.message || '删除失败');
+        }
       },
     });
   };
 
+  // 处理权限配置
+  const handlePermissionConfig = async (record: RoleData) => {
+    setCurrentPermissionRole(record);
+    setPermissionModalOpen(true);
+    setPermissionLoading(true);
+
+    try {
+      // 并行加载所有权限和当前角色权限
+      const [allPerms, rolePerms] = await Promise.all([
+        roleApi.getAllPermissions(),
+        roleApi.getRolePermissionList(record.roleId)
+      ]);
+      
+      setAllPermissions(allPerms);
+      setRolePermissions(rolePerms.map(p => p.permissionId));
+      permissionForm.setFieldsValue({
+        permissionIds: rolePerms.map(p => p.permissionId)
+      });
+    } catch (error: any) {
+      console.error('加载权限配置失败:', error);
+      message.error(error.message || '加载权限配置失败');
+    } finally {
+      setPermissionLoading(false);
+    }
+  };
+
+  // 提交权限配置
+  const handlePermissionSubmit = async () => {
+    try {
+      const values = await permissionForm.validateFields();
+      const permissionIds = values.permissionIds || [];
+
+      await roleApi.assignRolePermissions(currentPermissionRole!.roleId, permissionIds);
+      message.success('权限配置成功');
+      setPermissionModalOpen(false);
+      await loadRoleData(); // 刷新角色列表
+    } catch (error: any) {
+      console.error('权限配置失败:', error);
+      message.error(error.message || '权限配置失败');
+    }
+  };
+
+  // 处理关联用户（穿梭框模式）
+  const handleRelatedUsers = async (record: RoleData) => {
+    setCurrentUserRole(record);
+    setUserModalOpen(true);
+    setUserLoading(true);
+
+    try {
+      // 并行加载所有用户和当前角色的用户
+      const [allUsersData, roleUserIds] = await Promise.all([
+        userApi.getActiveUserList(),
+        roleApi.getRoleUserList(record.roleId)
+      ]);
+      
+      console.log('获取的用户数据:', { 
+        allUsersData, 
+        isArray: Array.isArray(allUsersData),
+        length: allUsersData?.length,
+        roleUserIds 
+      });
+      
+      // 确保allUsersData是数组
+      const userArray = Array.isArray(allUsersData) ? allUsersData : [];
+      setAllUsers(userArray);
+      setTargetKeys(roleUserIds || []);
+      setSelectedUserIds([]);
+    } catch (error: any) {
+      console.error('加载用户数据失败:', error);
+      message.error(error.message || '加载用户数据失败');
+      // 发生错误时设置空数组
+      setAllUsers([]);
+      setTargetKeys([]);
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  // 处理穿梭框变化
+  const handleTransferChange = (newTargetKeys: Key[], _direction: TransferDirection, _moveKeys: Key[]) => {
+    setTargetKeys(newTargetKeys as string[]);
+  };
+
+  // 处理穿梭框选择变化
+  const handleTransferSelectChange = (sourceSelectedKeys: Key[], targetSelectedKeys: Key[]) => {
+    setSelectedUserIds([...sourceSelectedKeys, ...targetSelectedKeys] as string[]);
+  };
+
+  // 提交用户分配
+  const handleUserAssignSubmit = async () => {
+    try {
+      await roleApi.assignRoleUsers(currentUserRole!.roleId, targetKeys);
+      message.success('用户分配成功');
+      setUserModalOpen(false);
+      await loadRoleData(); // 刷新角色列表以更新用户数量
+    } catch (error: any) {
+      console.error('用户分配失败:', error);
+      message.error(error.message || '用户分配失败');
+    }
+  };
+
+  // 处理状态切换
+  const handleStatusChange = async (record: RoleData, checked: boolean) => {
+    const status = checked ? '0' : '1';
+    try {
+      await roleApi.updateRoleStatus(record.roleId, status);
+      message.success(`${checked ? '启用' : '停用'}成功`);
+      await loadRoleData();
+    } catch (error: any) {
+      console.error('状态更新失败:', error);
+      message.error(error.message || '状态更新失败');
+    }
+  };
+
   // 处理表单提交
-  const handleSubmit = () => {
-    drawerForm.validateFields().then((values: any) => {
-      console.log('Form values:', values);
+  const handleSubmit = async () => {
+    try {
+      const values = await drawerForm.validateFields();
+      
+      const submitData: InsertOrUpdateRoleDetailDTO = {
+        roleId: drawerMode === 'edit' ? currentRecord?.roleId : undefined,
+        roleCode: values.roleCode,
+        roleNameZh: values.roleNameZh,
+        roleNameEn: values.roleNameEn,
+        roleSort: values.roleSort || 1,
+        status: values.status,
+        remark: values.remark
+      };
+
+      await roleApi.insertOrUpdateRole(submitData);
       setDrawerOpen(false);
       message.success(drawerMode === 'create' ? '创建成功' : '更新成功');
-    });
+      await loadRoleData();
+    } catch (error: any) {
+      console.error('提交失败:', error);
+      message.error(error.message || '提交失败');
+    }
+  };
+
+  // 处理分页变化
+  const handleTableChange = (paginationConfig: any) => {
+    const { current, pageSize } = paginationConfig;
+    loadRoleData(undefined, current, pageSize); // 保持当前搜索条件，只改变分页
   };
 
   // 表格列配置
   const columns = [
     {
-      key: 'roleName',
+      key: 'roleNameZh',
       title: '角色名称',
-      dataIndex: 'roleName',
+      dataIndex: 'roleNameZh',
       width: 150,
-      render: (text: string) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <TeamOutlined style={{ color: '#1890ff' }} />
-          <span style={{ fontWeight: 500 }}>{text}</span>
+      render: (text: string, record: RoleData) => (
+        <div>
+          <div style={{ fontWeight: 500 }}>{text}</div>
+          {record.roleNameEn && (
+            <div style={{ fontSize: '12px', color: '#666' }}>({record.roleNameEn})</div>
+          )}
         </div>
       )
     },
@@ -243,11 +409,12 @@ const RoleManagement: React.FC = () => {
       render: (text: string) => <code style={{ fontSize: '12px', background: '#f5f5f5', padding: '2px 6px', borderRadius: '4px' }}>{text}</code>
     },
     {
-      key: 'roleDesc',
+      key: 'remark',
       title: '角色描述',
-      dataIndex: 'roleDesc',
+      dataIndex: 'remark',
       width: 200,
       ellipsis: true,
+      render: (text: string) => text || '-'
     },
     {
       key: 'userCount',
@@ -255,7 +422,7 @@ const RoleManagement: React.FC = () => {
       dataIndex: 'userCount',
       width: 100,
       align: 'center' as const,
-      render: (count: number) => (
+      render: (count: number = 0) => (
         <Tag color={count > 0 ? 'blue' : 'default'}>
           {count} 人
         </Tag>
@@ -267,12 +434,13 @@ const RoleManagement: React.FC = () => {
       dataIndex: 'status',
       width: 100,
       align: 'center' as const,
-      render: (status: string) => (
+      render: (status: string, record: RoleData) => (
         <Switch
           checked={status === '0'}
           checkedChildren="启用"
           unCheckedChildren="停用"
           size="small"
+          onChange={(checked) => handleStatusChange(record, checked)}
         />
       )
     },
@@ -307,256 +475,265 @@ const RoleManagement: React.FC = () => {
           >
             编辑
           </Button>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'permissions',
-                  label: '权限配置',
-                  icon: <CheckOutlined />,
-                },
-                {
-                  key: 'users',
-                  label: '关联用户',
-                  icon: <TeamOutlined />,
-                },
-                {
-                  key: 'delete',
-                  label: '删除',
-                  icon: <DeleteOutlined />,
-                  danger: true
-                }
-              ],
-              onClick: ({ key }) => {
-                if (key === 'delete') {
-                  handleDelete(record);
-                } else if (key === 'permissions') {
-                  message.info('权限配置功能开发中...');
-                } else if (key === 'users') {
-                  message.info('关联用户功能开发中...');
-                }
-              }
-            }}
-          >
-            <Button type="link" size="small">
-              更多 <DownOutlined />
-            </Button>
-          </Dropdown>
         </Space>
       )
     }
   ];
 
   return (
-    <div className="page-container-management">
-      {/* 检索区域 */}
+    <div className="role-page-container">
+      {/* 搜索区域 - 固定展开 */}
       <div className="search-section">
-        <Collapse
-          className="search-collapse"
-          items={[
-            {
-              key: 'search',
-              label: '搜索条件',
-              children: (
-                <Form
-                  form={searchForm}
-                  className="search-form"
-                  layout="vertical"
-                  onFinish={handleSearch}
-                >
-                  <Row gutter={[16, 8]}>
-                    <Col span={6}>
-                      <Form.Item name="roleName" label="角色名称">
-                        <Input placeholder="请输入角色名称" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={6}>
-                      <Form.Item name="roleCode" label="角色编码">
-                        <Input placeholder="请输入角色编码" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={6}>
-                      <Form.Item name="status" label="状态">
-                        <Select placeholder="请选择状态" allowClear>
-                          <Select.Option value="0">启用</Select.Option>
-                          <Select.Option value="1">停用</Select.Option>
-                        </Select>
-                      </Form.Item>
-                    </Col>
-                    <Col span={6}>
-                      <Form.Item label=" " colon={false}>
-                        <div className="search-actions">
-                          <Button
-                            type="primary"
-                            icon={<SearchOutlined />}
-                            onClick={handleSearch}
-                            loading={loading}
-                          >
-                            搜索
-                          </Button>
-                          <Button onClick={handleReset}>
-                            重置
-                          </Button>
-                        </div>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                </Form>
-              ),
-            }
-          ]}
-          defaultActiveKey={['search']}
-          ghost
-        />
+        <Card className="card-wrapper" title="搜索条件">
+          <RoleSearch
+            form={searchForm}
+            searchParams={currentSearchParams}
+            onSearch={handleSearch}
+            onReset={handleReset}
+          />
+        </Card>
       </div>
 
-      {/* 数据管理区域 */}
-      <Card
-        className="data-section"
-        title="角色列表"
-        extra={
-          <div className="action-buttons">
-            <div className="action-buttons-left">
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  setDrawerMode('create');
-                  setDrawerOpen(true);
-                  drawerForm.resetFields();
-                }}
+      {/* 数据区域 - 精确计算高度 */}
+      <div className="data-section">
+        {/* 表格卡片 */}
+        <Card
+          className="data-card card-wrapper"
+          title="角色列表"
+          variant="borderless"
+          extra={
+            <TableHeaderOperation
+              selectedRole={selectedRole}
+              loading={loading}
+              onAdd={() => {
+                setDrawerMode('create');
+                setCurrentRecord(null);
+                setDrawerOpen(true);
+                setDrawerLoading(false);
+                drawerForm.resetFields();
+                drawerForm.setFieldsValue({
+                  status: '0',
+                  roleSort: 1
+                });
+              }}
+              onBatchDelete={() => selectedRole && handleDelete(selectedRole)}
+              onRefresh={refreshData}
+              onPermissionConfig={() => selectedRole && handlePermissionConfig(selectedRole)}
+              onRelatedUsers={() => selectedRole && handleRelatedUsers(selectedRole)}
+            />
+          }
+        >
+          <Table
+            rowSelection={{
+              type: 'radio',
+              selectedRowKeys: selectedRole ? [selectedRole.roleId] : [],
+              onChange: (_, selectedRows) => {
+                setSelectedRole(selectedRows[0] || null);
+              },
+            }}
+            scroll={{ x: 1200, y: 'calc(100vh - 280px)' }} // 精确计算表格高度
+            size="small"
+            columns={columns}
+            dataSource={roleData}
+            rowKey="roleId"
+            loading={loading}
+            pagination={false}
+          />
+        </Card>
+
+        {/* 分页器 - 独立在Card外部 */}
+        <div className="pagination-section">
+          <Pagination
+            current={pagination.current}
+            pageSize={pagination.pageSize}
+            total={pagination.total}
+            showSizeChanger={pagination.showSizeChanger}
+            showQuickJumper={pagination.showQuickJumper}
+            showTotal={pagination.showTotal}
+            hideOnSinglePage={false}
+            onChange={(page, pageSize) => {
+              handleTableChange({ current: page, pageSize });
+            }}
+            onShowSizeChange={(_, size) => {
+              handleTableChange({ current: 1, pageSize: size });
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 懒加载抽屉 */}
+      <Suspense>
+        <RoleOperateDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          mode={drawerMode}
+          currentRecord={currentRecord}
+          form={drawerForm}
+          loading={drawerLoading}
+          onSubmit={handleSubmit}
+        />
+      </Suspense>
+
+
+      {/* 权限配置弹窗 */}
+      <Modal
+        title={`角色 [${currentPermissionRole?.roleNameZh}] 权限配置`}
+        open={permissionModalOpen}
+        onOk={handlePermissionSubmit}
+        onCancel={() => setPermissionModalOpen(false)}
+        width={800}
+        okText="保存配置"
+        cancelText="取消"
+      >
+        <div style={{ padding: '20px 0' }}>
+          <Spin spinning={permissionLoading} tip="加载中...">
+            <Form
+              form={permissionForm}
+              layout="vertical"
+            >
+              <Form.Item 
+                name="permissionIds" 
+                label="选择权限" 
+                help="可以选择多个权限，取消选择即为移除权限"
               >
-                新增角色
-              </Button>
-              <Button
-                icon={<CheckOutlined />}
-                disabled={selectedRows.length === 0}
-                onClick={() => batchUpdateStatus('0')}
-              >
-                批量启用
-              </Button>
-              <Button
-                icon={<StopOutlined />}
-                disabled={selectedRows.length === 0}
-                onClick={() => batchUpdateStatus('1')}
-              >
-                批量停用
-              </Button>
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                disabled={selectedRows.length === 0}
-                onClick={batchDelete}
-              >
-                批量删除
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={refreshData}
-              >
-                刷新
-              </Button>
-            </div>
-            {selectedRows.length > 0 && (
-              <div className="batch-info">
-                已选择 {selectedRows.length} 项
+                <Select
+                  mode="multiple"
+                  placeholder="请选择权限"
+                  style={{ width: '100%' }}
+                  optionFilterProp="children"
+                  showSearch
+                  filterOption={(input, option) => {
+                    const label = String(option?.label ?? '');
+                    return label.toLowerCase().includes(input.toLowerCase());
+                  }}
+                  maxTagCount="responsive"
+                >
+                  {(() => {
+                    // 按权限组分组
+                    const groupedPermissions = allPermissions.reduce((groups, permission) => {
+                      const group = permission.permissionGroup || '其他';
+                      if (!groups[group]) {
+                        groups[group] = [];
+                      }
+                      groups[group].push(permission);
+                      return groups;
+                    }, {} as Record<string, PermissionDetailDTO[]>);
+
+                    return Object.entries(groupedPermissions).map(([groupName, permissions]) => (
+                      <Select.OptGroup key={groupName} label={groupName}>
+                        {permissions.map(permission => (
+                          <Select.Option 
+                            key={permission.permissionId} 
+                            value={permission.permissionId}
+                            label={permission.permissionNameZh}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>{permission.permissionNameZh}</span>
+                              <span style={{ fontSize: '12px', color: '#666' }}>
+                                ({permission.permissionKey})
+                              </span>
+                            </div>
+                          </Select.Option>
+                        ))}
+                      </Select.OptGroup>
+                    ));
+                  })()}
+                </Select>
+              </Form.Item>
+            </Form>
+            
+            {rolePermissions.length > 0 && (
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
+                  当前权限 ({rolePermissions.length} 个):
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {allPermissions
+                    .filter(p => rolePermissions.includes(p.permissionId))
+                    .map(permission => (
+                      <Tag key={permission.permissionId} color="blue">
+                        {permission.permissionNameZh}
+                      </Tag>
+                    ))}
+                </div>
               </div>
             )}
-          </div>
-        }
-      >
-        {/* 数据表格 */}
-        <Table
-          className="data-table"
-          columns={columns}
-          dataSource={roleData}
-          rowKey="roleId"
-          loading={loading}
-          pagination={{
-            total: roleData.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
-          }}
-          rowSelection={{
-            type: 'checkbox',
-            selectedRowKeys: selectedRowKeys,
-            onChange: handleSelectionChange,
-          }}
-          scroll={{
-            y: 500, // 使用固定高度，避免复杂的动态监听
-            x: 'max-content'
-          }}
-        />
-      </Card>
-
-      {/* 抽屉 */}
-      <Drawer
-        className="info-drawer"
-        title={
-          drawerMode === 'create' ? '新增角色' :
-          drawerMode === 'edit' ? '编辑角色' : '查看角色'
-        }
-        width={520}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      >
-        <div className="drawer-form-content">
-          <Form
-            form={drawerForm}
-            layout="vertical"
-            disabled={drawerMode === 'view'}
-            className="drawer-form"
-          >
-            <Form.Item name="roleName" label="角色名称" rules={[{ required: true }]}>
-              <Input placeholder="请输入角色名称" />
-            </Form.Item>
-            <Form.Item name="roleCode" label="角色编码" rules={[{ required: true }]}>
-              <Input placeholder="请输入角色编码" />
-            </Form.Item>
-            <Form.Item name="roleDesc" label="角色描述">
-              <Input.TextArea
-                placeholder="请输入角色描述"
-                rows={3}
-                maxLength={200}
-                showCount
-              />
-            </Form.Item>
-            <Form.Item name="status" label="角色状态" rules={[{ required: true }]}>
-              <Select placeholder="请选择角色状态">
-                <Select.Option value="0">启用</Select.Option>
-                <Select.Option value="1">停用</Select.Option>
-              </Select>
-            </Form.Item>
-            {drawerMode === 'view' && (
-              <>
-                <Form.Item name="userCount" label="关联用户数">
-                  <Input disabled />
-                </Form.Item>
-                <Form.Item name="createTime" label="创建时间">
-                  <Input disabled />
-                </Form.Item>
-                <Form.Item name="updateTime" label="更新时间">
-                  <Input disabled />
-                </Form.Item>
-              </>
-            )}
-          </Form>
+          </Spin>
         </div>
+      </Modal>
 
-        {/* 底部操作按钮 */}
-        {drawerMode !== 'view' && (
-          <div className="drawer-actions">
-            <Button onClick={() => setDrawerOpen(false)}>
-              取消
-            </Button>
-            <Button type="primary" onClick={handleSubmit}>
-              {drawerMode === 'create' ? '创建' : '保存'}
-            </Button>
+      {/* 关联用户穿梭框弹窗 */}
+      <Modal
+        title={`角色 [${currentUserRole?.roleNameZh}] 用户分配`}
+        open={userModalOpen}
+        onOk={handleUserAssignSubmit}
+        onCancel={() => setUserModalOpen(false)}
+        width={900}
+        okText="保存分配"
+        cancelText="取消"
+      >
+        <div style={{ padding: '20px 0' }}>
+          <Spin spinning={userLoading} tip="加载中...">
+            {Array.isArray(allUsers) ? (
+              <Transfer
+                dataSource={allUsers.map(user => ({
+                  key: user.userId,
+                  title: user.userNameZh,
+                  description: `登录ID: ${user.loginId} | 状态: ${user.status === '0' ? '启用' : '停用'}`,
+                  disabled: false,
+                  ...user
+                }))}
+                showSearch
+                filterOption={(inputValue, item) => {
+                  const searchValue = inputValue.toLowerCase();
+                  return (
+                    (item.loginId ?? '').toLowerCase().includes(searchValue) ||
+                    (item.userNameZh ?? '').toLowerCase().includes(searchValue) ||
+                    ((item.userNameEn ?? '').toLowerCase?.() ?? '').includes(searchValue)
+                  );
+                }}
+                targetKeys={targetKeys || []}
+                selectedKeys={selectedUserIds || []}
+                onChange={handleTransferChange}
+                onSelectChange={handleTransferSelectChange}
+                render={(item) => (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <UserOutlined style={{ color: '#1890ff' }} />
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: '14px' }}>
+                        {item.title}
+                        {item.userNameEn && <span style={{ fontSize: '12px', color: '#666', marginLeft: '4px' }}>({item.userNameEn})</span>}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#999' }}>
+                        {item.description}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                titles={['可选用户', '已分配用户']}
+                listStyle={{
+                  width: 400,
+                  height: 500,
+                }}
+                oneWay={false}
+                pagination={{
+                  pageSize: 10,
+                }}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '50px 0', color: '#999' }}>
+                暂无用户数据
+              </div>
+            )}
+          </Spin>
+          
+          <div style={{ marginTop: '16px', fontSize: '14px', color: '#666' }}>
+            <div>可选用户：{(allUsers?.length || 0) - (targetKeys?.length || 0)} 人</div>
+            <div>已分配用户：{targetKeys?.length || 0} 人</div>
+            <div>总用户数：{allUsers?.length || 0} 人</div>
           </div>
-        )}
-      </Drawer>
+        </div>
+      </Modal>
     </div>
   );
 };

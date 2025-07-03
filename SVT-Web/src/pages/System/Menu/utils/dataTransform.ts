@@ -7,7 +7,7 @@ export interface BackendMenuData {
   menuNameEn?: string;
   menuPath?: string;
   menuIcon?: string;
-  menuSort?: string;
+  menuSort?: number;
   status?: string;
   remark?: string;
 }
@@ -38,7 +38,7 @@ export function transformBackendToFrontend(backendData: BackendMenuData): MenuNo
     menuNameEn: backendData.menuNameEn,
     menuPath: backendData.menuPath || '',
     menuIcon: backendData.menuIcon,
-    menuSort: parseInt(backendData.menuSort || '0', 10),
+    menuSort: backendData.menuSort || 0,
     status: (backendData.status as '0' | '1') || '0',
     remark: backendData.remark,
   };
@@ -52,7 +52,7 @@ export function transformFrontendToBackend(frontendData: MenuNode): BackendMenuD
     menuNameEn: frontendData.menuNameEn,
     menuPath: frontendData.menuPath,
     menuIcon: frontendData.menuIcon,
-    menuSort: frontendData.menuSort.toString(),
+    menuSort: frontendData.menuSort,
     status: frontendData.status,
     remark: frontendData.remark,
   };

@@ -12,8 +12,7 @@ import com.seventeen.svt.modules.system.dto.response.OrgDetailDTO;
 import com.seventeen.svt.modules.system.dto.response.RoleDetailDTO;
 import com.seventeen.svt.modules.system.entity.UserInfo;
 import com.seventeen.svt.modules.system.service.UserInfoService;
-import com.seventeen.svt.modules.system.service.UserOrgService;
-import com.seventeen.svt.modules.system.service.UserRoleService;
+import com.seventeen.svt.modules.system.service.UserOrgRoleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -31,14 +30,12 @@ import java.util.List;
 @RequestMapping("/auth")
 public class SystemAuthController {
 
-    private final UserOrgService userOrgServiceImpl;
-    private final UserRoleService userRoleServiceImpl;
     private final UserInfoService userInfoServiceImpl;
+    private final UserOrgRoleService userOrgRoleServiceImpl;
 
     @Autowired
-    public SystemAuthController(UserOrgService userOrgServiceImpl, UserRoleService userRoleServiceImpl, UserInfoService userInfoServiceImpl) {
-        this.userOrgServiceImpl = userOrgServiceImpl;
-        this.userRoleServiceImpl = userRoleServiceImpl;
+    public SystemAuthController(UserInfoService userInfoServiceImpl, UserOrgRoleService userOrgRoleServiceImpl) {
+        this.userOrgRoleServiceImpl = userOrgRoleServiceImpl;
         this.userInfoServiceImpl = userInfoServiceImpl;
     }
 
@@ -48,25 +45,26 @@ public class SystemAuthController {
      * @return 当前用户的机构列表
      */
     @Operation(summary = "获取当前用户的机构列表", description = "根据当前登录的用户(token)获取当前用户的机构列表")
-    @GetMapping("/get-user-org-list")
+    @PostMapping("/get-user-org-list")
     @ApiOperationSupport(order = 2)
     public Result<?> getUserOrgList() {
         String requestUserId = RequestContextUtils.getRequestUserId();
-        List<OrgDetailDTO> orgDetailDTO = userOrgServiceImpl.getUserOrgListByUserId(requestUserId);
+        List<OrgDetailDTO> orgDetailDTO = userOrgRoleServiceImpl.getUserOrgListByUserId(requestUserId);
         return Result.success(orgDetailDTO);
     }
 
     /**
-     * 获取当前用户的角色列表
+     * 获取当前用户选择机构下的角色列表
      *
+     * @param orgId 机构ID
      * @return 当前用户的角色列表
      */
-    @Operation(summary = "获取当前用户的角色列表", description = "根据当前登录的用户(token)获取当前用户的角色列表")
-    @GetMapping("/get-user-role")
+    @Operation(summary = "获取当前用户选择机构下的角色列表", description = "根据当前登录的用户(token)获取当前用户选择机构下的角色列表")
+    @PostMapping("/get-user-role")
     @ApiOperationSupport(order = 3)
-    public Result<?> getUserRole() {
+    public Result<?> getUserRole(@RequestParam String orgId) {
         String requestUserId = RequestContextUtils.getRequestUserId();
-        List<RoleDetailDTO> roleDetailDTO = userRoleServiceImpl.getUserRoleListByUserId(requestUserId);
+        List<RoleDetailDTO> roleDetailDTO = userOrgRoleServiceImpl.getUserRoleListByUserId(requestUserId, orgId);
         return Result.success(roleDetailDTO);
     }
 

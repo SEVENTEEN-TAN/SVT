@@ -3,7 +3,6 @@ package com.seventeen.svt.modules.system.dto.response;
 import com.seventeen.svt.frame.cache.util.OrgInfoCacheUtils;
 import com.seventeen.svt.frame.cache.util.UserInfoCacheUtils;
 import com.seventeen.svt.modules.system.entity.OrgInfo;
-import com.seventeen.svt.modules.system.entity.RoleInfo;
 import com.seventeen.svt.modules.system.entity.UserInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -30,8 +29,10 @@ public class AuditLogDTO {
     public String getOperatorNameZh() {
         return UserInfoCacheUtils.getUserFieldValue(operatorId, UserInfo::getUserNameZh);
     }
+
     @Schema(description = "操作人英文名称")
     private String operatorNameEn;
+
     public String getOperatorNameEn() {
         return UserInfoCacheUtils.getUserFieldValue(operatorId, UserInfo::getUserNameEn);
     }
@@ -41,11 +42,14 @@ public class AuditLogDTO {
 
     @Schema(description = "操作机构中文名称")
     private String operatorOrgNameZh;
+
     public String getOperatorOrgNameZh() {
         return OrgInfoCacheUtils.getOrgFieldValue(operatorOrgId, OrgInfo::getOrgNameZh);
     }
+
     @Schema(description = "操作机构英文名称")
     private String operatorOrgNameEn;
+
     public String getOperatorOrgNameEn() {
         return OrgInfoCacheUtils.getOrgFieldValue(operatorOrgId, OrgInfo::getOrgNameEn);
     }
@@ -55,12 +59,15 @@ public class AuditLogDTO {
 
     @Schema(description = "角色中文名称")
     private String roleNameZh;
+
     public String getRoleNameZh() {
 //       TODO:  return RoleInfoCacheUtils.getRoleFieldValue(roleId, RoleInfo::getRoleNameZh);
         return null;
     }
+
     @Schema(description = "角色英文名称")
     private String roleNameEn;
+
     public String getRoleNameEn() {
 //       TODO:  return RoleInfoCacheUtils.getRoleFieldValue(roleId, RoleInfo::getRoleNameEn);
         return null;

@@ -31,7 +31,7 @@ export interface UserRoleInfo {
   /** 角色英文名称 */
   roleNameEn: string;
   /** 显示顺序 */
-  roleSort: string;
+  roleSort: number;
   /** 备注 */
   remark: string;
 }
@@ -51,7 +51,7 @@ export interface MenuTreeVO {
   /** 菜单图标 */
   menuIcon: string;
   /** 菜单排序 */
-  menuSort: string;
+  menuSort: number;
 }
 
 // 用户详情缓存
