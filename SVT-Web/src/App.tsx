@@ -13,8 +13,10 @@ import { modalManager } from '@/utils/modalManager';
 // 🔐 导入认证相关工具
 import { DebugManager } from '@/utils/debugManager';
 import { useAuthStore } from '@/stores/authStore';
-import { secureStorage } from '@/utils/secureStorage';
 import { tokenManager } from '@/utils/tokenManager';
+import { migrateFromSecureStorage } from '@/utils/encryptedStorage';
+// 清理存储工具
+import '@/utils/clearStorage';
 
 // 设置 dayjs 中文语言
 dayjs.locale('zh-cn');
@@ -32,20 +34,19 @@ const InnerApp: React.FC = () => {
     // 🔐 认证状态初始化
     const initializeAuth = async () => {
       try {
-        // 🔥 从安全存储恢复认证状态
-        DebugManager.log('🔄 [App] 开始恢复认证状态', {}, { 
+        DebugManager.log('🔄 [App] 开始初始化认证状态', {}, { 
           component: 'App', 
-          action: 'restoreAuth' 
+          action: 'initializeAuth' 
         });
 
-        const storedToken = await secureStorage.getToken();
-        if (storedToken) {
-          const authStore = useAuthStore.getState();
-          
-          // 恢复认证状态到内存
-          authStore.setToken(storedToken);
-          
-          // 启动Token管理器
+        // 执行一次性存储迁移
+        await migrateFromSecureStorage();
+        
+        // 获取认证状态（Zustand persist会自动从localStorage恢复）
+        const authStore = useAuthStore.getState();
+        
+        // 如果有有效的token，启动Token管理器
+        if (authStore.token && authStore.isAuthenticated) {
           tokenManager.start();
           
           DebugManager.log('✅ [App] 认证状态已恢复', { 
@@ -55,9 +56,9 @@ const InnerApp: React.FC = () => {
             action: 'authRestored' 
           });
         } else {
-          DebugManager.log('ℹ️ [App] 无存储的认证Token', {}, { 
+          DebugManager.log('ℹ️ [App] 用户未登录', {}, { 
             component: 'App', 
-            action: 'noStoredToken' 
+            action: 'noAuth' 
           });
         }
         

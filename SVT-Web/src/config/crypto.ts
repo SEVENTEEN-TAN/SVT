@@ -49,12 +49,12 @@ class CryptoConfigManager {
       // 从环境变量读取配置
       const aesEnabled = import.meta.env.VITE_AES_ENABLED;
       
-      // 🔧 支持多种配置方式
+      // 🔧 支持多种配置方式 - 优先级调整
+      // 1. 显式设置了VITE_AES_ENABLED，则以此为准
       if (aesEnabled !== undefined) {
-        // 显式设置了VITE_AES_ENABLED
         this.config.enabled = aesEnabled === 'true';
       } else {
-        // 未设置时，检查是否有AES密钥，有密钥则默认启用
+        // 2. 未设置VITE_AES_ENABLED时，检查是否有AES密钥
         const hasAesKey = !!import.meta.env.VITE_AES_KEY;
         this.config.enabled = hasAesKey;
       }

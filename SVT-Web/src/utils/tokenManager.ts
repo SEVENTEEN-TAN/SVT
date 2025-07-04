@@ -1,5 +1,4 @@
 import { useAuthStore } from '@/stores/authStore';
-import { secureStorage } from '@/utils/secureStorage';
 import { DebugManager } from '@/utils/debugManager';
 
 /**
@@ -32,7 +31,7 @@ class TokenManager {
 
   /**
    * 获取当前Token
-   * 优先从authStore获取，如果没有则从安全存储获取
+   * 优先从authStore获取，如果没有则从持久化存储获取
    */
   async getCurrentToken(): Promise<string | null> {
     const authStore = useAuthStore.getState();
@@ -42,24 +41,12 @@ class TokenManager {
       return authStore.token;
     }
     
-    // 如果内存没有，尝试从安全存储获取
-    try {
-      const secureToken = await secureStorage.getToken();
-      if (secureToken) {
-        DebugManager.log('🔐 [TokenManager] 从安全存储恢复Token', { 
-          tokenLength: secureToken.length 
-        }, { 
-          component: 'TokenManager', 
-          action: 'getCurrentToken' 
-        });
-        return secureToken;
-      }
-    } catch (error) {
-      DebugManager.error('从安全存储获取Token失败', error as Error, { 
-        component: 'TokenManager', 
-        action: 'getCurrentToken' 
-      });
-    }
+    // 如果内存没有，说明可能是页面刷新，Zustand会自动从持久化恢复
+    // 这里不需要额外处理，因为persist中间件会自动处理
+    DebugManager.log('🔐 [TokenManager] Token将由Zustand persist自动恢复', {}, { 
+      component: 'TokenManager', 
+      action: 'getCurrentToken' 
+    });
     
     return null;
   }
@@ -95,9 +82,7 @@ class TokenManager {
     const authStore = useAuthStore.getState();
     authStore.clearAuthState();
     
-    // 清理安全存储
-    secureStorage.removeToken();
-    DebugManager.log('🔐 [TokenManager] Token已从安全存储清除', {}, { 
+    DebugManager.log('🔐 [TokenManager] Token已清除', {}, { 
       component: 'TokenManager', 
       action: 'clearToken' 
     });

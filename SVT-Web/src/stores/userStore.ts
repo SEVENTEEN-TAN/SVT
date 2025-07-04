@@ -14,7 +14,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { SecureStorage } from '@/utils/secureStorage';
+import { createEncryptedStorage } from '@/utils/encryptedStorage';
 import * as authApi from '@/api/auth';
 import type { User } from '@/types/user';
 import type { UserDetailCache } from '@/types/org-role';
@@ -331,95 +331,12 @@ export const useUserStore = create<UserState>()(
       },
     }),
     {
-      name: 'user_data', // 🔥 使用SecureStorage的key
-      // 🔥 持久化用户信息和会话状态
+      name: 'user-storage', // 使用统一的存储key
+      storage: createEncryptedStorage(), // 使用统一的加密存储
       partialize: (state: UserState) => ({
         user: state.user,
         session: state.session,
       }),
-      // 🔥 自定义存储引擎 - 使用加密存储
-      storage: {
-        getItem: async (key: string): Promise<string | null> => {
-          try {
-            const data = await SecureStorage.getItem<{user: User | null, session: SessionState}>(key);
-            return data ? JSON.stringify({ state: data }) : null;
-          } catch (error) {
-            DebugManager.error('从安全存储读取用户数据失败', error as Error, { 
-              component: 'userStore', 
-              action: 'secureStorageRead' 
-            });
-            return null;
-          }
-        },
-        setItem: async (key: string, value: string): Promise<void> => {
-          try {
-            // Zustand persist中间件传递的value可能已经是对象或字符串
-            let dataToStore;
-            if (typeof value === 'string') {
-              try {
-                const parsedValue = JSON.parse(value);
-                dataToStore = parsedValue.state || parsedValue;
-              } catch {
-                // 如果解析失败，直接使用原值
-                dataToStore = value;
-              }
-            } else {
-              // 如果已经是对象，直接使用
-              dataToStore = value;
-            }
-            
-            await SecureStorage.setItem(key, dataToStore, { encrypt: true });
-            DebugManager.log('用户数据已加密存储', { key }, { 
-              component: 'userStore', 
-              action: 'secureStorageWrite' 
-            });
-          } catch (error) {
-            DebugManager.error('保存用户数据到安全存储失败', error as Error, { 
-              component: 'userStore', 
-              action: 'secureStorageWrite' 
-            });
-          }
-        },
-        removeItem: async (key: string): Promise<void> => {
-          try {
-            SecureStorage.removeItem(key);
-            DebugManager.log('用户数据已从安全存储移除', { key }, { 
-              component: 'userStore', 
-              action: 'secureStorageRemove' 
-            });
-          } catch (error) {
-            DebugManager.error('从安全存储移除用户数据失败', error as Error, { 
-              component: 'userStore', 
-              action: 'secureStorageRemove' 
-            });
-          }
-        }
-      } as any, // 绕过Zustand persist的类型检查
-      // 从安全存储恢复状态时的处理
-      onRehydrateStorage: () => (state: UserState | undefined) => {
-        if (state?.user) {
-          DebugManager.log('用户信息已从加密存储恢复', { 
-            userId: state.user.id,
-            username: state.user.username,
-            hasSession: !!state.session
-          }, { component: 'userStore', action: 'onRehydrateStorage' });
-        }
-        
-        // 🔥 检查会话状态的一致性
-        if (state?.session) {
-          const { hasSelectedOrgRole, orgRoleData } = state.session;
-          if (hasSelectedOrgRole && !orgRoleData) {
-            DebugManager.warn('会话状态不一致，重置会话', undefined, { 
-              component: 'userStore', 
-              action: 'onRehydrateStorage' 
-            });
-            
-            // 重置不一致的会话状态
-            state.session.hasSelectedOrgRole = false;
-            state.session.loginStep = 'initial';
-          }
-        }
-      },
     }
   )
 );
