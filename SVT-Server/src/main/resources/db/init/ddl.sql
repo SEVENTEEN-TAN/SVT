@@ -454,6 +454,31 @@ EXEC sp_addextendedproperty N'MS_Description', N'当前日期', N'SCHEMA', N'dbo
 EXEC sp_addextendedproperty N'MS_Description', N'当前字母位置(用于扩展容量)', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'current_letter_position';
 EXEC sp_addextendedproperty N'MS_Description', N'最后更新时间', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'last_update_time';
 
+
+-- 创建分布式锁表
+DROP TABLE IF EXISTS distributed_lock;
+CREATE TABLE distributed_lock (
+                                  lock_key VARCHAR(200) NOT NULL,
+                                  lock_value VARCHAR(100) NOT NULL,
+                                  holder_info VARCHAR(500),
+                                  created_time DATETIME NOT NULL DEFAULT GETDATE(),
+                                  expire_time DATETIME NOT NULL,
+                                  retry_count INT NOT NULL DEFAULT 0,
+                                  CONSTRAINT pk_distributed_lock PRIMARY KEY (lock_key)
+);
+
+-- 创建索引
+CREATE INDEX idx_distributed_lock_expire_time ON distributed_lock (expire_time);
+
+-- 添加分布式锁表注释
+EXEC sp_addextendedproperty N'MS_Description', N'分布式锁表', N'SCHEMA', N'dbo', N'TABLE', N'distributed_lock';
+EXEC sp_addextendedproperty N'MS_Description', N'锁键(表名_字段名)', N'SCHEMA', N'dbo', N'TABLE', N'distributed_lock', N'COLUMN', N'lock_key';
+EXEC sp_addextendedproperty N'MS_Description', N'锁值(UUID)', N'SCHEMA', N'dbo', N'TABLE', N'distributed_lock', N'COLUMN', N'lock_value';
+EXEC sp_addextendedproperty N'MS_Description', N'持有者信息(服务器IP+线程ID)', N'SCHEMA', N'dbo', N'TABLE', N'distributed_lock', N'COLUMN', N'holder_info';
+EXEC sp_addextendedproperty N'MS_Description', N'创建时间', N'SCHEMA', N'dbo', N'TABLE', N'distributed_lock', N'COLUMN', N'created_time';
+EXEC sp_addextendedproperty N'MS_Description', N'过期时间', N'SCHEMA', N'dbo', N'TABLE', N'distributed_lock', N'COLUMN', N'expire_time';
+EXEC sp_addextendedproperty N'MS_Description', N'重试次数', N'SCHEMA', N'dbo', N'TABLE', N'distributed_lock', N'COLUMN', N'retry_count';
+
 -- ========================================
 -- 创建性能索引
 -- ========================================

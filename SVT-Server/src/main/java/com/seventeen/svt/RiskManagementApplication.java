@@ -5,6 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
@@ -13,8 +14,9 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication
 @EnableTransactionManagement
 @EnableCaching
+@EnableScheduling
 @EnableConfigurationProperties
-@MapperScan("com.seventeen.svt.modules.*.mapper")
+@MapperScan({"com.seventeen.svt.modules.*.mapper", "com.seventeen.svt.frame.*.mapper"})
 public class RiskManagementApplication {
 
     public static void main(String[] args) {

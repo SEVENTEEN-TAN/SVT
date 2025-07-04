@@ -55,7 +55,15 @@ svt:
     # 生产环境脱敏配置：强制启用脱敏功能，保护数据安全
     sensitive:
       enabled: true           # 生产环境强制启用脱敏
-
+  # 分布式锁配置
+  distributed-lock:
+    wait-timeout: 30          # 锁等待超时时间(秒)
+    lease-time: 10            # 锁持有时间(秒)
+    retry-interval: 1000       # 重试间隔(毫秒)
+    max-retry-count: 10      # 最大重试次数
+    cleanup-interval: 3600      # 清理间隔(秒)
+    enable-force-release: true # 启用强制释放
+    server-identifier: ${spring.application.name:svt-server}:${server.port:8080} #服务标识
 # 生产环境JWT配置
 jwt:
   secret: ENC(JWlmelw38npHv2mTU/XgpfViufiA7dAqaqhKS69qz1fi0LAqZz4bixTr/I7VGgsllihWCA7SCCeuANvfTPmxZEriKKavH4xjQqnSaKaspe5ckohCLE7HyRtCAgpUYNII)

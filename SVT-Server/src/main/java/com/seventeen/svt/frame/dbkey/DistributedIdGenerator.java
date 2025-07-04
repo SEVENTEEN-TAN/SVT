@@ -2,7 +2,7 @@ package com.seventeen.svt.frame.dbkey;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.seventeen.svt.common.annotation.dbkey.DistributedId;
-import com.seventeen.svt.common.util.DistributedLockUtil;
+import com.seventeen.svt.frame.lock.DatabaseDistributedLockManager;
 import com.seventeen.svt.frame.cache.util.DbKeyCacheUtils;
 import com.seventeen.svt.modules.system.entity.DbKey;
 import com.seventeen.svt.modules.system.service.DbKeyService;
@@ -15,7 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 分布式ID生成器
@@ -38,11 +37,12 @@ public class DistributedIdGenerator {
         }
 
         // 缓存中没有ID,需要从DB获取一批新ID
-        String lockKey = DistributedLockUtil.getLockKey(cacheKey);
-        String lockValue = DistributedLockUtil.tryLock(lockKey, 5, 10, TimeUnit.SECONDS);
+        DatabaseDistributedLockManager lockManager = SpringUtil.getBean(DatabaseDistributedLockManager.class);
+        String lockKey = DatabaseDistributedLockManager.getLockKey(cacheKey);
+        String lockValue = lockManager.tryLock(lockKey);
 
         if (lockValue == null) {
-            throw new RuntimeException("获取分布式锁失败");
+            throw new RuntimeException("获取分布式锁失败: " + lockKey);
         }
 
         try {
@@ -86,7 +86,7 @@ public class DistributedIdGenerator {
             // 返回第一个ID
             return ids.remove(0);
         } finally {
-            DistributedLockUtil.unlock(lockKey, lockValue);
+            lockManager.unlock(lockKey, lockValue);
         }
     }
 
