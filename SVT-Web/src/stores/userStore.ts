@@ -13,12 +13,69 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { createEncryptedStorage } from '@/utils/encryptedStorage';
+// import { createEncryptedStorage } from '@/utils/encryptedStorage'; // 不再需要
 import * as authApi from '@/api/auth';
 import type { User } from '@/types/user';
 import type { UserDetailCache } from '@/types/org-role';
 import { DebugManager } from '@/utils/debugManager';
+
+// 原生localStorage存储键
+const USER_STORAGE_KEY = 'user-storage';
+
+// 存储用户状态到localStorage
+const saveUserState = (state: { user: User | null; session: SessionState }) => {
+  try {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(state));
+    DebugManager.log('✅ [userStore] 用户状态已保存到localStorage', {
+      hasUser: !!state.user,
+      hasSelectedOrgRole: state.session.hasSelectedOrgRole,
+      loginStep: state.session.loginStep
+    }, { component: 'userStore', action: 'saveState' });
+  } catch (error) {
+    DebugManager.error('❌ [userStore] 保存用户状态失败', error as Error, {
+      component: 'userStore',
+      action: 'saveState'
+    });
+  }
+};
+
+// 从localStorage恢复用户状态
+const loadUserState = () => {
+  try {
+    const stored = localStorage.getItem(USER_STORAGE_KEY);
+    if (stored) {
+      const state = JSON.parse(stored);
+      DebugManager.log('✅ [userStore] 从localStorage恢复用户状态', {
+        hasUser: !!state.user,
+        hasSelectedOrgRole: state.session?.hasSelectedOrgRole,
+        loginStep: state.session?.loginStep
+      }, { component: 'userStore', action: 'loadState' });
+      return state;
+    }
+  } catch (error) {
+    DebugManager.error('❌ [userStore] 恢复用户状态失败', error as Error, {
+      component: 'userStore',
+      action: 'loadState'
+    });
+  }
+  return null;
+};
+
+// 清除localStorage中的用户状态
+const clearUserState = () => {
+  try {
+    localStorage.removeItem(USER_STORAGE_KEY);
+    DebugManager.log('🧹 [userStore] 已清除localStorage中的用户状态', {}, {
+      component: 'userStore',
+      action: 'clearState'
+    });
+  } catch (error) {
+    DebugManager.error('❌ [userStore] 清除用户状态失败', error as Error, {
+      component: 'userStore',
+      action: 'clearState'
+    });
+  }
+};
 import { useAuthStore } from './authStore';
 
 // 机构角色数据接口
@@ -65,16 +122,18 @@ interface UserState {
 }
 
 // 创建用户信息状态管理
-export const useUserStore = create<UserState>()(
-  persist(
-    (set, get) => ({
-      // 初始状态
-      user: null,
+export const useUserStore = create<UserState>()((set, get) => {
+  // 从localStorage恢复初始状态
+  const savedState = loadUserState();
+
+  return {
+      // 初始状态 - 从localStorage恢复或使用默认值
+      user: savedState?.user || null,
       loading: false,
       error: null,
-      
+
       // 🔥 新增：会话状态初始值
-      session: {
+      session: savedState?.session || {
         hasSelectedOrgRole: false,
         orgRoleData: null,
         loginStep: 'initial'
@@ -82,11 +141,17 @@ export const useUserStore = create<UserState>()(
 
       // 设置用户信息
       setUser: (user: User) => {
+        const currentState = get();
+        const newState = { user, session: currentState.session };
+
         set({ user, error: null });
-        
-        DebugManager.logSensitive('用户信息已设置', user, { 
-          component: 'userStore', 
-          action: 'setUser' 
+
+        // 保存到localStorage
+        saveUserState(newState);
+
+        DebugManager.logSensitive('用户信息已设置', user, {
+          component: 'userStore',
+          action: 'setUser'
         });
       },
 
@@ -109,12 +174,13 @@ export const useUserStore = create<UserState>()(
       // 清除用户信息
       clearUser: () => {
         set({ user: null, error: null, loading: false });
-        
-        // 🔧 移除手动localStorage清理，只使用Zustand persist清理
-        
-        DebugManager.log('用户信息已清除', undefined, { 
-          component: 'userStore', 
-          action: 'clearUser' 
+
+        // 清除localStorage中的用户状态
+        clearUserState();
+
+        DebugManager.log('用户信息已清除', undefined, {
+          component: 'userStore',
+          action: 'clearUser'
         });
       },
 
@@ -226,13 +292,17 @@ export const useUserStore = create<UserState>()(
           menuTrees: userDetails.menuTrees,
         };
 
+        const currentState = get();
+        const newState = { user, session: currentState.session };
+
         set({ user, error: null });
-        
-        // 🔧 移除重复的localStorage设置，只使用Zustand persist
-        
-        DebugManager.logSensitive('用户信息已从详情设置', user, { 
-          component: 'userStore', 
-          action: 'setUserFromDetails' 
+
+        // 保存到localStorage
+        saveUserState(newState);
+
+        DebugManager.logSensitive('用户信息已从详情设置', user, {
+          component: 'userStore',
+          action: 'setUserFromDetails'
         });
       },
 
@@ -240,18 +310,22 @@ export const useUserStore = create<UserState>()(
       
       // 设置机构角色选择
       setOrgRoleSelection: (orgRoleData: OrgRoleData) => {
-        set({ 
-          session: {
-            ...get().session,
-            orgRoleData,
-            hasSelectedOrgRole: true,
-            loginStep: 'org-role-selection'
-          }
-        });
-        
-        DebugManager.logSensitive('机构角色已选择', orgRoleData, { 
-          component: 'userStore', 
-          action: 'setOrgRoleSelection' 
+        const currentState = get();
+        const newSession = {
+          ...currentState.session,
+          orgRoleData,
+          hasSelectedOrgRole: true,
+          loginStep: 'org-role-selection' as const
+        };
+
+        set({ session: newSession });
+
+        // 保存到localStorage
+        saveUserState({ user: currentState.user, session: newSession });
+
+        DebugManager.logSensitive('机构角色已选择', orgRoleData, {
+          component: 'userStore',
+          action: 'setOrgRoleSelection'
         });
       },
 
@@ -267,13 +341,17 @@ export const useUserStore = create<UserState>()(
           selectedAt: new Date().toISOString()
         };
 
-        set({ 
-          session: {
-            hasSelectedOrgRole: true,
-            orgRoleData,
-            loginStep: 'completed'
-          }
-        });
+        const currentState = get();
+        const newSession = {
+          hasSelectedOrgRole: true,
+          orgRoleData,
+          loginStep: 'completed' as const
+        };
+
+        set({ session: newSession });
+
+        // 保存到localStorage
+        saveUserState({ user: currentState.user, session: newSession });
 
         DebugManager.logSensitive('机构角色选择已完成', {
           orgId: orgRoleData.orgId,
@@ -285,58 +363,61 @@ export const useUserStore = create<UserState>()(
 
       // 清除会话状态
       clearSession: () => {
-        set({ 
-          session: {
-            hasSelectedOrgRole: false,
-            orgRoleData: null,
-            loginStep: 'initial'
-          }
-        });
-        
-        DebugManager.log('会话状态已清除', undefined, { 
-          component: 'userStore', 
-          action: 'clearSession' 
+        const currentState = get();
+        const newSession = {
+          hasSelectedOrgRole: false,
+          orgRoleData: null,
+          loginStep: 'initial' as const
+        };
+
+        set({ session: newSession });
+
+        // 保存到localStorage
+        saveUserState({ user: currentState.user, session: newSession });
+
+        DebugManager.log('会话状态已清除', undefined, {
+          component: 'userStore',
+          action: 'clearSession'
         });
       },
 
       // 设置登录步骤
       setLoginStep: (step: SessionState['loginStep']) => {
-        set({ 
-          session: {
-            ...get().session,
-            loginStep: step
-          }
-        });
-        
-        DebugManager.log('登录步骤已更新', { step }, { 
-          component: 'userStore', 
-          action: 'setLoginStep' 
+        const currentState = get();
+        const newSession = {
+          ...currentState.session,
+          loginStep: step
+        };
+
+        set({ session: newSession });
+
+        // 保存到localStorage
+        saveUserState({ user: currentState.user, session: newSession });
+
+        DebugManager.log('登录步骤已更新', { step }, {
+          component: 'userStore',
+          action: 'setLoginStep'
         });
       },
 
       // 重置登录流程
       resetLoginFlow: () => {
-        set({ 
-          session: {
-            hasSelectedOrgRole: false,
-            orgRoleData: null,
-            loginStep: 'initial'
-          }
-        });
-        
-        DebugManager.log('登录流程已重置', undefined, { 
-          component: 'userStore', 
-          action: 'resetLoginFlow' 
+        const currentState = get();
+        const newSession = {
+          hasSelectedOrgRole: false,
+          orgRoleData: null,
+          loginStep: 'initial' as const
+        };
+
+        set({ session: newSession });
+
+        // 保存到localStorage
+        saveUserState({ user: currentState.user, session: newSession });
+
+        DebugManager.log('登录流程已重置', undefined, {
+          component: 'userStore',
+          action: 'resetLoginFlow'
         });
       },
-    }),
-    {
-      name: 'user-storage', // 使用统一的存储key
-      storage: createEncryptedStorage(), // 使用统一的加密存储
-      partialize: (state: UserState) => ({
-        user: state.user,
-        session: state.session,
-      }),
-    }
-  )
-);
+  };
+});

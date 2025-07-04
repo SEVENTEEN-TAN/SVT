@@ -15,16 +15,17 @@ export const useUserStatus = () => {
   const [error, setError] = useState<string | null>(null);
   const hasVerifiedRef = useRef(false); // 🔧 使用useRef防重复验证（不触发重新渲染）
   const navigate = useNavigate();
-  const { logout, isAuthenticated, auth } = useAuth();
+  const { logout, isAuthenticated, auth, hasSelectedOrgRole } = useAuth();
 
   useEffect(() => {
     // 🔧 将verifyStatus定义在useEffect内部，避免依赖问题
     const verifyStatus = async () => {
-      // 🔧 关键修复：只在已认证且有token的情况下才进行验证
-      if (!isAuthenticated || !auth.token) {
-        DebugManager.log('🚫 [JWT智能续期测试] 用户未认证，跳过状态验证', { 
-          isAuthenticated, 
-          hasToken: !!auth.token 
+      // 🔧 关键修复：只在完整认证状态下才进行验证（包括机构角色选择）
+      if (!isAuthenticated || !auth.token || !hasSelectedOrgRole) {
+        DebugManager.log('🚫 [用户状态验证] 用户未完整认证，跳过状态验证', {
+          isAuthenticated,
+          hasToken: !!auth.token,
+          hasSelectedOrgRole
         }, { component: 'useUserStatus', action: 'skipVerify' });
         setLoading(false);
         return;
@@ -34,22 +35,23 @@ export const useUserStatus = () => {
         setLoading(true);
         setError(null);
         
-        DebugManager.log('🔍 [JWT智能续期测试] 开始用户状态验证', { 
-          tokenPrefix: auth.token.substring(0, 20) + '...' 
+        DebugManager.log('🔍 [用户状态验证] 开始用户状态验证', {
+          tokenPrefix: auth.token.substring(0, 20) + '...',
+          hasSelectedOrgRole
         }, { component: 'useUserStatus', action: 'startVerify' });
-        
+
         const status = await verifyUserStatus();
         setUserStatus(status);
-        
-        DebugManager.log('✅ [JWT智能续期测试] 用户状态验证API调用成功', { 
+
+        DebugManager.log('✅ [用户状态验证] 用户状态验证API调用成功', {
           isValid: status.isValid,
-          message: status.message 
+          message: status.message
         }, { component: 'useUserStatus', action: 'verifySuccess' });
         
         // 检查用户状态
         if (!status.isValid) {
-          DebugManager.warn('⚠️ [JWT智能续期测试] 用户状态无效，准备登出', { 
-            status: status.message 
+          DebugManager.warn('⚠️ [用户状态验证] 用户状态无效，准备登出', {
+            status: status.message
           }, { component: 'useUserStatus', action: 'invalidStatus' });
           
           message.error(status.message || '用户状态异常，请联系管理员');
@@ -65,9 +67,9 @@ export const useUserStatus = () => {
       } catch (err: any) {
         // 🔧 对于verify-user-status的错误，已由request拦截器统一处理
         // 这里只记录错误，不显示消息，避免重复提醒
-        DebugManager.warn('❌ [JWT智能续期测试] 用户状态验证失败（由全局拦截器统一处理）', err, { 
-          component: 'useUserStatus', 
-          action: 'verify' 
+        DebugManager.warn('❌ [用户状态验证] 用户状态验证失败（由全局拦截器统一处理）', err, {
+          component: 'useUserStatus',
+          action: 'verify'
         });
         setError(err.message || '验证失败');
       } finally {
@@ -75,28 +77,30 @@ export const useUserStatus = () => {
       }
     };
 
-    // 🔧 防止重复调用：只在组件首次挂载且已认证时调用
-    if (isAuthenticated && auth.token && !hasVerifiedRef.current) {
-      DebugManager.log('🚀 [JWT智能续期测试] 满足用户状态验证条件，开始执行', { 
-        isAuthenticated, 
+    // 🔧 防止重复调用：只在完整认证状态且首次挂载时调用
+    if (isAuthenticated && auth.token && hasSelectedOrgRole && !hasVerifiedRef.current) {
+      DebugManager.log('🚀 [用户状态验证] 满足用户状态验证条件，开始执行', {
+        isAuthenticated,
         hasToken: !!auth.token,
-        hasVerified: hasVerifiedRef.current 
+        hasSelectedOrgRole,
+        hasVerified: hasVerifiedRef.current
       }, { component: 'useUserStatus', action: 'initVerify' });
-      
+
       hasVerifiedRef.current = true;
       verifyStatus();
     } else {
-      DebugManager.log('⏸️ [JWT智能续期测试] 跳过用户状态验证', { 
-        isAuthenticated, 
+      DebugManager.log('⏸️ [用户状态验证] 跳过用户状态验证', {
+        isAuthenticated,
         hasToken: !!auth.token,
-        hasVerified: hasVerifiedRef.current 
+        hasSelectedOrgRole,
+        hasVerified: hasVerifiedRef.current
       }, { component: 'useUserStatus', action: 'skipVerify' });
     }
-  }, [isAuthenticated, auth.token, logout, navigate]); // 🔧 移除hasVerified依赖，使用useRef避免重复调用
+  }, [isAuthenticated, auth.token, hasSelectedOrgRole, logout, navigate]); // 🔧 添加hasSelectedOrgRole依赖
 
   // 🔧 提供手动刷新功能
   const refetch = async () => {
-    if (isAuthenticated && auth.token) {
+    if (isAuthenticated && auth.token && hasSelectedOrgRole) {
       const verifyStatus = async () => {
         try {
           setLoading(true);

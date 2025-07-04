@@ -7,7 +7,7 @@ import {
   BankOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/stores/useAuth';
 import { getUserOrgList, getUserRoleList, getUserDetails } from '@/api/auth';
 import type { LoginRequest } from '@/types/user';
@@ -21,6 +21,7 @@ const { Option } = Select;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const authHook = useAuth();
   const { login, logout, isLoading: loading, isAuthenticated, hasSelectedOrgRole, completeOrgRoleSelection } = authHook;
   const [form] = Form.useForm();
@@ -44,12 +45,12 @@ const LoginPage: React.FC = () => {
       setOrgRoleLoading(true);
       setHasError(false);
       setShowOrgRoleModal(true);
-      
+
       // 清空之前的选择和角色列表
       orgRoleForm.resetFields();
       setRoleList([]);
 
-      // 等待token设置完成
+      // 🔧 修复：动态获取token，避免依赖数组包含token导致无限循环
       let currentToken = authHook.auth.token;
       let retryCount = 0;
       const maxRetries = 10; // 最多等待1秒
@@ -71,7 +72,22 @@ const LoginPage: React.FC = () => {
       // 如果只有一个机构，自动选择并加载对应的角色
       if (orgList?.length === 1 && orgList[0]?.orgId) {
         orgRoleForm.setFieldValue('orgId', orgList[0].orgId);
-        await handleOrgChange(orgList[0].orgId);
+        // 🔧 直接调用角色加载逻辑，避免依赖handleOrgChange
+        try {
+          setRoleLoading(true);
+          const roles = await getUserRoleList(orgList[0].orgId);
+          setRoleList(roles || []);
+
+          // 如果只有一个角色，自动选择
+          if (roles?.length === 1 && roles[0]?.roleId) {
+            orgRoleForm.setFieldValue('roleId', roles[0].roleId);
+          }
+        } catch (roleError) {
+          console.error('加载角色列表失败:', roleError);
+          messageApi.error('加载角色列表失败，请重试');
+        } finally {
+          setRoleLoading(false);
+        }
       }
 
     } catch (error) {
@@ -85,7 +101,7 @@ const LoginPage: React.FC = () => {
     } finally {
       setOrgRoleLoading(false);
     }
-  }, [navigate, orgRoleForm, logout, authHook.auth.token, messageApi]);
+  }, [navigate, orgRoleForm, logout, messageApi]); // 🔧 移除authHook.auth.token和handleOrgChange依赖，避免循环
 
   // 处理机构选择变化
   const handleOrgChange = useCallback(async (orgId: string) => {
@@ -114,18 +130,24 @@ const LoginPage: React.FC = () => {
   }, [orgRoleForm, messageApi]);
 
   useEffect(() => {
+    // 🔧 如果用户已完整认证，直接跳转到目标页面或首页
+    if (isAuthenticated && hasSelectedOrgRole) {
+      const state = location.state as { from?: { pathname: string } };
+      const targetPath = state?.from?.pathname || '/home';
+      navigate(targetPath, { replace: true });
+      return;
+    }
+
+    // 🔧 只有在登录成功但未选择机构角色时才显示弹窗
+    // 这包括：1. 刚完成登录认证 2. 从受保护页面重定向过来需要选择机构角色
     if (isAuthenticated && !hasSelectedOrgRole) {
-      // 🔧 只有登录成功且未选择机构角色时才显示弹窗
       // 添加小延迟确保token已经设置
       const timer = setTimeout(() => {
         showOrgRoleSelection();
       }, 100);
       return () => clearTimeout(timer);
-    } else if (isAuthenticated && hasSelectedOrgRole) {
-      // 🔧 已完成选择，直接跳转
-      navigate('/home', { replace: true });
     }
-  }, [isAuthenticated, hasSelectedOrgRole, navigate]);
+  }, [isAuthenticated, hasSelectedOrgRole, navigate, location.state]); // 🔧 移除showOrgRoleSelection依赖，避免循环
 
   const handleSubmit = async (values: LoginRequest) => {
     try {
@@ -161,12 +183,14 @@ const LoginPage: React.FC = () => {
       completeOrgRoleSelection(userDetails);
       
       messageApi.destroy();
-      messageApi.success('即将跳转到系统首页...');
+      messageApi.success('即将跳转...');
       
-      // 关闭弹窗并跳转到dashboard
+      // 关闭弹窗并跳转到目标页面或首页
       setShowOrgRoleModal(false);
       setTimeout(() => {
-        navigate('/home', { replace: true });
+        const state = location.state as { from?: { pathname: string } };
+        const targetPath = state?.from?.pathname || '/home';
+        navigate(targetPath, { replace: true });
       }, 1000);
       
     } catch (error) {

@@ -13,7 +13,6 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { tokenManager } from '@/utils/tokenManager';
 import * as authApi from '@/api/auth';
 import type { LoginRequest } from '@/types/user';
@@ -22,10 +21,68 @@ import {
   clearStorageOnTokenExpired,
   STORAGE_KEYS
 } from '@/utils/localStorageManager';
-import { createEncryptedStorage, migrateFromSecureStorage } from '@/utils/encryptedStorage';
+import { migrateFromSecureStorage } from '@/utils/encryptedStorage';
 import { message } from 'antd';
 import { DebugManager } from '@/utils/debugManager';
 import { sessionManager } from '@/utils/sessionManager';
+
+// 原生localStorage存储键
+const AUTH_STORAGE_KEY = 'auth-storage';
+
+// 存储认证状态到localStorage
+const saveAuthState = (state: { token: string | null; isAuthenticated: boolean; expiryDate: string | null }) => {
+  try {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
+    DebugManager.log('✅ [authStore] 认证状态已保存到localStorage', {
+      hasToken: !!state.token,
+      isAuthenticated: state.isAuthenticated,
+      tokenLength: state.token?.length || 0
+    }, { component: 'authStore', action: 'saveState' });
+  } catch (error) {
+    DebugManager.error('❌ [authStore] 保存认证状态失败', error as Error, {
+      component: 'authStore',
+      action: 'saveState'
+    });
+  }
+};
+
+// 从localStorage恢复认证状态
+const loadAuthState = () => {
+  try {
+    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (stored) {
+      const state = JSON.parse(stored);
+      DebugManager.log('✅ [authStore] 从localStorage恢复认证状态', {
+        hasToken: !!state.token,
+        isAuthenticated: state.isAuthenticated,
+        tokenLength: state.token?.length || 0
+      }, { component: 'authStore', action: 'loadState' });
+      return state;
+    }
+  } catch (error) {
+    DebugManager.error('❌ [authStore] 恢复认证状态失败', error as Error, {
+      component: 'authStore',
+      action: 'loadState'
+    });
+  }
+  return null;
+};
+
+// 清除localStorage中的认证状态
+const clearAuthState = () => {
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    DebugManager.log('🧹 [authStore] 已清除localStorage中的认证状态', {}, {
+      component: 'authStore',
+      action: 'clearState'
+    });
+  } catch (error) {
+    DebugManager.error('❌ [authStore] 清除认证状态失败', error as Error, {
+      component: 'authStore',
+      action: 'clearState'
+    });
+  }
+};
 import { cryptoConfig } from '@/config/crypto';
 
 // 纯认证状态接口 - 职责单一
@@ -44,14 +101,17 @@ interface AuthState {
   refreshToken: () => Promise<void>;
 }
 
-// 创建纯认证状态管理 - 使用加密的persist存储
-export const useAuthStore = create<AuthState>()(persist(
-  (set, get) => ({
-      // 初始状态
-      token: null,
-      isAuthenticated: false,
+// 创建纯认证状态管理 - 使用原生localStorage
+export const useAuthStore = create<AuthState>()((set, get) => {
+  // 从localStorage恢复初始状态
+  const savedState = loadAuthState();
+
+  return {
+      // 初始状态 - 从localStorage恢复或使用默认值
+      token: savedState?.token || null,
+      isAuthenticated: savedState?.isAuthenticated || false,
       loading: false,
-      expiryDate: null,
+      expiryDate: savedState?.expiryDate || null,
 
       // 登录操作 - 简化版，只处理认证
       login: async (credentials: LoginRequest) => {
@@ -94,20 +154,25 @@ export const useAuthStore = create<AuthState>()(persist(
           }
           
           // 更新认证状态
-          set({
+          const newAuthState = {
             token: accessToken,
             isAuthenticated: true,
-            loading: false,
             expiryDate: calculatedExpiryDate,
+          };
+
+          set({
+            ...newAuthState,
+            loading: false,
           });
 
-          // Token已通过persist自动保存
-          DebugManager.log('🔐 [统一存储] 认证状态已保存', { 
-            tokenLength: accessToken.length,
-            encrypted: cryptoConfig.isEnabled()
-          }, { 
-            component: 'authStore', 
-            action: 'persistStorage' 
+          // 保存到localStorage
+          saveAuthState(newAuthState);
+
+          DebugManager.log('🔐 [authStore] 认证状态已保存到localStorage', {
+            tokenLength: accessToken.length
+          }, {
+            component: 'authStore',
+            action: 'saveAuthState'
           });
 
           // 启动Token管理器
@@ -222,31 +287,38 @@ export const useAuthStore = create<AuthState>()(persist(
           loading: false,
           expiryDate: null,
         });
-        
-        DebugManager.production('🎯 [JWT智能续期测试] 认证状态完全清理完成', { 
-          component: 'authStore', 
-          action: 'clearAuthState' 
+
+        // 清除localStorage中的认证状态
+        clearAuthState();
+
+        DebugManager.production('🎯 [authStore] 认证状态完全清理完成', {
+          component: 'authStore',
+          action: 'clearAuthState'
         });
       },
 
       // 设置Token - 新增方法，供其他Store使用
       setToken: (token: string, expiryDate?: string | null) => {
-        set({
+        const newState = {
           token,
           isAuthenticated: true,
           expiryDate: expiryDate || null
-        });
-        
+        };
+
+        set(newState);
+
+        // 保存到localStorage
+        saveAuthState(newState);
+
         if (expiryDate) {
           localStorage.setItem(STORAGE_KEYS.EXPIRY_DATE, expiryDate);
         }
-        
-        // Token已通过persist自动保存
-        DebugManager.log('🔐 [统一存储] Token已更新', { 
-          tokenLength: token.length 
-        }, { 
-          component: 'authStore', 
-          action: 'setToken' 
+
+        DebugManager.log('🔐 [authStore] Token已更新并保存', {
+          tokenLength: token.length
+        }, {
+          component: 'authStore',
+          action: 'setToken'
         });
         
         // 启动Token管理器
@@ -282,17 +354,8 @@ export const useAuthStore = create<AuthState>()(persist(
           throw error;
         }
       },
-    }),
-  {
-    name: 'auth-storage',
-    storage: createEncryptedStorage(),
-    partialize: (state) => ({
-      token: state.token,
-      isAuthenticated: state.isAuthenticated,
-      expiryDate: state.expiryDate,
-    }),
-  }
-));
+  };
+});
 
 // 初始化时执行迁移
 if (typeof window !== 'undefined') {

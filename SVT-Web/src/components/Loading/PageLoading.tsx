@@ -1,8 +1,12 @@
 import React from 'react';
 import { Spin } from 'antd';
 
-const PageLoading: React.FC = () => (
-  <Spin size="large" tip="页面加载中..." fullscreen />
+interface PageLoadingProps {
+  message?: string;
+}
+
+const PageLoading: React.FC<PageLoadingProps> = ({ message = "页面加载中..." }) => (
+  <Spin size="large" tip={message} fullscreen />
 );
 
-export default PageLoading; 
+export default PageLoading;
