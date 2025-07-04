@@ -425,6 +425,7 @@ EXEC sp_addextendedproperty N'MS_Description', N'备注', N'SCHEMA', N'dbo', N'T
 DROP TABLE IF EXISTS db_key;
 CREATE TABLE db_key (
     table_name VARCHAR(100) NOT NULL,
+    field_name VARCHAR(100) NOT NULL,
     entity_name VARCHAR(100) NOT NULL,
     prefix VARCHAR(10) NOT NULL,
     date_format VARCHAR(20) NOT NULL DEFAULT 'yyyyMMdd',
@@ -434,7 +435,7 @@ CREATE TABLE db_key (
     record_date DATE,
     current_letter_position INT NOT NULL DEFAULT 0,
     last_update_time DATETIME NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT uk_db_key_table_name UNIQUE (table_name)
+    CONSTRAINT pk_db_key PRIMARY KEY (table_name, field_name)
 );
 
 -- 添加表注释
@@ -442,7 +443,8 @@ EXEC sp_addextendedproperty N'MS_Description', N'分布式ID生成表', N'SCHEMA
 
 -- 添加列注释
 EXEC sp_addextendedproperty N'MS_Description', N'表名', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'table_name';
-EXEC sp_addextendedproperty N'MS_Description', N'实体类名/主键', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'entity_name';
+EXEC sp_addextendedproperty N'MS_Description', N'字段名', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'field_name';
+EXEC sp_addextendedproperty N'MS_Description', N'实体类名', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'entity_name';
 EXEC sp_addextendedproperty N'MS_Description', N'ID前缀', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'prefix';
 EXEC sp_addextendedproperty N'MS_Description', N'日期格式', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'date_format';
 EXEC sp_addextendedproperty N'MS_Description', N'补充位数', N'SCHEMA', N'dbo', N'TABLE', N'db_key', N'COLUMN', N'padding_length';

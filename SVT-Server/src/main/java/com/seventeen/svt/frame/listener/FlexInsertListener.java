@@ -58,9 +58,10 @@ public class FlexInsertListener implements InsertListener {
             if (distributedId != null) {
                 // 获取类上的@TableName注解的值
                 String tableName = getTableName(obj.getClass());
+                String fieldName = field.getName(); // 获取字段名
                 String entityName = obj.getClass().getSimpleName();
 
-                String id = DistributedIdGenerator.generateId(tableName, entityName, distributedId);
+                String id = DistributedIdGenerator.generateId(tableName, fieldName, entityName, distributedId);
                 field.set(obj, id);
                 log.debug("字段 {} 分布式ID填充完成, 填充值: {}", field.getName(), id);
             }

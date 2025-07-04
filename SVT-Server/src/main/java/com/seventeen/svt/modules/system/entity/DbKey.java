@@ -22,11 +22,14 @@ import java.util.Date;
 @Data
 public class DbKey implements Serializable {
 
-    @Column(value = "entity_name", comment = "实体类名")
-    private String entityName;
-
     @Column(value = "table_name", comment = "表名")
     private String tableName;
+
+    @Column(value = "field_name", comment = "字段名")
+    private String fieldName;
+
+    @Column(value = "entity_name", comment = "实体类名")
+    private String entityName;
 
     @Column(value = "prefix", comment = "ID前缀")
     private String prefix;
@@ -56,4 +59,25 @@ public class DbKey implements Serializable {
     @Serial
     @Column(ignore = true)
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 生成复合主键
+     * 格式：表名_字段名
+     */
+    public String getCompositeKey() {
+        return tableName + "_" + fieldName;
+    }
+
+    /**
+     * 从复合主键解析表名和字段名
+     */
+    public static String[] parseCompositeKey(String compositeKey) {
+        if (compositeKey == null || !compositeKey.contains("_")) {
+            throw new IllegalArgumentException("Invalid composite key format: " + compositeKey);
+        }
+        int lastIndex = compositeKey.lastIndexOf("_");
+        String tableName = compositeKey.substring(0, lastIndex);
+        String fieldName = compositeKey.substring(lastIndex + 1);
+        return new String[]{tableName, fieldName};
+    }
 }

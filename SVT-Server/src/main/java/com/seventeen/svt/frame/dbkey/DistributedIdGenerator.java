@@ -27,15 +27,18 @@ public class DistributedIdGenerator {
     /**
      * 生成ID
      */
-    public static String generateId(String tableName, String entityName, DistributedId annotation) {
+    public static String generateId(String tableName, String fieldName, String entityName, DistributedId annotation) {
+        // 生成缓存键：表名_字段名
+        String cacheKey = generateCacheKey(tableName, fieldName);
+
         // 先从缓存获取ID
-        String id = getIdFromCache(tableName);
+        String id = getIdFromCache(cacheKey);
         if (id != null) {
             return id;
         }
 
         // 缓存中没有ID,需要从DB获取一批新ID
-        String lockKey = DistributedLockUtil.getLockKey(tableName);
+        String lockKey = DistributedLockUtil.getLockKey(cacheKey);
         String lockValue = DistributedLockUtil.tryLock(lockKey, 5, 10, TimeUnit.SECONDS);
 
         if (lockValue == null) {
@@ -44,13 +47,13 @@ public class DistributedIdGenerator {
 
         try {
             // 再次检查缓存(可能其他线程已经获取了新ID)
-            id = getIdFromCache(tableName);
+            id = getIdFromCache(cacheKey);
             if (id != null) {
                 return id;
             }
 
             // 获取配置
-            DbKey dbKey = getOrCreateConfig(tableName, entityName, annotation);
+            DbKey dbKey = getOrCreateConfig(tableName, fieldName, entityName, annotation);
 
             // 获取当前日期
             String currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern(annotation.dateFormat()));
@@ -69,16 +72,16 @@ public class DistributedIdGenerator {
                 dbKey.setCurrentId(1L);
                 dbKey.setCurrentLetterPosition(0);
                 dbKey.setRecordDate(new Date()); // 设置当前日期
-                dbKeyServiceImpl.updateCurrentDate(dbKey.getTableName(), dbKey.getRecordDate());
-                dbKeyServiceImpl.updateCurrentId(dbKey.getTableName(), dbKey.getCurrentId());
-                dbKeyServiceImpl.updateCurrentLetterPosition(dbKey.getTableName(), dbKey.getCurrentLetterPosition());
+                dbKeyServiceImpl.updateCurrentDate(dbKey.getTableName(), dbKey.getFieldName(), dbKey.getRecordDate());
+                dbKeyServiceImpl.updateCurrentId(dbKey.getTableName(), dbKey.getFieldName(), dbKey.getCurrentId());
+                dbKeyServiceImpl.updateCurrentLetterPosition(dbKey.getTableName(), dbKey.getFieldName(), dbKey.getCurrentLetterPosition());
             }
 
             // 生成一批ID
             List<String> ids = generateBatchIds(dbKey);
 
             // 保存到缓存
-            DbKeyCacheUtils.putIds(tableName, ids);
+            DbKeyCacheUtils.putIds(cacheKey, ids);
 
             // 返回第一个ID
             return ids.remove(0);
@@ -90,15 +93,22 @@ public class DistributedIdGenerator {
     /**
      * 从缓存获取ID
      */
-    private static String getIdFromCache(String tableName) {
-        List<String> ids = DbKeyCacheUtils.getIds(tableName);
+    private static String getIdFromCache(String cacheKey) {
+        List<String> ids = DbKeyCacheUtils.getIds(cacheKey);
         if (ids != null && !ids.isEmpty()) {
             String id = ids.remove(0);
             // 更新缓存
-            DbKeyCacheUtils.putIds(tableName, ids);
+            DbKeyCacheUtils.putIds(cacheKey, ids);
             return id;
         }
         return null;
+    }
+
+    /**
+     * 生成缓存键
+     */
+    private static String generateCacheKey(String tableName, String fieldName) {
+        return tableName + "_" + fieldName;
     }
 
     /**
@@ -137,15 +147,16 @@ public class DistributedIdGenerator {
         if (newCurrentId > maxNumber) {
             newCurrentId = 1;
             dbKey.setCurrentLetterPosition(dbKey.getCurrentLetterPosition() + 1);
-            dbKeyServiceImpl.updateCurrentLetterPosition(dbKey.getTableName(), dbKey.getCurrentLetterPosition());
+            dbKeyServiceImpl.updateCurrentLetterPosition(dbKey.getTableName(), dbKey.getFieldName(), dbKey.getCurrentLetterPosition());
         }
 
         // 更新DB中的当前ID
         dbKey.setCurrentId(newCurrentId);
-        dbKeyServiceImpl.updateCurrentId(dbKey.getTableName(), newCurrentId);
+        dbKeyServiceImpl.updateCurrentId(dbKey.getTableName(), dbKey.getFieldName(), newCurrentId);
 
         // 更新缓存
-        DbKeyCacheUtils.put(dbKey.getTableName(), dbKey);
+        String cacheKey = generateCacheKey(dbKey.getTableName(), dbKey.getFieldName());
+        DbKeyCacheUtils.put(cacheKey, dbKey);
 
         return ids;
     }
@@ -153,9 +164,12 @@ public class DistributedIdGenerator {
     /**
      * 获取或创建配置
      */
-    private static DbKey getOrCreateConfig(String tableName, String entityName, DistributedId annotation) {
+    private static DbKey getOrCreateConfig(String tableName, String fieldName, String entityName, DistributedId annotation) {
+        // 生成缓存键
+        String cacheKey = generateCacheKey(tableName, fieldName);
+
         // 从缓存获取
-        DbKey dbKey = DbKeyCacheUtils.get(tableName);
+        DbKey dbKey = DbKeyCacheUtils.get(cacheKey);
         if (dbKey != null) {
             return dbKey;
         }
@@ -163,11 +177,12 @@ public class DistributedIdGenerator {
         DbKeyService dbKeyServiceImpl = SpringUtil.getBean("dbKeyServiceImpl", DbKeyService.class);
 
         // 从数据库获取
-        dbKey = dbKeyServiceImpl.getByTableName(tableName);
+        dbKey = dbKeyServiceImpl.getByTableNameAndFieldName(tableName, fieldName);
         if (dbKey == null) {
             // 创建新配置
             dbKey = new DbKey();
             dbKey.setTableName(tableName);
+            dbKey.setFieldName(fieldName);
             dbKey.setEntityName(entityName);
             dbKey.setPrefix(annotation.prefix());
             dbKey.setDateFormat(annotation.dateFormat());
@@ -182,7 +197,7 @@ public class DistributedIdGenerator {
         }
 
         // 更新缓存
-        DbKeyCacheUtils.put(tableName, dbKey);
+        DbKeyCacheUtils.put(cacheKey, dbKey);
         return dbKey;
     }
 

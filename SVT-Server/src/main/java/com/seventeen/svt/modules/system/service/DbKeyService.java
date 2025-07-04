@@ -11,32 +11,36 @@ import java.util.Date;
 public interface DbKeyService extends IService<DbKey> {
 
     /**
-     * 根据表名查询配置
+     * 根据表名和字段名查询配置
      * @param tableName 表名
+     * @param fieldName 字段名
      * @return 配置
      */
-    DbKey getByTableName(String tableName);
+    DbKey getByTableNameAndFieldName(String tableName, String fieldName);
 
     /**
      * 更新当前ID
      * @param tableName 表名
+     * @param fieldName 字段名
      * @param currentId 当前ID
      */
-    void updateCurrentId(String tableName, Long currentId);
+    void updateCurrentId(String tableName, String fieldName, Long currentId);
 
     /**
      * 更新当前字母位置
      * @param tableName 表名
+     * @param fieldName 字段名
      * @param currentLetterPosition 当前字母位置
      */
-    void updateCurrentLetterPosition(String tableName, Integer currentLetterPosition);
+    void updateCurrentLetterPosition(String tableName, String fieldName, Integer currentLetterPosition);
 
     /**
      * 更新当前日期
      * @param tableName 表名
+     * @param fieldName 字段名
      * @param recordDate 记录日期
      */
-    void updateCurrentDate(String tableName, Date recordDate);
+    void updateCurrentDate(String tableName, String fieldName, Date recordDate);
 
     /**
      * 创建配置
