@@ -78,9 +78,9 @@ src/
 │   └── ProtectedRoute.tsx # 路由守卫
 │
 ├── stores/                # 状态管理层
-│   ├── authStore.ts       # 认证状态
-│   ├── sessionStore.ts    # 会话状态
-│   └── userStore.ts       # 用户状态
+│   ├── authStore.ts       # 认证状态（Token、登录状态）
+│   ├── userStore.ts       # 用户状态（用户信息、会话管理）
+│   └── useAuth.ts         # 组合Hook（协调认证和用户状态）
 │
 ├── styles/                # 样式层
 │   ├── PageContainer.css  # 页面容器样式
@@ -476,11 +476,11 @@ SVT采用Zustand进行全局状态管理，具备以下特点：
 ### 5.2 状态架构设计
 
 ```typescript
-// 状态模块化设计
+// 状态模块化设计 (v1.0.1-SNAPSHOT)
 stores/
-├── authStore.ts      # 认证状态管理
-├── userStore.ts      # 用户信息管理
-├── sessionStore.ts   # 会话状态管理
+├── authStore.ts      # 认证状态管理（纯认证逻辑）
+├── userStore.ts      # 用户信息管理（含会话状态）
+├── useAuth.ts        # 组合Hook（协调认证和用户交互）
 └── [业务Store]       # 按业务模块划分
 ```
 

@@ -30,21 +30,22 @@ SVT项目在React生态的众多状态管理方案中选择Zustand，基于以�
 ```
 应用层组件
     ↓
-状态层 (Zustand Stores)
-    ├── authStore      (认证状态)
-    ├── userStore      (用户信息)
-    ├── sessionStore   (会话管理)
+状态层 (Zustand Stores) - 职责分离设计
+    ├── authStore      (纯认证状态：Token、登录状态、过期时间)
+    ├── userStore      (用户信息 + 会话状态：用户详情、权限、会话管理)
+    ├── useAuth        (组合Hook：协调authStore和userStore交互)
     └── [业务Store]    (业务状态)
     ↓
-持久化层 (LocalStorage + SessionStorage)
-    ├── auth-storage   (认证持久化)
+持久化层 (Native LocalStorage)
+    ├── auth-storage   (认证状态持久化)
     ├── user-storage   (用户信息持久化)
-    └── session-storage (会话状态持久化)
+    └── session-state  (会话状态持久化)
     ↓
 工具层 (Utilities)
-    ├── tokenManager   (Token管理)
-    ├── sessionManager (会话管理)
-    └── storageManager (存储管理)
+    ├── tokenManager   (Token智能续期管理)
+    ├── sessionManager (会话状态管理)
+    ├── debugManager   (调试管理)
+    └── localStorageManager (存储管理)
 ```
 
 ### 2.2 核心概念与API
@@ -415,6 +416,59 @@ export const useSessionStore = create<SessionState>()(
 );
 ```
 
+### 3.4 缓存机制设计
+
+SVT前端实现了多层缓存策略，提供高性能的数据访问：
+
+**缓存类型：**
+```typescript
+// 1. 安全存储缓存（加密）
+SecureStorage:
+├── svt_secure_auth_token    # JWT认证令牌
+├── svt_secure_user_data     # 用户详细信息（加密）
+└── svt_secure_permissions   # 权限数据（加密）
+
+// 2. 普通localStorage缓存
+LocalStorage:
+├── svt-tab-state           # Tab页签状态
+├── svt-active-tab          # 当前激活Tab
+├── auth-storage            # Auth Store持久化
+└── user-storage            # User Store持久化
+```
+
+**缓存数据格式：**
+```typescript
+// 安全存储格式
+interface SecureStorageItem {
+  encrypted: boolean;        // 是否加密
+  data: string;             // 数据内容
+  timestamp: number;        // 时间戳
+  version: string;          // 版本号
+}
+
+// 示例：JWT Token存储
+{
+  "encrypted": false,
+  "data": "\"eyJhbGciOiJIUzI1NiJ9...\"",
+  "timestamp": 1751592860788,
+  "version": "1.0"
+}
+
+// 示例：用户数据存储（加密）
+{
+  "encrypted": true,
+  "data": "U2FsdGVkX1+...", // AES加密后的数据
+  "timestamp": 1751592860790,
+  "version": "1.0"
+}
+```
+
+**缓存策略：**
+- **认证数据**: 高安全性，短期存储，自动过期
+- **用户数据**: 中等安全性，长期存储，加密保护
+- **Tab状态**: 低安全性，会话存储，明文保存
+- **权限数据**: 高安全性，中期存储，加密保护
+
 ## 4. Store使用模式
 
 ### 4.1 组件中使用Store
@@ -709,3 +763,102 @@ describe('AuthStore', () => {
 3. **Token安全**: Token应设置合理的过期时间和刷新机制
 4. **状态清理**: 登出时彻底清理所有相关状态
 5. **错误信息**: 避免在错误信息中暴露系统内部细节
+
+## 6. 架构更新记录 (v1.0.1-SNAPSHOT)
+
+### 6.1 职责分离重构
+
+**背景**: 为了提高代码可维护性和性能，我们对状态管理架构进行了重构。
+
+**主要变更**:
+1. **authStore职责收窄**: 专注于纯认证逻辑（Token、登录状态、过期时间）
+2. **userStore职责扩展**: 整合了用户信息和会话状态管理
+3. **sessionStore移除**: 会话相关状态合并到userStore中
+4. **useAuth组合Hook**: 提供统一的认证接口，协调多个Store交互
+
+**新架构优势**:
+- **更清晰的职责分离**: 每个Store有明确的职责边界
+- **简化的状态管理**: 减少Store间复杂依赖关系
+- **更好的性能**: 避免不必要的状态订阅和组件重渲染
+- **更容易测试**: 独立的Store更易于单元测试
+
+### 6.2 全局验证状态优化
+
+**问题**: 页面切换时出现重复API调用，影响性能和用户体验。
+
+**解决方案**: 实现全局验证状态管理
+```typescript
+// useUserStatus.ts
+let globalVerificationStatus = {
+  hasVerified: false,
+  isVerifying: false,
+  verificationPromise: null as Promise<UserStatusVerificationResult> | null
+};
+
+export const resetGlobalVerificationStatus = () => {
+  globalVerificationStatus = {
+    hasVerified: false,
+    isVerifying: false,
+    verificationPromise: null
+  };
+};
+```
+
+**效果**:
+- 防止重复的用户状态验证调用
+- 提升页面切换性能
+- 改善用户体验
+
+### 6.3 性能优化实现
+
+**权限检查优化**:
+```typescript
+// O(1)权限检查实现
+const permissionPaths = useMemo(() => {
+  return user?.menuTrees ? buildPermissionIndex(user.menuTrees as MenuItem[]) : new Set<string>();
+}, [user?.menuTrees]);
+
+const hasPermission = permissionPaths.has(currentPath); // O(1)查找
+```
+
+**导航系统优化**:
+```typescript
+// 修复强制刷新问题
+const handleMenuClick = (key: string) => {
+  addTab(key, false); // 正常切换，不强制刷新
+};
+```
+
+### 6.4 移除"记住我"功能
+
+**背景**: 简化认证流程，统一Token管理策略。
+
+**变更内容**:
+1. 移除登录页面的"记住我"复选框
+2. 移除LoginRequest中的rememberMe字段
+3. 移除authStore中的记住我逻辑
+4. Token过期时间完全由后端JWT控制
+
+**代码变更**:
+```typescript
+// 旧版本
+interface LoginRequest {
+  loginId: string;
+  password: string;
+  captcha?: string;
+  rememberMe?: boolean; // 已移除
+}
+
+// 新版本
+interface LoginRequest {
+  loginId: string;
+  password: string;
+  captcha?: string;
+}
+```
+
+---
+
+**文档版本**: v1.0.1-SNAPSHOT  
+**最后更新**: 2025年7月  
+**更新说明**: 反映最新的状态管理架构和性能优化

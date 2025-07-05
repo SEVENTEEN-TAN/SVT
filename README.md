@@ -5,9 +5,9 @@
 ## 🎯 项目特色
 
 - **技术栈先进**：Spring Boot 3.3.2 + React 19.1.0 + Java 21 + TypeScript 5.8.3
-- **安全机制完善**：JWT智能续期 + AES-256加密 + Argon2密码哈希 + 敏感数据脱敏
+- **安全机制完善**：JWT智能续期 + AES-256加密 + SM4国密加密 + Argon2密码哈希 + 敏感数据脱敏
 - **架构设计优秀**：分层模块化 + 职责分离 + 高内聚低耦合 + AOP横切关注点
-- **性能优化到位**：Redis分布式缓存 + Caffeine本地缓存 + 代码分割 + 异步处理
+- **性能优化到位**：数据库分布式锁 + Redis缓存 + Caffeine本地缓存 + 代码分割 + 异步处理
 - **开发体验优良**：TypeScript类型安全 + 热重载 + 自动化构建 + API文档自动生成
 
 ## 🚀 技术架构
@@ -18,7 +18,7 @@
 - **数据库**：Microsoft SQL Server + Druid 1.2.24 连接池
 - **缓存系统**：Redis（分布式缓存）+ Caffeine 3.1.8（本地缓存）
 - **安全框架**：Spring Security + JWT (jjwt 0.11.5) + Argon2
-- **加密算法**：AES-256-CBC（API传输加密）+ Jasypt 3.0.5（配置加密）
+- **加密算法**：AES-256-CBC（API传输加密）+ SM4国密算法（配置加密，替代Jasypt）
 - **文档工具**：Knife4j 4.5.0（基于OpenAPI 3.0）
 - **日志系统**：Log4j2 + Disruptor 3.4.4（异步日志）
 - **工具类库**：Hutool 5.8.16 + Guava 32.1.3 + BouncyCastle 1.69
@@ -52,7 +52,7 @@ SVT/
 │   │   │   │   └── transaction/                   # 事务管理(@AutoTransaction)
 │   │   │   ├── config/                            # 配置类
 │   │   │   │   ├── AESConfig.java                 # AES加密配置
-│   │   │   │   ├── JasyptConfig.java              # 配置文件加密
+│   │   │   │   ├── SM4ConfigDecryptProcessor.java  # SM4配置文件加密
 │   │   │   │   ├── RedisConfig.java               # Redis配置
 │   │   │   │   ├── SVTArgon2PasswordEncoder.java  # Argon2密码编码器
 │   │   │   │   └── transaction/                   # 事务管理配置
@@ -75,6 +75,7 @@ SVT/
 │   │   │   ├── dbkey/                             # 分布式ID生成器
 │   │   │   ├── handler/                           # MyBatis类型处理器
 │   │   │   ├── listener/                          # 事件监听器
+│   │   │   ├── lock/                              # 数据库分布式锁系统
 │   │   │   └── security/                          # 安全框架
 │   │   │       ├── config/                        # Security配置
 │   │   │       ├── controller/                    # 认证控制器
@@ -157,9 +158,6 @@ SVT/
 │   │       ├── debugManager.ts         # 调试管理器
 │   │       └── localStorageManager.ts  # 本地存储管理器
 │   └── docs/                           # 前端文档
-│
-└── docs/                               # 项目文档
-    └── architecture/                   # 架构设计文档
 ```
 
 ## 🏃‍♂️ 快速开始
@@ -193,11 +191,11 @@ cd SVT
 2. **环境变量配置**
    ```bash
    # Windows
-   set JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_password
+   set SM4_ENCRYPTION_KEY=your_sm4_encryption_key
    set SVT_AES_KEY=your_32_char_aes_key_1234567890123456
 
    # Linux/Mac
-   export JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_password
+   export SM4_ENCRYPTION_KEY=your_sm4_encryption_key
    export SVT_AES_KEY=your_32_char_aes_key_1234567890123456
    ```
 
@@ -281,12 +279,13 @@ cd SVT
 #### 安全机制
 - **AES-256-CBC加密**：API请求/响应数据端到端加密
 - **Argon2密码哈希**：业界最安全的密码存储算法
-- **配置文件加密**：Jasypt保护敏感配置信息
+- **配置文件加密**：SM4国密算法保护敏感配置信息
 - **审计日志**：完整的操作审计，敏感数据自动脱敏
 - **敏感数据脱敏**：支持多种脱敏策略（手机号、身份证、银行卡等）
 
 #### 系统特性
 - **分布式ID生成**：雪花算法变种，支持日期重置和字母扩展
+- **数据库分布式锁**：替代Redis锁，支持智能重试和强制释放机制
 - **多级缓存策略**：Redis分布式缓存 + Caffeine本地缓存
 - **自动事务管理**：基于注解的智能事务处理
 - **链路追踪**：TraceId全链路追踪，便于问题排查
@@ -296,14 +295,14 @@ cd SVT
 
 #### 布局系统
 - **模块化布局设计**：Header、Sidebar、TabSystem独立模块
-- **智能标签页系统**：多标签管理、右键菜单、状态持久化、防重复开启
+- **智能标签页系统**：多标签管理、右键菜单、状态持久化、优化导航性能
 - **响应式设计**：支持桌面端和移动端适配
 - **可折叠侧边栏**：节省屏幕空间，提升用户体验
 - **智能面包屑导航**：动态生成，支持路由跳转
 
 #### 用户体验
 - **分级加载状态**：页面级、组件级、按钮级加载状态管理
-- **智能会话提醒**：Token即将过期自动提醒用户
+- **智能会话管理**：Token智能续期、统一会话过期提醒、防重复API调用
 - **错误边界处理**：React错误边界，友好的错误处理
 - **防抖节流优化**：搜索、提交等操作的性能优化
 
@@ -314,7 +313,7 @@ cd SVT
 - **代码分割优化**：按需加载，减少首屏加载时间
 
 #### 状态管理
-- **认证状态管理**：JWT Token、登录状态、过期时间管理
+- **认证状态管理**：JWT Token智能续期、简化登录流程（移除记住我功能）
 - **用户状态管理**：用户信息、权限、组织信息缓存
 - **会话状态管理**：页面状态、表单状态持久化
 - **本地存储管理**：智能清理、版本控制、过期处理
@@ -334,9 +333,8 @@ cd SVT
 - [前端开发指南](./SVT-Web/README.md) - React开发规范、组件设计、状态管理
 
 ### 技术文档
-- [架构设计文档](./docs/architecture/) - 系统架构、技术选型、设计原理
-- [后端技术文档](./SVT-Server/docs/) - API加密、密码哈希、审计日志等
-- [前端技术文档](./SVT-Web/docs/) - 组件架构、状态管理、Tab系统等
+- [后端技术文档](./SVT-Server/docs/) - API加密、密码哈希、审计日志、SM4配置加密等
+- [前端技术文档](./SVT-Web/docs/) - 组件架构、状态管理、Tab系统、开发指南等
 
 ## 🔨 开发指南
 
@@ -478,14 +476,16 @@ server {
 ### 必需环境变量
 系统启动前必须配置以下环境变量：
 ```bash
-# 配置文件加密密钥（用于Jasypt加密）
-JASYPT_ENCRYPTOR_PASSWORD=your_secure_password
+# 配置文件加密密钥（用于SM4国密加密，替代Jasypt）
+SM4_ENCRYPTION_KEY=your_sm4_encryption_key
 
 # API数据加密密钥（32字符，用于AES加密）
 SVT_AES_KEY=your_32_char_aes_key_1234567890123456
 
 # 敏感数据脱敏开关（可选，默认true）
 SENSITIVE_ENABLED=true
+
+# 注意：JASYPT_ENCRYPTOR_PASSWORD已废弃，使用SM4_ENCRYPTION_KEY替代
 ```
 
 ### 数据库初始化
@@ -496,7 +496,7 @@ SENSITIVE_ENABLED=true
 
 ### 依赖服务
 - **Redis**：系统强依赖Redis，用于JWT缓存、用户会话等
-- **SQL Server**：主数据库，建议使用SQL Server 2019+
+- **SQL Server**：主数据库，建议使用SQL Server 2019+，同时用于数据库分布式锁
 
 ### 安全配置
 - AES密钥必须是32字符长度
@@ -561,6 +561,24 @@ SENSITIVE_ENABLED=true
 - 提交Issue：项目问题反馈
 - 发起讨论：功能建议和技术交流
 - 邮件联系：技术支持
+
+## 🔄 最新更新记录
+
+### v1.0.1-SNAPSHOT (2025年7月)
+- **🔒 安全增强**：实施SM4国密算法替代Jasypt配置加密
+- **🔧 架构优化**：实现数据库分布式锁系统，替代Redis锁机制
+- **⚡ 性能提升**：修复页面导航时的重复API调用问题，实现O(1)权限检查
+- **🎯 用户体验**：统一会话管理，修复重复登录提示问题
+- **🔄 系统简化**：移除"记住我"功能，简化认证流程
+- **🚀 智能续期**：基于用户活跃度的JWT智能续期机制
+- **🐛 错误修复**：解决React Hooks生命周期错误，增强错误边界
+- **📋 文档更新**：完善技术文档，统一前后端常量命名
+
+### 技术亮点
+- **数据库分布式锁**：智能重试机制、自动清理过期锁、强制释放功能
+- **全局验证状态**：防止重复用户状态验证调用，提升页面切换性能  
+- **优化导航系统**：避免强制组件重挂载，提升用户体验
+- **统一会话常量**：前后端常量保持一致，减少维护成本
 
 ---
 

@@ -48,13 +48,13 @@ Tab关闭     移除Tab              内容区域更新
 ```typescript
 interface TabItem {
   key: string;        // 唯一标识
-  title: string;      // Tab标题
+  label: string;      // Tab标题
   path: string;       // 路由路径
   icon?: string;      // 图标
   closable: boolean;  // 是否可关闭
-  fixed: boolean;     // 是否固定
-  refreshKey: number; // 刷新标识
-  lastVisited: number; // 最后访问时间
+  fixed?: boolean;    // 是否固定
+  refreshKey?: number; // 刷新标识
+  lastVisited?: number; // 最后访问时间
 }
 ```
 
@@ -818,3 +818,233 @@ const LazyTabContent: React.FC<{
 3. **Tab搜索**: 大量Tab时的快速搜索功能
 4. **拖拽排序**: 支持Tab拖拽重新排序
 5. **键盘导航**: 支持键盘快捷键Tab切换
+
+## 8. 状态持久化机制
+
+### 8.1 持久化概述
+
+SVT Tab系统实现了完整的状态持久化机制，支持页面刷新后恢复标签页状态，提供流畅的用户体验。
+
+**核心特性：**
+- **持久化存储**: 标签页状态保存到localStorage
+- **状态恢复**: 页面刷新后自动恢复标签页
+- **智能清理**: 登录/登出时自动清理过期数据
+- **默认首页**: 确保首页标签始终存在且不可关闭
+
+### 8.2 存储结构
+
+```typescript
+// 存储键名
+export const STORAGE_KEYS = {
+  TAB_STATE: 'svt-tab-state',     // 标签页列表
+  ACTIVE_TAB: 'svt-active-tab',   // 当前激活标签
+} as const;
+
+// 存储的状态结构
+interface TabState {
+  tabs: TabItem[];    // 标签页列表
+  activeTab: string;  // 当前激活的标签页
+}
+```
+
+### 8.3 核心实现
+
+**tabStorage工具** (`src/utils/localStorageManager.ts`)：
+
+```typescript
+export const tabStorage = {
+  // 保存Tab状态
+  save: (tabs: TabItem[], activeTab: string): void => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.TAB_STATE, JSON.stringify(tabs));
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, activeTab);
+    } catch (error) {
+      console.warn('[LocalStorage] 保存Tab状态失败:', error);
+    }
+  },
+  
+  // 加载Tab状态
+  load: (): { tabs: TabItem[], activeTab: string } => {
+    try {
+      const savedTabs = localStorage.getItem(STORAGE_KEYS.TAB_STATE);
+      const savedActiveTab = localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB);
+      
+      if (savedTabs && savedActiveTab) {
+        return {
+          tabs: JSON.parse(savedTabs),
+          activeTab: savedActiveTab
+        };
+      }
+    } catch (error) {
+      console.warn('[LocalStorage] 加载Tab状态失败:', error);
+    }
+    
+    // 返回默认状态
+    return {
+      tabs: [{ key: '/home', label: '首页', path: '/home', closable: false }],
+      activeTab: '/home'
+    };
+  },
+  
+  // 清理Tab状态
+  clear: (): void => {
+    localStorage.removeItem(STORAGE_KEYS.TAB_STATE);
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_TAB);
+  }
+};
+```
+
+### 8.4 状态管理流程
+
+**初始化流程：**
+```typescript
+// 组件初始化时加载存储的状态
+useEffect(() => {
+  const { tabs, activeTab } = loadTabsFromStorage();
+  setTabs(tabs);
+  setActiveTab(activeTab);
+}, [loadTabsFromStorage]);
+
+// 确保首页标签的特殊处理
+const ensureHomeTab = (tabs: TabItem[]): TabItem[] => {
+  const homeIndex = tabs.findIndex(tab => tab.key === '/home');
+  
+  if (homeIndex >= 0) {
+    // 更新现有首页标签属性
+    tabs[homeIndex] = { 
+      key: '/home', 
+      label: '首页', 
+      path: '/home', 
+      closable: false 
+    };
+  } else {
+    // 首页不存在则添加到开头
+    tabs.unshift({ 
+      key: '/home', 
+      label: '首页', 
+      path: '/home', 
+      closable: false 
+    });
+  }
+  
+  return tabs;
+};
+```
+
+**状态更新流程：**
+```typescript
+// 添加新标签页
+const addTab = (newTab: TabItem) => {
+  const updatedTabs = [...tabs, newTab];
+  setTabs(updatedTabs);
+  setActiveTab(newTab.key);
+  
+  // 持久化到localStorage
+  saveTabsToStorage(updatedTabs, newTab.key);
+};
+
+// 关闭标签页
+const removeTab = (targetKey: string) => {
+  const targetIndex = tabs.findIndex(tab => tab.key === targetKey);
+  const updatedTabs = tabs.filter(tab => tab.key !== targetKey);
+  
+  // 处理激活标签页的切换
+  let newActiveTab = activeTab;
+  if (activeTab === targetKey) {
+    newActiveTab = targetIndex > 0 ? 
+      updatedTabs[targetIndex - 1].key : 
+      updatedTabs[0].key;
+  }
+  
+  setTabs(updatedTabs);
+  setActiveTab(newActiveTab);
+  
+  // 持久化到localStorage
+  saveTabsToStorage(updatedTabs, newActiveTab);
+};
+```
+
+### 8.5 清理策略
+
+```typescript
+// 登录时清理
+export const initializeStorageOnLogin = (): void => {
+  try {
+    clearAllUserData();
+    console.log('[LocalStorage] 登录时存储初始化完成');
+  } catch (error) {
+    console.warn('[LocalStorage] 登录时存储初始化失败:', error);
+  }
+};
+
+// 登出时清理
+export const clearStorageOnLogout = (): void => {
+  try {
+    clearAllUserData();
+    console.log('[LocalStorage] 登出时存储清理完成');
+  } catch (error) {
+    console.warn('[LocalStorage] 登出时存储清理失败:', error);
+  }
+};
+```
+
+### 8.6 异常处理
+
+```typescript
+// JSON解析异常处理
+const loadTabState = (): TabState => {
+  try {
+    const savedTabs = localStorage.getItem(STORAGE_KEYS.TAB_STATE);
+    const savedActiveTab = localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB);
+    
+    if (savedTabs && savedActiveTab) {
+      const tabs = JSON.parse(savedTabs);
+      
+      // 验证数据完整性
+      if (Array.isArray(tabs) && tabs.every(isValidTabItem)) {
+        return { tabs, activeTab: savedActiveTab };
+      }
+    }
+  } catch (error) {
+    console.warn('[TabStorage] 解析存储数据失败:', error);
+  }
+  
+  // 返回安全的默认状态
+  return getDefaultTabState();
+};
+
+// 数据验证
+const isValidTabItem = (item: any): item is TabItem => {
+  return item && 
+         typeof item.key === 'string' && 
+         typeof item.label === 'string' && 
+         typeof item.path === 'string' && 
+         typeof item.closable === 'boolean';
+};
+```
+
+### 8.7 性能优化
+
+```typescript
+import { throttle } from 'lodash-es';
+
+// 节流保存，避免频繁写入localStorage
+const throttledSave = throttle((tabs: TabItem[], activeTab: string) => {
+  tabStorage.save(tabs, activeTab);
+}, 300);
+
+// 在状态更新时使用节流保存
+const updateTabState = (newTabs: TabItem[], newActiveTab: string) => {
+  setTabs(newTabs);
+  setActiveTab(newActiveTab);
+  throttledSave(newTabs, newActiveTab);
+};
+```
+
+---
+
+## 📚 相关文档
+
+- [状态管理](./State-Management.md) - Zustand状态管理详解
+- [组件架构](./Component-Structure.md) - 组件设计规范
+- [响应式布局](./Responsive-Layout-System.md) - 布局系统设计

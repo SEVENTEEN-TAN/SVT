@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SVT (Seventeen) is an enterprise-grade risk management system built with Spring Boot 3.3.2 (Java 21) backend and React 19.1.0 (TypeScript) frontend. It features JWT authentication, AES-256 encryption, Redis caching, and comprehensive permission management.
+SVT (Seventeen) is an enterprise-grade risk management system built with Spring Boot 3.3.2 (Java 21) backend and React 19.1.0 (TypeScript) frontend. It features JWT smart renewal authentication, AES-256 encryption, distributed locking system, and comprehensive permission management with dynamic routing.
 
 ## Essential Commands
 
@@ -52,8 +52,16 @@ npm run preview                      # Preview production build
 ## Architecture Overview
 
 ### Core Technology Stack
-**Backend**: Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 1.10.9 + SQL Server + Redis  
+**Backend**: Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 1.10.9 + SQL Server + Redis + SM4 Encryption  
 **Frontend**: React 19.1.0 + TypeScript 5.8.3 + Ant Design 5.25.4 + Zustand 5.0.5 + Vite 6.3.5
+
+### Recent Architecture Updates
+- **Database Distributed Lock System**: Replaced Redis-based locks with database distributed locks for better reliability
+- **SM4 National Encryption**: Implemented SM4 encryption for configuration security (replacing Jasypt)
+- **Intelligent JWT Renewal**: Smart token renewal based on user activity with automatic cleanup
+- **Unified Session Management**: Improved session expiry handling with proper message management
+- **Layout System Optimization**: Fixed duplicate API calls during page navigation
+- **Simplified Authentication Flow**: Removed "remember me" functionality for enhanced security
 
 ### Frontend Architecture Deep Dive
 
@@ -76,10 +84,12 @@ npm run preview                      # Preview production build
 ```
 
 **Key Features:**
-- **Persistence Strategy**: Native localStorage with encryption migration
-- **State Recovery**: Automatic state restoration after page refresh
-- **Security**: Token management with smart renewal and validation
+- **Persistence Strategy**: Native localStorage with automatic cleanup and migration
+- **State Recovery**: Automatic state restoration after page refresh with validation
+- **Security**: JWT smart renewal with activity-based expiry and unified session management
 - **Type Safety**: Complete TypeScript interfaces with Zod validation
+- **Performance**: Optimized API calls with duplicate prevention and global verification status
+- **Error Handling**: Robust React hooks lifecycle management and error boundaries
 
 #### **Layout System Design**
 ```typescript
@@ -102,8 +112,9 @@ npm run preview                      # Preview production build
 - **Multi-tab Management**: Open, close, switch between pages
 - **Context Menu**: Close left/right/other tabs functionality  
 - **State Persistence**: Tab list and active state saved to localStorage
-- **Page Refresh**: Individual tab refresh without affecting others
-- **Route Integration**: Automatic tab creation from menu navigation
+- **Optimized Navigation**: Fixed duplicate API calls during page switching
+- **Route Integration**: Automatic tab creation from menu navigation without forced refresh
+- **Performance**: Intelligent page refresh mechanism with proper component lifecycle
 
 #### **Dynamic Routing System**
 ```typescript
@@ -118,9 +129,11 @@ URL: /System/Menu
 
 **Security Features:**
 - **Four-Layer Protection**: Auth → Role Selection → Status Validation → Permission Check
-- **Strict Matching**: Case-sensitive route permissions
-- **Permission Validation**: Based on user's menu tree from backend
+- **Strict Matching**: Case-sensitive route permissions with O(1) permission checking
+- **Permission Validation**: Based on user's menu tree from backend with optimized indexing
 - **Error Boundaries**: Graceful handling of component loading failures
+- **Session Management**: Unified session expiry handling with consistent messaging
+- **Global Verification**: Prevents duplicate user status verification calls
 
 ## Project Structure
 
@@ -133,11 +146,12 @@ SVT/
 │   │   │   ├── config/                  # AES, Redis, Security, Transaction configs
 │   │   │   ├── filter/                  # AES crypto filter, request wrapper
 │   │   │   └── util/                    # Encryption, Redis, JWT utilities
-│   │   ├── frame/                       # Framework layer (AOP, cache, security)
+│   │   ├── frame/                       # Framework layer (AOP, cache, security, lock)
 │   │   │   ├── aspect/                  # AOP aspects (audit, permission, transaction)
 │   │   │   ├── cache/                   # Cache management (Redis + Caffeine)
 │   │   │   ├── security/                # JWT authentication, Spring Security
-│   │   │   └── dbkey/                   # Distributed ID generator
+│   │   │   ├── dbkey/                   # Distributed ID generator
+│   │   │   └── lock/                    # Database distributed lock system
 │   │   └── modules/system/              # System management module
 │   │       ├── controller/              # REST controllers
 │   │       ├── entity/                  # JPA entities with annotations
@@ -203,8 +217,10 @@ SVT/
 - **Annotation-Driven Development**: Custom annotations for audit logging, permissions, auto-filling, distributed IDs
 - **AOP Cross-Cutting Concerns**: Aspect-oriented programming for audit, transaction, and permission handling
 - **Multi-Level Caching**: Redis (distributed) + Caffeine (local) with automatic cache management
-- **Layered Security**: AES-256 API encryption + JWT authentication + Argon2 password hashing
+- **Layered Security**: AES-256 API encryption + JWT smart renewal + Argon2 password hashing + SM4 config encryption
 - **Distributed ID Generation**: Snowflake-based IDs with prefix support and date reset capability
+- **Database Distributed Locks**: Replaces Redis locks with database-based distributed locking with intelligent retry
+- **Unified Session Constants**: Consistent session management constants between frontend and backend
 
 ### Frontend Patterns
 - **Modular Layout Architecture**: Independent Header, Sidebar, TabSystem modules with shared context
@@ -214,7 +230,10 @@ SVT/
 - **Four-Layer Security**: Auth → Role Selection → Status Validation → Permission Check
 - **Smart Tab Management**: Multi-tab system with context menus and persistent state
 - **Responsive Design**: Mobile-first approach with automatic layout adaptation
-- **Performance Optimization**: Lazy loading, memoization, and optimized re-renders
+- **Performance Optimization**: Lazy loading, memoization, optimized re-renders, and duplicate API prevention
+- **Global Verification Status**: Prevents duplicate user status verification calls across components
+- **Intelligent Navigation**: Optimized menu click handling without forced component remounting
+- **Simplified Authentication**: Removed "remember me" functionality for enhanced security model
 
 #### **Frontend Development Patterns**
 
@@ -351,7 +370,7 @@ export const useYourStore = create<YourState>()(
 ### Required Environment Variables
 ```bash
 # Backend
-JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_password           # Config encryption
+SM4_ENCRYPTION_KEY=your_sm4_encryption_key              # SM4 config encryption (replaces Jasypt)
 SVT_AES_KEY=your_32_char_aes_key_1234567890123456       # API encryption (32 chars)
 SENSITIVE_ENABLED=true                                   # Enable data masking
 
@@ -359,6 +378,8 @@ SENSITIVE_ENABLED=true                                   # Enable data masking
 VITE_API_BASE_URL=http://localhost:8080                 # Backend API URL
 VITE_AES_KEY=your_32_char_aes_key_1234567890123456     # Must match backend key
 VITE_DEBUG_MODE=true                                    # Enable debug logging
+
+# Note: JASYPT_ENCRYPTOR_PASSWORD is deprecated - use SM4_ENCRYPTION_KEY instead
 ```
 
 ### Important Files and Locations
@@ -373,9 +394,10 @@ VITE_DEBUG_MODE=true                                    # Enable debug logging
 ## API Contract
 
 ### Key Authentication Endpoints
-- **Login**: `POST /api/auth/login` - Returns JWT token with expiry
+- **Login**: `POST /api/auth/login` - Returns JWT token with expiry (no remember me option)
 - **Logout**: `GET /api/auth/logout` - Invalidates current session
-- **Token Refresh**: Automatic via smart renewal mechanism
+- **Token Refresh**: Automatic via smart renewal mechanism based on user activity
+- **User Status Verification**: `POST /api/auth/verify-user-status` - Only called on page refresh
 
 ### System Management APIs
 - **Menu Tree**: `POST /api/system/menu/get-all-menu-tree` - Get complete menu structure
@@ -393,9 +415,11 @@ VITE_DEBUG_MODE=true                                    # Enable debug logging
 
 ### Working with the Security System
 - All API endpoints are automatically encrypted/decrypted via `AESCryptoFilter`
-- JWT tokens are managed by `JwtCacheUtils` with Redis backing
+- JWT tokens are managed by `JwtCacheUtils` with Redis backing and smart renewal
 - Permissions are checked via `@RequiresPermission` annotation
 - Audit logs are automatically generated via `@Audit` annotation
+- Database distributed locks ensure secure concurrent operations
+- Session constants are unified between frontend and backend (JWT_TOKEN_EXPIRED, ACTIVITY_EXPIRED)
 
 ### Frontend Layout System
 - Use `LayoutProvider` context for accessing layout state
@@ -438,7 +462,20 @@ VITE_DEBUG_MODE=true                                    # Enable debug logging
 - Check Zustand store state via Redux DevTools extension
 - Monitor tab system state persistence in localStorage
 - Review debug manager output for detailed logging
+- Check for duplicate API calls in network tab - should be prevented by global verification status
+- Verify React hooks lifecycle errors don't occur during logout
+- Ensure session expiry messages are not duplicated
 
 ## Dependencies and Services
-- **Required**: Redis (JWT cache, distributed locks), SQL Server 2019+
+- **Required**: Redis (JWT cache), SQL Server 2019+ (including distributed locks)
 - **Optional**: External API services for notifications, file storage
+
+## Recent Bug Fixes and Improvements
+- **Fixed Duplicate API Calls**: Resolved issue where page navigation caused duplicate API requests
+- **Fixed Session Message Duplication**: Eliminated duplicate "请重新登录" messages in session expiry notifications
+- **Fixed React Hooks Error**: Resolved "Rendered fewer hooks than expected" error during logout
+- **Unified Constants**: Aligned frontend and backend session management constants
+- **Removed Remember Me**: Simplified authentication flow by removing remember me functionality
+- **Optimized Permission Checking**: Implemented O(1) permission validation with useMemo
+- **Enhanced Error Handling**: Improved React hooks lifecycle management and error boundaries
+- **Global Verification Status**: Implemented global status to prevent duplicate user verification calls

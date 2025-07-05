@@ -1,11 +1,11 @@
 # SVT-Server 后端服务
 
-基于 Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 构建的企业级风险管理系统后端服务，采用分层模块化架构，提供完整的用户权限管理、API数据加密、审计日志、分布式ID生成等核心功能。
+基于 Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 构建的企业级风险管理系统后端服务，采用分层模块化架构，提供完整的用户权限管理、API数据加密、SM4配置加密、数据库分布式锁、审计日志、分布式ID生成等核心功能。
 
 ## 🎯 技术特色
 
 - **现代化技术栈**：Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 1.10.9
-- **企业级安全**：JWT智能续期 + AES-256加密 + Argon2密码哈希 + 审计日志 + 敏感数据脱敏
+- **企业级安全**：JWT智能续期 + AES-256加密 + SM4国密加密 + Argon2密码哈希 + 审计日志 + 敏感数据脱敏
 - **高性能设计**：Redis分布式缓存 + Caffeine本地缓存 + 异步日志 + 连接池优化
 - **分层架构**：通用层(common) + 框架层(frame) + 业务层(modules) + 职责清晰
 - **开发友好**：自定义注解 + 统一响应 + 热重载 + API文档自动生成
@@ -25,7 +25,7 @@
 - **SQL Server JDBC 12.8.1** - 微软官方数据库驱动
 
 ### 缓存与性能
-- **Redis** - 分布式缓存，用于JWT令牌管理、用户会话、分布式锁
+- **Redis** - 分布式缓存，用于JWT令牌管理、用户会话
 - **Caffeine 3.1.8** - 高性能本地缓存，提供L1缓存支持
 - **Apache Commons Pool2** - 连接池管理，优化资源使用
 
@@ -33,7 +33,7 @@
 - **JJWT 0.11.5** - JWT令牌生成、验证和智能续期
 - **Spring Security Crypto + Argon2** - 密码哈希，比bcrypt更安全
 - **BouncyCastle 1.69** - AES-256-CBC加密实现，API数据端到端加密
-- **Jasypt 3.0.5** - 配置文件加密，保护敏感配置信息
+- **SM4国密算法** - 配置文件加密，保护敏感配置信息（替代Jasypt）
 
 ### 工具与辅助
 - **Hutool 5.8.16** - Java工具类库，简化开发
@@ -78,7 +78,7 @@ src/main/java/com/seventeen/svt/
 │   │   ├── AESConfig.java            # AES加密配置和密钥管理
 │   │   ├── AsyncConfig.java          # 异步任务线程池配置
 │   │   ├── DruidConfig.java          # 数据源和连接池配置
-│   │   ├── JasyptConfig.java         # 配置文件加密设置
+│   │   ├── SM4ConfigDecryptProcessor.java # SM4配置文件加密处理器
 │   │   ├── MessageConfig.java        # 国际化消息配置
 │   │   ├── RedisConfig.java          # Redis缓存和序列化配置
 │   │   ├── RemoveDruidAdConfig.java  # 移除Druid广告页面
@@ -106,8 +106,7 @@ src/main/java/com/seventeen/svt/
 │   │   └── ResultCode.java           # 响应状态码枚举
 │   └── util/                          # 工具类库
 │       ├── AESUtils.java             # AES加密解密工具
-│       ├── DistributedLockUtil.java  # Redis分布式锁工具
-│       ├── JasyptEncryptionUtils.java # Jasypt配置加密工具
+│       ├── SM4Utils.java             # SM4加密解密工具
 │       ├── MessageUtils.java         # 国际化消息获取工具
 │       ├── RedisUtils.java           # Redis操作封装工具
 │       ├── RequestContextUtils.java  # 请求上下文信息工具
@@ -148,6 +147,14 @@ src/main/java/com/seventeen/svt/
 │   │   ├── FlexInsertListener.java   # MyBatis-Flex插入事件监听
 │   │   ├── FlexUpdateListener.java   # MyBatis-Flex更新事件监听
 │   │   └── SystemStartupListener.java # 系统启动事件监听
+│   ├── lock/                          # 数据库分布式锁系统
+│   │   ├── DatabaseDistributedLockManager.java # 分布式锁管理器
+│   │   ├── config/
+│   │   │   └── DistributedLockConfig.java # 分布式锁配置
+│   │   ├── entity/
+│   │   │   └── DistributedLock.java   # 分布式锁实体
+│   │   └── mapper/
+│   │       └── DistributedLockMapper.java # 分布式锁数据访问
 │   ├── security/                      # 安全框架实现
 │   │   ├── config/                    # 安全配置
 │   │   │   ├── CustomAuthentication.java # 自定义认证实现
@@ -284,11 +291,11 @@ src/main/resources/
 
 ```bash
 # Windows 环境
-set JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_encryption_password
+set SM4_ENCRYPTION_KEY=your_sm4_encryption_key
 set SVT_AES_KEY=your_32_character_aes_key_1234567890123456
 
 # Linux/Mac 环境  
-export JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_encryption_password
+export SM4_ENCRYPTION_KEY=your_sm4_encryption_key
 export SVT_AES_KEY=your_32_character_aes_key_1234567890123456
 
 # 可选：开发环境关闭敏感信息脱敏
@@ -296,8 +303,9 @@ export SENSITIVE_ENABLED=false
 ```
 
 **关键说明：**
-- `JASYPT_ENCRYPTOR_PASSWORD`：配置文件加密密钥，用于解密application.yml中的ENC()值
+- `SM4_ENCRYPTION_KEY`：SM4配置文件加密密钥，用于解密application.yml中的加密配置（替代Jasypt）
 - `SVT_AES_KEY`：API数据加密密钥，必须是32位字符串，用于AES-256加密
+- 注意：JASYPT_ENCRYPTOR_PASSWORD已废弃，请使用SM4_ENCRYPTION_KEY
 
 ### 应用配置
 
@@ -310,7 +318,7 @@ spring:
     druid:
       url: jdbc:sqlserver://localhost:1433;databaseName=svt_db;encrypt=false
       username: your_username
-      password: ENC(your_encrypted_password)  # 使用Jasypt加密
+      password: your_encrypted_password  # 使用SM4加密或环境变量
       driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
 
 # Redis配置
@@ -318,7 +326,7 @@ spring:
     redis:
       host: localhost
       port: 6379
-      password: ENC(your_encrypted_redis_password)  # 使用Jasypt加密
+      password: your_encrypted_redis_password  # 使用SM4加密或环境变量
       timeout: 5000ms
       lettuce:
         pool:
@@ -328,7 +336,7 @@ spring:
 
 # JWT配置
 jwt:
-  secret: ENC(your_encrypted_jwt_secret)  # 使用Jasypt加密
+  secret: your_encrypted_jwt_secret  # 使用SM4加密或环境变量
   expiration: 86400  # 24小时，单位：秒
   issuer: svt-issuer
 
@@ -842,7 +850,7 @@ ls -la target/SVT-Server-*.jar
 #### 2. 环境变量设置
 ```bash
 # 生产环境必须设置的环境变量
-export JASYPT_ENCRYPTOR_PASSWORD=your_production_jasypt_password
+export SM4_ENCRYPTION_KEY=your_production_sm4_key
 export SVT_AES_KEY=your_production_32_character_aes_key
 export SPRING_PROFILES_ACTIVE=prod
 
@@ -877,7 +885,7 @@ Type=simple
 User=app
 Group=app
 WorkingDirectory=/app
-Environment=JASYPT_ENCRYPTOR_PASSWORD=your_password
+Environment=SM4_ENCRYPTION_KEY=your_sm4_key
 Environment=SVT_AES_KEY=your_aes_key
 Environment=SPRING_PROFILES_ACTIVE=prod
 ExecStart=/usr/bin/java -Xms2g -Xmx4g -XX:+UseG1GC -jar /app/SVT-Server-1.0.1-SNAPSHOT.jar
@@ -967,9 +975,9 @@ sqlcmd -S localhost -U username -P password -Q "SELECT @@VERSION"
 # 检查网络连通性
 telnet localhost 1433
 
-# 验证加密密码解密
-java -cp jasypt-*.jar org.jasypt.intf.cli.JasyptPBEStringDecryptionCLI \
-     input="ENC(encrypted_password)" password="jasypt_password"
+# 验证SM4配置加密解密（需要相应工具）
+# 检查SM4_ENCRYPTION_KEY环境变量设置
+echo $SM4_ENCRYPTION_KEY
 ```
 
 **Redis连接失败**
@@ -987,12 +995,12 @@ tail -f /var/log/redis/redis-server.log
 **环境变量未设置**
 ```bash
 # 检查环境变量
-echo $JASYPT_ENCRYPTOR_PASSWORD
+echo $SM4_ENCRYPTION_KEY
 echo $SVT_AES_KEY
 echo $SPRING_PROFILES_ACTIVE
 
 # Windows环境
-echo %JASYPT_ENCRYPTOR_PASSWORD%
+echo %SM4_ENCRYPTION_KEY%
 echo %SVT_AES_KEY%
 ```
 
@@ -1034,11 +1042,10 @@ curl -H "Content-Type: application/json" \
 
 **配置文件解密失败**
 ```bash
-# 测试Jasypt解密
-java -cp jasypt-spring-boot-starter-*.jar \
-     org.jasypt.intf.cli.JasyptPBEStringDecryptionCLI \
-     input="ENC(your_encrypted_value)" \
-     password="$JASYPT_ENCRYPTOR_PASSWORD"
+# 测试SM4解密（需要SM4工具）
+# 检查SM4密钥配置
+echo "SM4 Key: $SM4_ENCRYPTION_KEY"
+# 验证配置文件是否正确解密
 ```
 
 #### 4. 性能问题诊断
@@ -1198,17 +1205,15 @@ spring:
 ## 📖 相关文档
 
 ### 技术文档
-- [API接口文档](./docs/API文档.md) - 详细的API接口说明和示例
 - [API加密设计](./docs/API-Encryption-AES.md) - AES加密实现原理
 - [Argon2密码哈希](./docs/Argon2-Password-Hashing.md) - 密码存储安全实践
 - [审计日志系统](./docs/Audit-Logging.md) - 审计日志设计和使用
-- [身份认证安全](./docs/Authentication-and-Security.md) - JWT和安全机制
+- [身份认证安全](./docs/Authentication-and-Security.md) - JWT和安全机制、安全设计原理
 - [自动事务管理](./docs/Automated-Transaction-Management.md) - 事务处理机制
 - [分布式ID生成](./docs/Distributed-ID-Generation.md) - ID生成算法设计
-- [Jasypt配置加密](./docs/Jasypt-Configuration-Encryption.md) - 配置文件安全
+- [SM4配置加密](./docs/SM4-Configuration-Encryption.md) - SM4国密算法配置文件安全
 
 ### 架构文档
-- [安全设计原则](./docs/Security-Design-Principles.md) - 系统安全架构设计
 
 ## 🤝 贡献指南
 
@@ -1229,6 +1234,23 @@ refactor: 重构缓存工具类
 test: 添加单元测试
 chore: 更新依赖版本
 ```
+
+## 🔄 最新更新记录
+
+### v1.0.1-SNAPSHOT (2025年7月)
+- **🔒 安全升级**：实施SM4国密算法替代Jasypt配置加密，提升配置安全性
+- **🔧 架构重构**：实现数据库分布式锁系统，替代Redis分布式锁，提高系统可靠性
+- **⚡ 性能优化**：优化JWT智能续期机制，基于用户活跃度动态调整过期时间
+- **🎯 系统简化**：移除"记住我"功能，简化认证流程，统一Token管理策略
+- **🛡️ 会话管理**：统一前后端会话常量，修复重复登录提示问题
+- **🚀 智能重试**：数据库分布式锁支持智能重试机制和自动清理过期锁
+- **📋 文档同步**：完善技术文档，确保与实际代码实现保持一致
+
+### 技术亮点
+- **SM4国密算法**：符合国产化要求，提供与国际标准等同的安全强度
+- **数据库分布式锁**：基于数据库实现，减少对Redis的依赖，提高系统稳定性
+- **智能续期机制**：根据用户活跃度自动调整Token过期时间，平衡安全性与用户体验
+- **统一会话管理**：前后端常量保持一致，减少维护成本和错误率
 
 ---
 

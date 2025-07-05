@@ -1,6 +1,6 @@
 # SVT-Web 前端应用
 
-基于 React 19.1.0 + TypeScript 5.8.3 构建的企业级风险管理系统前端应用，采用现代化开发技术栈，提供完整的布局系统、状态管理、JWT智能续期等功能。
+基于 React 19.1.0 + TypeScript 5.8.3 构建的企业级风险管理系统前端应用，采用现代化开发技术栈，提供完整的布局系统、状态管理、JWT智能续期、全局验证状态等功能。
 
 ## 🎯 技术特色
 
@@ -109,8 +109,10 @@ src/
 │   ├── crypto.ts                 # 加密配置
 │   └── env.ts                    # 环境变量配置
 ├── hooks/                        # 自定义Hooks
-│   ├── useTokenStatus.ts         # JWT Token状态管理
-│   └── useUserStatus.ts          # 用户状态管理
+│   ├── useMobile.ts              # 移动端响应式检测
+│   ├── useTableScroll.ts         # 表格滚动优化
+│   ├── useTableScrollY.ts        # 表格竖向滚动
+│   └── useUserStatus.ts          # 用户状态管理（全局验证）
 ├── pages/                        # 页面组件
 │   ├── Auth/                     # 认证页面
 │   │   ├── LoginPage.css         # 登录页面样式
@@ -141,10 +143,9 @@ src/
 │   ├── index.tsx                 # 路由定义和配置
 │   └── ProtectedRoute.tsx        # 路由守卫组件
 ├── stores/                       # 状态管理（Zustand）
-│   ├── authStore.ts              # 认证状态管理
-│   ├── sessionStore.ts           # 会话状态管理
-│   ├── useAuth.ts                # 认证Hook封装
-│   └── userStore.ts              # 用户信息状态管理
+│   ├── authStore.ts              # 认证状态管理（纯认证逻辑）
+│   ├── useAuth.ts                # 认证Hook封装（组合多个Store）
+│   └── userStore.ts              # 用户信息和会话状态管理
 ├── styles/                       # 全局样式
 │   ├── PageContainer.css         # 页面容器样式
 │   └── theme.ts                  # 主题配置
@@ -155,17 +156,17 @@ src/
 │   ├── session.ts                # 会话类型
 │   └── user.ts                   # 用户类型
 ├── utils/                        # 工具函数
-│   ├── __tests__/                # 工具函数测试
+│   ├── __tests__/                # 工具函数单元测试
+│   ├── clearStorage.ts           # 存储清理工具
 │   ├── crypto.ts                 # 加密解密工具
 │   ├── debugManager.ts           # 调试管理器
+│   ├── encryptedStorage.ts       # 加密存储工具
+│   ├── jwtUtils.ts               # JWT工具函数
 │   ├── localStorageManager.ts    # 本地存储管理
 │   ├── messageManager.ts         # 消息管理器
 │   ├── modalManager.ts           # 弹窗管理器
 │   ├── request.ts                # HTTP请求封装
 │   ├── sessionManager.ts         # 会话管理器
-│   ├── stateRecoveryValidator.ts # 状态恢复验证
-│   ├── storageCleanup.ts         # 存储清理工具
-│   ├── tabStorageCleanup.ts      # 标签存储清理
 │   └── tokenManager.ts           # Token管理器
 ├── App.css                       # 应用根样式
 ├── App.tsx                       # 应用根组件
@@ -277,6 +278,7 @@ npm run lint
 - **单点登录**：自动检测并处理重复登录
 - **状态持久化**：刷新页面保持登录状态
 - **自动登出**：Token过期自动清理状态
+- **简化认证**：移除"记住我"功能，统一Token管理策略
 
 **技术实现**：
 ```typescript
@@ -331,7 +333,8 @@ interface TabState {
 - **防重复开启**：同一页面只开启一个标签
 - **状态持久化**：标签状态本地存储，刷新保持
 - **右键菜单**：关闭当前、关闭其他、关闭所有
-- **拖拽排序**：支持标签拖拽重新排序（规划中）
+- **优化导航**：修复重复API调用问题，避免强制组件重挂载
+- **性能优化**：全局验证状态，防止重复用户状态验证
 
 **技术实现**：
 ```typescript
@@ -349,10 +352,10 @@ const TabSystem: React.FC = () => {
 
 #### 4. 状态管理架构
 
-**分层设计**：
-- **认证状态 (authStore)**：JWT Token、登录状态、过期时间
-- **用户状态 (userStore)**：用户信息、权限、组织信息
-- **会话状态 (sessionStore)**：页面状态、表单状态、临时数据
+**职责分离设计**：
+- **认证状态 (authStore)**：纯JWT Token、登录状态、过期时间管理
+- **用户状态 (userStore)**：用户信息、权限、组织信息、会话状态
+- **统一管理 (useAuth)**：组合多个Store，提供统一认证接口
 
 **持久化策略**：
 ```typescript
@@ -380,7 +383,7 @@ export const useAuthStore = create<AuthState>()(
 - **请求拦截**：自动添加Token、加密数据、请求日志
 - **响应拦截**：自动解密、错误处理、Token续期
 - **错误重试**：网络异常自动重试机制
-- **并发控制**：防止重复请求
+- **并发控制**：防止重复请求，全局验证状态管理
 
 **实现示例**：
 ```typescript
@@ -1022,13 +1025,12 @@ server {
 - [组件架构设计](./docs/Component-Structure.md) - 组件设计原则和规范
 - [模块化架构](./docs/Modular-Architecture.md) - 模块化设计理念
 - [响应式布局系统](./docs/Responsive-Layout-System.md) - 布局系统设计
-- [状态管理指南](./docs/State-Management.md) - Zustand使用指南
-- [标签页系统设计](./docs/Tab-System-Design.md) - 标签页实现原理
-- [标签状态持久化](./docs/Tab-State-Persistence.md) - 状态持久化机制
-- [API数据加密](./docs/API-Encryption-AES.md) - 前端加密实现
+- [状态管理指南](./docs/State-Management.md) - Zustand使用指南和缓存机制
+- [标签页系统设计](./docs/Tab-System-Design.md) - 标签页系统和状态持久化
+- [存储管理指南](./docs/Storage-Management.md) - 存储测试工具和问题排查
 
 ### 开发指南
-- [开发指南](./docs/开发指南.md) - 详细开发规范和最佳实践
+- [开发指南](./docs/开发指南.md) - 完整开发规范、设计原则和调试指南
 - [环境变量配置](./docs/环境变量配置说明.md) - 环境配置详细说明
 - [Schema配置规范](./docs/Schema配置规范.md) - 数据验证配置
 
@@ -1058,6 +1060,25 @@ chore: 更新依赖版本
 3. 确保代码通过ESLint检查
 4. 提交Pull Request并填写详细描述
 5. 等待代码审查并根据反馈调整
+
+## 🔄 最新更新记录
+
+### v1.0.1-SNAPSHOT (2025年7月)
+- **🎯 性能优化**：修复页面导航时的重复API调用问题，实现O(1)权限检查优化
+- **🔄 系统简化**：移除"记住我"功能，简化认证流程，统一Token管理策略
+- **🛡️ 会话管理**：统一前后端会话常量，修复重复"请重新登录"提示问题
+- **🚀 智能优化**：实现全局验证状态，防止重复用户状态验证调用
+- **⚡ 导航优化**：修复标签页导航时强制组件重挂载问题，提升用户体验
+- **🔧 架构重构**：职责分离的状态管理设计，authStore专注认证，userStore整合用户信息
+- **🐛 错误修复**：解决React Hooks生命周期错误，增强错误边界处理
+- **📋 工具完善**：新增存储清理工具、JWT工具函数等实用工具类
+
+### 技术亮点
+- **全局验证状态**：使用globalVerificationStatus防止重复用户状态验证，提升页面切换性能
+- **优化菜单导航**：修改菜单点击处理，避免不必要的pageRefreshKey变更和组件重挂载
+- **智能权限检查**：使用useMemo实现O(1)时间复杂度的权限验证，优化大型菜单树性能
+- **职责清晰的Store设计**：authStore专注纯认证逻辑，userStore整合用户和会话信息
+- **增强的错误处理**：在useEffect中添加loading状态防护，避免hooks生命周期错误
 
 ---
 

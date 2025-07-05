@@ -179,17 +179,21 @@ interface UserState {
   setCurrentOrg: (orgId: string) => void;
 }
 
-// 会话状态管理
-// src/stores/sessionStore.ts
-interface SessionState {
-  refreshKey: number;
-  lastActivity: number;
-  sessionWarning: boolean;
+// 组合Hook - 协调认证和用户状态交互
+// src/stores/useAuth.ts (v1.0.1-SNAPSHOT)
+interface AuthHook {
+  // 合并认证和用户状态
+  isAuthenticated: boolean;
+  userInfo: UserInfo | null;
+  loading: boolean;
   
-  updateActivity: () => void;
-  triggerRefresh: () => void;
-  showSessionWarning: () => void;
+  // 统一认证操作
+  login: (credentials: LoginRequest) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshUserInfo: () => Promise<void>;
 }
+
+// 注意：sessionStore已合并到userStore中
 ```
 
 ### 3.3 路由系统
