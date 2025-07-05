@@ -52,7 +52,7 @@ const pathToComponentPath = (menuPath: string): string => {
 
   // 将路径段转换为Pascal命名（首字母大写）
   const convertToPascalCase = (str: string) => {
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    return str.charAt(0).toUpperCase() + str.slice(1);
   };
 
   // 构建组件路径：/system/menu -> ../../pages/System/Menu/index.tsx

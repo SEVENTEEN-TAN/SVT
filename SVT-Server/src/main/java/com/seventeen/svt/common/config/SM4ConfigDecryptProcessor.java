@@ -102,7 +102,7 @@ public class SM4ConfigDecryptProcessor implements BeanFactoryPostProcessor, Envi
                 
                 // 检查特定的配置项
                 checkAndDecrypt("spring.datasource.password", sm4Key, decryptedProperties);
-                checkAndDecrypt("spring.data.redis.password", sm4Key, decryptedProperties);
+                // Redis已移除，不再需要解密Redis密码
                 checkAndDecrypt("jwt.secret", sm4Key, decryptedProperties);
                 checkAndDecrypt("svt.security.aes.key", sm4Key, decryptedProperties);
             }

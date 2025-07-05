@@ -86,17 +86,6 @@ spring:
           config:
             multi-statement-allow: true
 
-  # Redis 通用配置
-  # 具体主机、端口、密码、数据库在环境文件中指定
-  data:
-    redis:
-      timeout: 5000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
 
 # ----------------------------------------
 # MyBatis-Flex 通用配置

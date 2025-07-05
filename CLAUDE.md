@@ -1,122 +1,149 @@
-# SVT Enterprise Risk Management System - Claude Project Guide
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-SVT (Seventeen) is an enterprise-grade risk management system built with modern technology stack, featuring a Spring Boot backend and React frontend with complete user authentication, permission management, and organization management capabilities.
+SVT (Seventeen) is an enterprise-grade risk management system built with Spring Boot 3.3.2 (Java 21) backend and React 19.1.0 (TypeScript) frontend. It features JWT authentication, AES-256 encryption, Redis caching, and comprehensive permission management.
 
-## Technology Stack
+## Essential Commands
 
 ### Backend (SVT-Server)
-- **Core Framework**: Spring Boot 3.3.2 + Java 21
-- **ORM**: MyBatis-Flex 1.10.9 (modern type-safe ORM)
-- **Database**: Microsoft SQL Server + Druid 1.2.24 connection pool
-- **Cache**: Redis (distributed) + Caffeine 3.1.8 (local)
-- **Security**: Spring Security + JWT (jjwt 0.11.5) + Argon2
-- **Encryption**: AES-256-CBC + Jasypt 3.0.5 (config encryption)
-- **Documentation**: Knife4j 4.5.0 (OpenAPI 3.0)
-- **Logging**: Log4j2 + Disruptor 3.4.4 (async)
-- **Build Tool**: Maven 3.6+
+```bash
+# Development
+cd SVT-Server
+mvn clean install                    # Build and run tests
+mvn spring-boot:run                  # Start development server (http://localhost:8080)
+
+# Testing
+mvn test                             # Run unit tests
+mvn test -Dtest=ClassName           # Run specific test class
+
+# Packaging
+mvn clean package -Dmaven.test.skip=true  # Build without tests
+```
 
 ### Frontend (SVT-Web)
-- **Core Framework**: React 19.1.0 + TypeScript 5.8.3
-- **UI Library**: Ant Design 5.25.4
-- **State Management**: Zustand 5.0.5
-- **Routing**: React Router DOM 7.6.2
-- **Build Tool**: Vite 6.3.5
-- **HTTP Client**: Axios 1.9.0
-- **Form Management**: React Hook Form 7.57.0
-- **Data Fetching**: TanStack React Query 5.80.6
-- **Validation**: Zod 3.25.57
-- **Encryption**: crypto-js 4.2.0
-- **Package Manager**: npm/yarn/pnpm
+```bash
+# Development
+cd SVT-Web
+npm install                          # Install dependencies
+npm run dev                          # Start development server (http://localhost:5173)
+npm run dev:uat                      # Start UAT mode
+npm run dev:prod                     # Start production mode
+
+# Building
+npm run build                        # Build for production
+npm run build:dev                    # Build for development
+npm run build:uat                    # Build for UAT
+
+# Code Quality
+npm run lint                         # Run ESLint
+npm run preview                      # Preview production build
+```
+
+### Database Setup
+```bash
+# 1. Create database named 'svt_db'
+# 2. Execute DDL: SVT-Server/src/main/resources/db/init/ddl.sql
+# 3. Execute DML: SVT-Server/src/main/resources/db/init/dml.sql
+```
+
+## Architecture Overview
+
+### Core Technology Stack
+**Backend**: Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 1.10.9 + SQL Server + Redis  
+**Frontend**: React 19.1.0 + TypeScript 5.8.3 + Ant Design 5.25.4 + Zustand 5.0.5 + Vite 6.3.5
 
 ## Project Structure
 
 ```
 SVT/
-├── SVT-Server/                # Backend Service
+├── SVT-Server/                          # Spring Boot Backend
 │   ├── src/main/java/com/seventeen/svt/
-│   │   ├── common/           # Common utilities, configs, annotations
-│   │   ├── frame/            # Framework layer (AOP, cache, security)
-│   │   └── modules/          # Business modules
-│   ├── src/main/resources/
-│   │   ├── application*.yml  # Environment configs
-│   │   └── db/init/         # Database scripts
-│   └── docs/                # Backend documentation
+│   │   ├── common/                      # Global configs, annotations, utilities
+│   │   │   ├── annotation/              # Custom annotations (@Audit, @RequiresPermission, etc.)
+│   │   │   ├── config/                  # AES, Redis, Security, Transaction configs
+│   │   │   ├── filter/                  # AES crypto filter, request wrapper
+│   │   │   └── util/                    # Encryption, Redis, JWT utilities
+│   │   ├── frame/                       # Framework layer (AOP, cache, security)
+│   │   │   ├── aspect/                  # AOP aspects (audit, permission, transaction)
+│   │   │   ├── cache/                   # Cache management (Redis + Caffeine)
+│   │   │   ├── security/                # JWT authentication, Spring Security
+│   │   │   └── dbkey/                   # Distributed ID generator
+│   │   └── modules/system/              # System management module
+│   │       ├── controller/              # REST controllers
+│   │       ├── entity/                  # JPA entities with annotations
+│   │       ├── service/                 # Business logic
+│   │       └── dto/                     # Data transfer objects
+│   └── src/main/resources/
+│       ├── application*.yml             # Multi-environment configurations
+│       └── db/init/                     # Database DDL/DML scripts
 │
-├── SVT-Web/                 # Frontend Application
+├── SVT-Web/                             # React Frontend
 │   ├── src/
-│   │   ├── api/            # API service layer
-│   │   ├── components/     # Reusable components
-│   │   ├── config/         # App configuration
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── pages/          # Page components
-│   │   ├── router/         # Route configuration
-│   │   ├── stores/         # Zustand state stores
-│   │   ├── types/          # TypeScript definitions
-│   │   └── utils/          # Utility functions
-│   └── docs/               # Frontend documentation
-│
-└── docs/                    # Project documentation
+│   │   ├── api/                         # API service layer with encryption
+│   │   ├── components/Layout/           # Modular layout system
+│   │   │   ├── modules/Header/          # Header with breadcrumb, user dropdown
+│   │   │   ├── modules/Sidebar/         # Sidebar with menu tree
+│   │   │   └── modules/TabSystem/       # Multi-tab management
+│   │   ├── pages/                       # Page components
+│   │   │   ├── Auth/                    # Login page
+│   │   │   ├── System/                  # System management pages
+│   │   │   └── Home/                    # Dashboard
+│   │   ├── stores/                      # Zustand state management
+│   │   ├── utils/                       # Crypto, token, session managers
+│   │   └── router/                      # Protected routes
+│   └── docs/                            # Frontend documentation
 ```
 
-## Key Features
+## Key Architecture Patterns
 
-### Security Features
-- **JWT Smart Renewal**: Automatic token renewal based on user activity
-- **Single Sign-On**: Automatic invalidation of old tokens
-- **AES-256 Encryption**: End-to-end API data encryption
-- **Argon2 Password Hashing**: Industry-standard secure password storage
-- **Audit Logging**: Complete operation tracking with sensitive data masking
-- **Distributed ID Generation**: Snowflake-based ID generation with date reset
+### Backend Patterns
+- **Annotation-Driven Development**: Custom annotations for audit logging, permissions, auto-filling, distributed IDs
+- **AOP Cross-Cutting Concerns**: Aspect-oriented programming for audit, transaction, and permission handling
+- **Multi-Level Caching**: Redis (distributed) + Caffeine (local) with automatic cache management
+- **Layered Security**: AES-256 API encryption + JWT authentication + Argon2 password hashing
+- **Distributed ID Generation**: Snowflake-based IDs with prefix support and date reset capability
 
-### System Management
-- **Menu Management**: Full CRUD, tree structure, drag-and-drop sorting
-- **User Management**: User information, status, role assignment
-- **Role Management**: Role definition, permission assignment, user association
-- **Organization Management**: 4-level hierarchy (HQ/Division/Branch/Group)
-
-### Frontend Features
-- **Modular Layout System**: Header, Sidebar, TabSystem as independent modules
-- **Smart Tab System**: Multi-tab management, context menu, state persistence
-- **Responsive Design**: Desktop and mobile support
-- **Type Safety**: TypeScript strict mode with full type coverage
-- **Debug Manager**: Graded logging for development/production
+### Frontend Patterns
+- **Modular Layout Architecture**: Independent Header, Sidebar, TabSystem modules with shared context
+- **Smart State Management**: Zustand stores with persistence, encryption, and automatic cleanup
+- **Type-Safe API Layer**: TypeScript interfaces with Zod validation and automatic encryption
+- **Responsive Component System**: Ant Design components with custom hooks and utilities
+- **Session Management**: JWT token management with automatic renewal and security monitoring
 
 ## Development Guidelines
 
-### Backend Development
-
-1. **Entity Class Example**:
+### Backend Entity Pattern
 ```java
-@DistributedId(prefix = "U")
+@DistributedId(prefix = "U")                                    // Auto-generate distributed ID
 @Column(value = "user_id", comment = "User ID")
 private String userId;
 
-@AutoFill(type = FillType.TIME, operation = OperationType.INSERT)
+@AutoFill(type = FillType.TIME, operation = OperationType.INSERT)  // Auto-fill timestamp
 @Column(value = "create_time", comment = "Create Time")
 private String createTime;
 
-@SensitiveLog(strategy = SensitiveStrategy.MOBILE)
+@SensitiveLog(strategy = SensitiveStrategy.MOBILE)              // Sensitive data masking
 @Column(value = "phone", comment = "Phone Number")
 private String phone;
 ```
 
-2. **Controller Example**:
+### Backend Controller Pattern
 ```java
 @PostMapping("/create")
 @Operation(summary = "Create Record")
-@Audit(module = "Business Module", operation = "Create")
-@RequiresPermission("module:create")
+@Audit(module = "Business Module", operation = "Create")       // Audit logging
+@RequiresPermission("module:create")                           // Permission check
+@AutoTransaction(type = TransactionType.REQUIRED)              // Auto transaction
 public Result<String> create(@RequestBody @Valid CreateDTO dto) {
     String id = service.create(dto);
     return Result.success("Success", id);
 }
 ```
 
-### Frontend Development
-
-1. **Component Structure**:
+### Frontend Component Pattern
 ```typescript
 interface Props {
   data: DataType[];
@@ -125,16 +152,16 @@ interface Props {
 }
 
 const YourComponent: React.FC<Props> = ({ data, loading, onUpdate }) => {
-  // Component logic
+  // Component logic with hooks
 };
 ```
 
-2. **State Management**:
+### Frontend State Management Pattern
 ```typescript
 export const useYourStore = create<YourState>()(
   persist(
     (set) => ({
-      // State definition
+      // State definition with persistence
     }),
     { name: 'your-storage' }
   )
@@ -144,122 +171,74 @@ export const useYourStore = create<YourState>()(
 ## Environment Setup
 
 ### Required Environment Variables
-
-**Backend**:
 ```bash
-JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_password
-SVT_AES_KEY=your_32_char_aes_key_1234567890123456
-SENSITIVE_ENABLED=true
+# Backend
+JASYPT_ENCRYPTOR_PASSWORD=your_jasypt_password           # Config encryption
+SVT_AES_KEY=your_32_char_aes_key_1234567890123456       # API encryption (32 chars)
+SENSITIVE_ENABLED=true                                   # Enable data masking
+
+# Frontend
+VITE_API_BASE_URL=http://localhost:8080                 # Backend API URL
+VITE_AES_KEY=your_32_char_aes_key_1234567890123456     # Must match backend key
+VITE_DEBUG_MODE=true                                    # Enable debug logging
 ```
 
-**Frontend**:
-```bash
-VITE_API_BASE_URL=http://localhost:8080
-VITE_APP_TITLE=SVT Risk Management System
-VITE_AES_KEY=your_32_char_aes_key_1234567890123456
-VITE_DEBUG_MODE=true
-```
-
-### Database Initialization
-1. Create database: `svt_db`
-2. Execute DDL script: `SVT-Server/src/main/resources/db/init/ddl.sql`
-3. Execute DML script: `SVT-Server/src/main/resources/db/init/dml.sql`
-
-### Running the Application
-
-**Backend**:
-```bash
-cd SVT-Server
-mvn clean install
-mvn spring-boot:run
-# API: http://localhost:8080/api
-# Docs: http://localhost:8080/doc.html
-```
-
-**Frontend**:
-```bash
-cd SVT-Web
-npm install
-npm run dev
-# App: http://localhost:5173
-```
-
-## Security Considerations
-
-1. **Production Checklist**:
-   - Change all default passwords and keys
-   - Use strong password policies
-   - Rotate encryption keys regularly
-   - Enable HTTPS with TLS 1.2+
-   - Configure proper CORS policies
-   - Enable SQL injection protection
-   - Set API rate limiting
-
-2. **Required Services**:
-   - Redis (for JWT cache and distributed locks)
-   - SQL Server 2019+ (main database)
+### Important Files and Locations
+- **API Documentation**: http://localhost:8080/doc.html (Knife4j interface)
+- **Configuration Files**: `SVT-Server/src/main/resources/application*.yml`
+- **Database Scripts**: `SVT-Server/src/main/resources/db/init/`
+- **Custom Annotations**: `SVT-Server/src/main/java/com/seventeen/svt/common/annotation/`
+- **Security Configuration**: `SVT-Server/src/main/java/com/seventeen/svt/frame/security/`
+- **Frontend Stores**: `SVT-Web/src/stores/`
+- **Layout Components**: `SVT-Web/src/components/Layout/modules/`
 
 ## API Contract
 
-### Authentication
-- **Login**: `POST /api/auth/login`
-  - Request: `{ "username": "admin", "password": "password" }`
-  - Response: `{ "token": "jwt.token.here", "expiryDate": "2025-01-01T00:00:00" }`
+### Key Authentication Endpoints
+- **Login**: `POST /api/auth/login` - Returns JWT token with expiry
+- **Logout**: `GET /api/auth/logout` - Invalidates current session
+- **Token Refresh**: Automatic via smart renewal mechanism
 
-- **Logout**: `GET /api/auth/logout`
+### System Management APIs
+- **Menu Tree**: `POST /api/system/menu/get-all-menu-tree` - Get complete menu structure
+- **Menu Status**: `POST /api/system/menu/update-menu-status` - Enable/disable menus
+- **Role/User Management**: Various endpoints under `/api/system/role/*` and `/api/system/user/*`
 
-### System Management
-- **Menu Tree**: `POST /api/system/menu/get-all-menu-tree`
-- **Update Menu Status**: `POST /api/system/menu/update-menu-status`
-- **Role Management**: Various endpoints under `/api/system/role/*`
-- **User Management**: Various endpoints under `/api/system/user/*`
+## Common Development Tasks
 
-## Code Quality
+### Adding New Business Modules
+1. Create entity classes with appropriate annotations (`@DistributedId`, `@AutoFill`, `@SensitiveLog`)
+2. Implement controllers with security annotations (`@Audit`, `@RequiresPermission`)
+3. Add corresponding frontend pages in the appropriate modules directory
+4. Register routes in the router configuration
+5. Update menu configuration in the database
 
-### Linting & Testing
-- **Backend**: Maven test framework, 80% coverage target
-- **Frontend**: ESLint with TypeScript rules, strict mode enabled
+### Working with the Security System
+- All API endpoints are automatically encrypted/decrypted via `AESCryptoFilter`
+- JWT tokens are managed by `JwtCacheUtils` with Redis backing
+- Permissions are checked via `@RequiresPermission` annotation
+- Audit logs are automatically generated via `@Audit` annotation
 
-### Commit Convention
-```
-feat: Add new feature
-fix: Fix bug
-docs: Update documentation
-style: Code formatting
-refactor: Code refactoring
-test: Add tests
-chore: Update dependencies
-```
+### Frontend Layout System
+- Use `LayoutProvider` context for accessing layout state
+- Header, Sidebar, and TabSystem are independent modules with their own hooks
+- Tab state is automatically persisted and managed
+- All pages should use the `BasicLayout` wrapper
 
-## Documentation
+## Debugging and Troubleshooting
 
-### Backend Documentation
-- [API Encryption](./SVT-Server/docs/API-Encryption-AES.md)
-- [Password Security](./SVT-Server/docs/Argon2-Password-Hashing.md)
-- [Audit System](./SVT-Server/docs/Audit-Logging.md)
-- [Authentication](./SVT-Server/docs/Authentication-and-Security.md)
-- [Transaction Management](./SVT-Server/docs/Automated-Transaction-Management.md)
-- [ID Generation](./SVT-Server/docs/Distributed-ID-Generation.md)
+### Backend Issues
+- Check application logs in `logs/` directory
+- Verify Redis connection and JWT cache status
+- Check database connection pool status via Druid monitoring
+- Review audit logs for permission-related issues
 
-### Frontend Documentation
-- [Component Structure](./SVT-Web/docs/Component-Structure.md)
-- [State Management](./SVT-Web/docs/State-Management.md)
-- [Layout System](./SVT-Web/docs/Responsive-Layout-System.md)
-- [Tab System](./SVT-Web/docs/Tab-System-Design.md)
-- [Development Guide](./SVT-Web/docs/开发指南.md)
+### Frontend Issues
+- Use browser DevTools for debugging API encryption/decryption
+- Check Zustand store state via Redux DevTools extension
+- Monitor tab system state persistence in localStorage
+- Review debug manager output for detailed logging
 
-## Performance Targets
-- API response time < 100ms (90th percentile)
-- Page load time < 1s
-- Memory usage < 80%
-- CPU usage < 70%
-
-## Project Status
-- **Version**: 1.0.1-SNAPSHOT
-- **Status**: Production Ready ✅
-- **Last Updated**: July 2025
-- **Team**: SVT Development Team
-
----
-
-**Note**: This is a comprehensive enterprise system with strong security features. Always ensure proper environment configuration and follow security best practices when deploying to production.
+## Dependencies and Services
+- **Required**: Redis (JWT cache, distributed locks), SQL Server 2019+
+- **Optional**: External API services for notifications, file storage

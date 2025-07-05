@@ -8,7 +8,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -28,8 +27,6 @@ public class SystemStartupListener implements CommandLineRunner {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private RedisConnectionFactory redisConnectionFactory;
 
     @Autowired
     private AESConfig aesConfig;
@@ -84,24 +81,8 @@ public class SystemStartupListener implements CommandLineRunner {
             throw new RuntimeException("数据库连接失败", e);
         }
 
-        // 检查Redis连接（如果配置了Redis）
-        String redisHost = environment.getProperty("spring.data.redis.host");
-        if (redisHost != null) {
-            try (var connection = redisConnectionFactory.getConnection()) {
-                String pingResponse = connection.ping();
-                if ("PONG".equals(pingResponse)) {
-                    log.info("Redis连接检查: 成功 √");
-                } else {
-                    log.error("Redis连接检查: 失败 X");
-                    throw new RuntimeException("Redis连接失败，响应不正确");
-                }
-            } catch (Exception e) {
-                log.error("Redis连接检查: 失败", e);
-                throw new RuntimeException("Redis连接失败", e);
-            }
-        } else {
-            log.info("Redis连接检查: 未配置，跳过检查");
-        }
+        // 缓存系统检查
+        log.info("缓存系统: 使用Caffeine本地缓存");
 
         // 检查系统配置
         checkSystemConfig();

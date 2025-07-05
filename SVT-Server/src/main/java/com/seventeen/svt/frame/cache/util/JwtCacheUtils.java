@@ -121,17 +121,11 @@ public class JwtCacheUtils {
     
     public JwtCache getJwt(String userId) {
         JwtCache jwtCache = userLocalCache.getIfPresent(userId);
-        if (jwtCache != null) {
-            log.debug("JWT found in local cache for user: {}", userId);
-        } else {
-            log.debug("JWT not found in local cache for user: {}", userId);
-        }
         return jwtCache;
     }
     
     public void putJwt(String userId, JwtCache jwtCache) {
         userLocalCache.put(userId, jwtCache);
-        log.debug("JWT cached for user: {}, expires at: {}", userId, jwtCache.getExpirationTime());
     }
     
     public void removeJwt(String userId) {
@@ -190,8 +184,6 @@ public class JwtCacheUtils {
         long elapsedTime = currentTime - cycleStartTime;
         boolean inRenewalWindow = elapsedTime >= (cycleDuration - renewalWindow);
 
-        log.debug("续期检查 - User: {}, 已用时: {}ms, 周期: {}ms, 需要续期: {}", 
-                 userId, elapsedTime, cycleDuration, inRenewalWindow);
 
         return inRenewalWindow;
     }

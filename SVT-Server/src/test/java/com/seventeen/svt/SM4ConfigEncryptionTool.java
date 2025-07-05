@@ -33,7 +33,6 @@ public class SM4ConfigEncryptionTool {
     public void generateAllEncryptedConfigs() {
         Map<String, String> configs = new LinkedHashMap<>();
         configs.put("数据库密码", "Tsq19971108!");
-        configs.put("Redis密码", "123456");
         configs.put("JWT密钥", "SVT-DEV-JWT-SECRET-CHANGE-ME-5678-VERY-LONG-AND-SECURE");
         configs.put("AES密钥", "wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg=");
         
@@ -95,7 +94,6 @@ public class SM4ConfigEncryptionTool {
         
         // 生成加密值
         String dbPassword = SM4Utils.encryptCBC("Tsq19971108!", SM4_KEY);
-        String redisPassword = SM4Utils.encryptCBC("123456", SM4_KEY);
         String jwtSecret = SM4Utils.encryptCBC("SVT-DEV-JWT-SECRET-CHANGE-ME-5678-VERY-LONG-AND-SECURE", SM4_KEY);
         String aesKey = SM4Utils.encryptCBC("wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg=", SM4_KEY);
         
@@ -103,9 +101,6 @@ public class SM4ConfigEncryptionTool {
         System.out.println("spring:");
         System.out.println("  datasource:");
         System.out.println("    password: SM4(" + dbPassword + ")");
-        System.out.println("  data:");
-        System.out.println("    redis:");
-        System.out.println("      password: SM4(" + redisPassword + ")");
         System.out.println("");
         System.out.println("svt:");
         System.out.println("  security:");

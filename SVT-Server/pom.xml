@@ -27,7 +27,6 @@
         <druid.version>1.2.24</druid.version>
         
         <!-- 缓存相关版本 -->
-        <commons-pool2.version>2.12.0</commons-pool2.version>
         <caffeine.version>3.1.8</caffeine.version>
         
         <!-- 安全相关版本 -->
@@ -115,16 +114,6 @@
             <version>${druid.version}</version>
         </dependency>
         
-        <!-- Redis 依赖 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-pool2</artifactId>
-            <version>${commons-pool2.version}</version>
-        </dependency>
         
         <!-- Caffeine 本地缓存 -->
         <dependency>

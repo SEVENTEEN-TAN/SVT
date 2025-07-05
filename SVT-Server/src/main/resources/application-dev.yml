@@ -9,13 +9,6 @@ spring:
     username: sa                # 开发环境数据库用户名
     password: SM4(uBQb/d1CJViO4PTPpg8nZEwq8Tx789oNdVwTgPWAxrI=)   # 开发环境数据库密码
 
-  # 开发环境Redis配置
-  data:
-    redis:
-      host: 123.60.68.66        # Redis服务器地址
-      port: 6379                # Redis服务器端口
-      password: SM4(CQVZxKLzuudjb+edEWAV7YjtCh5HeXKEEaELx0gWPpQ=)          # Redis服务器密码
-      database: 0               # Redis数据库索引
 
 # 开发环境日志配置
 logging:

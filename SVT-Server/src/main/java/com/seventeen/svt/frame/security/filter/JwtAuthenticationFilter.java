@@ -95,14 +95,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String loginId = jwtUtils.getUserIdFromToken(tokenStr);
                 
                 if (loginId != null && !jwtUtils.isTokenExpired(tokenStr)) {
-                    log.info("🔍 [JWT智能续期测试] 开始JWT认证流程 - User: {}, IP: {}", loginId, RequestContextUtils.getIpAddress());
                     
                     // 1. 检查黑名单
                     if (jwtCacheUtils.isBlackToken(tokenStr)) {
                         log.warn("🚫 [JWT智能续期测试] Token在黑名单中 - User: {}", loginId);
                         throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.tokeninvalid"));
                     }
-                    log.info("✅ [JWT智能续期测试] 黑名单检查通过 - User: {}", loginId);
 
                     // 2. 检查JWT缓存是否存在 - 不存在则认证失败（服务重启后安全策略）
                     JwtCache existingCache = jwtCacheUtils.getJwt(loginId);
@@ -112,8 +110,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         jwtCacheUtils.invalidJwt(tokenStr);
                         throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.expired"));
                     }
-                    log.info("✅ [JWT智能续期测试] JWT缓存存在 - User: {}, 活跃度周期开始时间: {}", 
-                        loginId, existingCache.getActivityCycleStartTime());
 
                     // 3. 缓存存在，执行正常的安全检查
                     String currentIp = RequestContextUtils.getIpAddress();
@@ -125,7 +121,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         jwtCacheUtils.removeJwt(loginId);
                         throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.ipchange"));
                     }
-                    log.info("✅ [JWT智能续期测试] IP检查通过 - User: {}, IP: {}", loginId, currentIp);
 
                     // 检查Token变化
                     if (jwtCacheUtils.checkTokenChange(loginId, tokenStr)) {
@@ -133,11 +128,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         jwtCacheUtils.removeJwt(loginId);
                         throw new BusinessException(HttpStatus.UNAUTHORIZED.value(), MessageUtils.getMessage("auth.login.tokeninvalid"));
                     }
-                    log.info("✅ [JWT智能续期测试] Token一致性检查通过 - User: {}", loginId);
 
                     // 4. 🔧 修复：先检查会话是否因活跃度过期
                     boolean isExpiredByActivity = jwtCacheUtils.isSessionExpiredByActivity(loginId);
-                    log.info("⏰ [JWT智能续期测试] 活跃度过期检查 - User: {}, 已过期: {}", loginId, isExpiredByActivity);
                     
                     if (isExpiredByActivity) {
                         log.warn("⏰ [JWT智能续期测试] 会话因活跃度过期 - User: {}", loginId);
@@ -148,10 +141,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // 5. 智能活跃度续期检查（只有在未过期的情况下才检查续期）
                     boolean needsRenewal = jwtCacheUtils.needsActivityRenewal(loginId);
-                    log.info("🔄 [JWT智能续期测试] 检查是否需要活跃度续期 - User: {}, 需要续期: {}", loginId, needsRenewal);
                     
                     if (needsRenewal) {
-                        log.info("⚡ [JWT智能续期测试] 开始执行活跃度续期 - User: {}", loginId);
                         JwtCacheUtils.ActivityRenewalResult renewalResult =
                             jwtCacheUtils.renewActivityWithTokenLimit(loginId);
 
@@ -167,8 +158,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             log.warn("⚠️ [JWT智能续期测试] 续期受Token生命周期限制 - User: {}, 剩余时间: {}ms", 
                                 loginId, renewalResult.getRemainingTime());
                         } else {
-                            log.info("✅ [JWT智能续期测试] 活跃度续期成功 - User: {}, 剩余时间: {}ms", 
-                                loginId, renewalResult.getRemainingTime());
                         }
                     }
 
@@ -182,8 +171,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         response.setHeader(SessionStatusHeader.SESSION_WARNING, statusInfo.getMessage());
                     }
                     
-                    log.info("📡 [JWT智能续期测试] 设置会话状态响应头 - User: {}, Status: {}, Remaining: {}ms, Warning: {}", 
-                        loginId, statusInfo.getStatus(), statusInfo.getRemainingTime(), statusInfo.getMessage());
 
                     // 7. 检查会话是否过期
                     if (SessionStatusHeader.STATUS_EXPIRED.equals(statusInfo.getStatus())) {
@@ -195,7 +182,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // 8. 更新最后活动时间
                     jwtCacheUtils.updateLastActivity(loginId);
-                    log.info("🔄 [JWT智能续期测试] 更新最后活动时间 - User: {}", loginId);
 
                     // 9. 设置认证上下文
                     String username = jwtUtils.getUsernameFromToken(tokenStr);
