@@ -7,14 +7,14 @@ spring:
   datasource:
     url: jdbc:sqlserver://123.60.68.66:1433;databaseName=svt-dev;encrypt=true;trustServerCertificate=true  # 开发环境数据库URL
     username: sa                # 开发环境数据库用户名
-    password: ENC(MgtqLx7TCcVS9OlboFeo8Qi+Awm0knkLom756drzSsl/nKPXIQapluwRYA9PGJUD)   # 开发环境数据库密码
+    password: Tsq19971108!   # 开发环境数据库密码
 
   # 开发环境Redis配置
   data:
     redis:
       host: 123.60.68.66        # Redis服务器地址
       port: 6379                # Redis服务器端口
-      password: ENC(sbLkh5viVrQrea/rKmqD1h5+vDJX2lz5FO1/iw9QRfocxz4TxDhehF9SMIrHgqMy)          # Redis服务器密码
+      password: 123456          # Redis服务器密码
       database: 0               # Redis数据库索引
 
 # 开发环境日志配置
@@ -61,7 +61,7 @@ svt:
     aes:
       enabled: false           # 开发环境暂时关闭AES加密
       debug: true             # 开发环境启用调试模式
-      key: ENC(DTSJxXmkJ+nrfdRRcTQhezXFylSFaq4l+9cXbSIFf1Onu+9Umq0S/Lhi4Hul5x5UaEZ1VQGx59U6IdI88YilHi+UWaMuHc5JPKqmj/fNp+4=) # AES API密钥(Base64, 32-byte)
+      key: wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg= # AES API密钥(Base64, 32-byte)
     # 开发环境脱敏配置：关闭脱敏功能，便于调试
     sensitive:
       enabled: false          # 开发环境关闭脱敏
@@ -77,7 +77,7 @@ svt:
 
 # 开发环境JWT配置 (临时使用明文，用于测试)
 jwt:
-  secret: ENC(JWlmelw38npHv2mTU/XgpfViufiA7dAqaqhKS69qz1fi0LAqZz4bixTr/I7VGgsllihWCA7SCCeuANvfTPmxZEriKKavH4xjQqnSaKaspe5ckohCLE7HyRtCAgpUYNII)
+  secret: SVT-DEV-JWT-SECRET-CHANGE-ME-5678-VERY-LONG-AND-SECURE
   expiration: 28800 # 10小时 (真正的session过期时间)
   issuer: svt-issuer
 

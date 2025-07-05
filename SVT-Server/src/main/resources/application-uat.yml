@@ -7,14 +7,14 @@ spring:
   datasource:
     url: jdbc:sqlserver://123.60.68.66:1433;databaseName=svt-uat;encrypt=true;trustServerCertificate=true  # UAT环境数据库URL
     username: sa                # UAT环境数据库用户名
-    password: ENC(MgtqLx7TCcVS9OlboFeo8Qi+Awm0knkLom756drzSsl/nKPXIQapluwRYA9PGJUD)   # 开发环境数据库密码
+    password: Tsq19971108!   # 开发环境数据库密码
 
   # UAT环境Redis配置
   data:
     redis:
       host: 123.60.68.66        # Redis服务器地址
       port: 6739                # Redis服务器端口
-      password: ENC(sbLkh5viVrQrea/rKmqD1h5+vDJX2lz5FO1/iw9QRfocxz4TxDhehF9SMIrHgqMy)          # Redis服务器密码
+      password: 123456          # Redis服务器密码
       database: 1               # Redis数据库索引 (UAT使用1)
 
 # UAT环境日志配置
@@ -53,7 +53,7 @@ svt:
     aes:
       enabled: true           # UAT环境启用AES加密
       debug: false            # UAT环境启用调试模式,调试模式下返回明文
-      key: ENC(DTSJxXmkJ+nrfdRRcTQhezXFylSFaq4l+9cXbSIFf1Onu+9Umq0S/Lhi4Hul5x5UaEZ1VQGx59U6IdI88YilHi+UWaMuHc5JPKqmj/fNp+4=) # AES API密钥(Base64, 32-byte)
+      key: wJ/6sgrWER8T14S3z1esg39g7sL8f8b+J5fCg6a5fGg= # AES API密钥(Base64, 32-byte)
     # UAT环境脱敏配置：启用脱敏功能，模拟生产环境
     sensitive:
       enabled: true           # UAT环境启用脱敏
@@ -68,7 +68,7 @@ svt:
     server-identifier: ${spring.application.name:svt-server}:${server.port:8080} #服务标识
 # UAT环境JWT配置
 jwt:
-  secret: ENC(JWlmelw38npHv2mTU/XgpfViufiA7dAqaqhKS69qz1fi0LAqZz4bixTr/I7VGgsllihWCA7SCCeuANvfTPmxZEriKKavH4xjQqnSaKaspe5ckohCLE7HyRtCAgpUYNII)
+  secret: SVT-DEV-JWT-SECRET-CHANGE-ME-5678-VERY-LONG-AND-SECURE
   expiration: 18000 # 5 hours
   issuer: svt-issuer
 

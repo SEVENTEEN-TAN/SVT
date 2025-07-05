@@ -32,7 +32,6 @@
         
         <!-- 安全相关版本 -->
         <jjwt.version>0.11.5</jjwt.version>
-        <jasypt.version>3.0.5</jasypt.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         
         <!-- 工具类版本 -->
@@ -224,13 +223,6 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
-        </dependency>
-        
-        <!-- Jasypt 配置文件加密 -->
-        <dependency>
-            <groupId>com.github.ulisesbocchio</groupId>
-            <artifactId>jasypt-spring-boot-starter</artifactId>
-            <version>${jasypt.version}</version>
         </dependency>
         
         <!-- Spring Security Crypto for Argon2 -->
