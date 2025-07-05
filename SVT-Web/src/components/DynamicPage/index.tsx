@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, Component } from 'react';
+import React, { Suspense, lazy, Component, useMemo } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import NotFoundPage from '@/pages/Error/NotFoundPage';
@@ -139,6 +139,21 @@ const PageLoading: React.FC = () => (
   </div>
 );
 
+// 构建权限路径索引的优化函数
+const buildPermissionIndex = (menus: MenuItem[]): Set<string> => {
+  const paths = new Set<string>();
+  
+  const traverse = (items: MenuItem[]) => {
+    items.forEach(item => {
+      if (item.menuPath) paths.add(item.menuPath);
+      if (item.children) traverse(item.children);
+    });
+  };
+  
+  traverse(menus);
+  return paths;
+};
+
 // 动态页面组件
 const DynamicPage: React.FC = () => {
   const location = useLocation();
@@ -155,31 +170,23 @@ const DynamicPage: React.FC = () => {
     return <PageLoading />;
   }
 
-  // 递归检查用户是否有访问该路径的权限（严格匹配，区分大小写）
-  const checkPermission = (menus: MenuItem[], targetPath: string): boolean => {
-    return menus.some(menu => {
-      if (menu.menuPath) {
-        // 严格匹配，区分大小写
-        if (menu.menuPath === targetPath) {
-          return true;
-        }
-      }
-      if (menu.children && menu.children.length > 0) {
-        return checkPermission(menu.children, targetPath);
-      }
-      return false;
-    });
-  };
+  // 🚀 优化：使用useMemo缓存权限索引，避免每次渲染都遍历菜单树
+  const permissionPaths = useMemo(() => {
+    return user?.menuTrees ? buildPermissionIndex(user.menuTrees as MenuItem[]) : new Set<string>();
+  }, [user?.menuTrees]);
 
-  const hasPermission = user?.menuTrees ? checkPermission(user.menuTrees as MenuItem[], currentPath) : false;
+  // 🚀 优化：O(1)权限检查，替代O(n)递归遍历
+  const hasPermission = permissionPaths.has(currentPath);
 
   // 如果没有权限，显示404
   if (!hasPermission) {
     return <NotFoundPage />;
   }
 
-  // 基于用户菜单数据创建动态页面映射
-  const pageMap = user?.menuTrees ? createDynamicPageMap(user.menuTrees as MenuItem[]) : {};
+  // 🚀 优化：使用useMemo缓存页面映射，只有menuTrees变化时才重新计算
+  const pageMap = useMemo(() => {
+    return user?.menuTrees ? createDynamicPageMap(user.menuTrees as MenuItem[]) : {};
+  }, [user?.menuTrees]);
 
   // 获取对应的页面组件（只支持精确匹配）
   const PageComponent = pageMap[currentPath];

@@ -31,8 +31,8 @@ public class SessionStatusHeader {
     public static final String STATUS_EXPIRED = "EXPIRED";
     
     // 过期原因常量
-    public static final String EXPIRED_REASON_JWT_TOKEN = "JWT_TOKEN_EXPIRED";
-    public static final String EXPIRED_REASON_ACTIVITY = "ACTIVITY_EXPIRED";
+    public static final String JWT_TOKEN_EXPIRED = "JWT_TOKEN_EXPIRED";
+    public static final String ACTIVITY_EXPIRED = "ACTIVITY_EXPIRED";
     
     private SessionStatusHeader() {
         // 工具类，禁止实例化

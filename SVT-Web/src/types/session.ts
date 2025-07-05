@@ -163,15 +163,16 @@ export function getSessionStatusText(status: SessionStatus): string {
 
 /**
  * 获取过期原因的显示文本
+ * 注意：不包含"请重新登录"，由modalManager统一添加
  */
 export function getExpiredReasonText(reason: ExpiredReason): string {
   switch (reason) {
     case EXPIRED_REASON.JWT_TOKEN_EXPIRED:
-      return 'Token已到期，请重新登录';
+      return '认证已到期';
     case EXPIRED_REASON.ACTIVITY_EXPIRED:
-      return '长时间未操作，会话已过期，请重新登录';
+      return '长时间未操作，会话已过期';
     default:
-      return '会话已过期，请重新登录';
+      return '会话已过期';
   }
 }
 

@@ -64,12 +64,12 @@ class ModalManager {
 
   /**
    * 显示会话过期弹窗
-   * @param reason 过期原因，如"长时间未操作"、"登录已过期"等
+   * @param reason 过期原因，如"认证已到期"、"长时间未操作，会话已过期"等
    * @param onConfirm 确认回调
    */
-  showSessionExpiredModal(reason: string = "长时间未操作", onConfirm?: () => void) {
+  showSessionExpiredModal(reason: string = "会话已过期", onConfirm?: () => void) {
     return this.confirm({
-      title: '⚠️ 会话已过期',
+      title: '系统:',
       content: `${reason}，请重新登录`,
       okText: '确定',
       cancelText: null, // 隐藏取消按钮

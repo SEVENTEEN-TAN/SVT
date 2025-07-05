@@ -357,8 +357,8 @@ public class JwtCacheUtils {
      */
     @Getter
     public enum ExpiredReason {
-        JWT_TOKEN_EXPIRED(SessionStatusHeader.EXPIRED_REASON_JWT_TOKEN),
-        ACTIVITY_EXPIRED(SessionStatusHeader.EXPIRED_REASON_ACTIVITY);
+        JWT_TOKEN_EXPIRED(SessionStatusHeader.JWT_TOKEN_EXPIRED),
+        ACTIVITY_EXPIRED(SessionStatusHeader.ACTIVITY_EXPIRED);
 
         private final String message;
 
