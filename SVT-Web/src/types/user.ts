@@ -36,7 +36,6 @@ export interface LoginRequest {
   loginId: string;
   password: string;
   captcha?: string;
-  rememberMe?: boolean;
 }
 
 export interface LoginResponse {

@@ -102,14 +102,9 @@
 
 .remember-section {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 25px;
-}
-
-.remember-me {
-  font-size: 14px;
-  color: #495057;
 }
 
 .forgot-password {

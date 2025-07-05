@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Form, Input, Button, Checkbox, Typography, message, Modal, Select, Spin } from 'antd';
+import { Form, Input, Button, Typography, message, Modal, Select, Spin } from 'antd';
 import type { ValidateErrorEntity } from 'rc-field-form/lib/interface';
 import { 
   UserOutlined, 
@@ -251,7 +251,7 @@ const LoginPage: React.FC = () => {
             onFinishFailed={handleSubmitFailed}
             autoComplete="off"
             layout="vertical"
-            initialValues={{ remember: false }}
+            initialValues={{}}
             requiredMark={false}
           >
             <Form.Item
@@ -291,9 +291,6 @@ const LoginPage: React.FC = () => {
             </Form.Item>
             
             <div className="remember-section">
-              <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox className="remember-me">记住我</Checkbox>
-              </Form.Item>
               <a 
                 href="#" 
                 className="forgot-password"

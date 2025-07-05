@@ -139,20 +139,12 @@ export const useAuthStore = create<AuthState>()((set, get) => {
             action: 'loginSuccess' 
           });
           
-          // 计算过期时间
-          const now = new Date();
-          let calculatedExpiryDate: string | null = null;
-          if (credentials.rememberMe) {
-            now.setDate(now.getDate() + 30);
-            calculatedExpiryDate = now.toISOString();
-          }
+          // 移除记住我功能，不设置额外的过期时间
+          // Token过期时间完全由后端JWT控制
+          const calculatedExpiryDate: string | null = null;
 
-          // 存储过期时间到localStorage
-          if (calculatedExpiryDate) {
-            localStorage.setItem(STORAGE_KEYS.EXPIRY_DATE, calculatedExpiryDate);
-          } else {
-            localStorage.removeItem(STORAGE_KEYS.EXPIRY_DATE);
-          }
+          // 清除可能存在的旧过期时间设置
+          localStorage.removeItem(STORAGE_KEYS.EXPIRY_DATE);
           
           // 更新认证状态
           const newAuthState = {
