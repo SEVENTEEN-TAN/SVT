@@ -81,7 +81,7 @@ const LayoutStructure: React.FC = () => {
 
   // 菜单点击处理
   const handleMenuClick = (key: string) => {
-    addTab(key, true); // 强制刷新
+    addTab(key, false); // 正常切换，不强制刷新
   };
 
   // 侧边栏Props

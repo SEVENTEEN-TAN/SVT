@@ -10,7 +10,8 @@
       "Bash(mvn:*)",
       "Bash(true)",
       "Bash(pkill:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "mcp__sequential-thinking__sequentialthinking"
     ],
     "deny": []
   }

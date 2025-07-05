@@ -55,6 +55,73 @@ npm run preview                      # Preview production build
 **Backend**: Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 1.10.9 + SQL Server + Redis  
 **Frontend**: React 19.1.0 + TypeScript 5.8.3 + Ant Design 5.25.4 + Zustand 5.0.5 + Vite 6.3.5
 
+### Frontend Architecture Deep Dive
+
+#### **Modern Technology Stack**
+- **React 19.1.0** - Latest React with concurrent features
+- **TypeScript 5.8.3** - Strict type checking, 100% type coverage
+- **Vite 6.3.5** - Lightning-fast build tool and HMR
+- **Ant Design 5.25.4** - Enterprise-class UI components
+- **Zustand 5.0.5** - Lightweight state management without boilerplate
+- **React Router DOM 7.6.2** - Declarative routing with nested routes
+- **TanStack React Query 5.80.6** - Server state management and caching
+- **UnoCSS** - Atomic CSS framework for utility-first styling
+
+#### **State Management Architecture**
+```typescript
+// Separated Store Design
+├── authStore.ts      # Pure authentication (token, login state, expiry)
+├── userStore.ts      # User info, org-role selection, session state  
+└── useAuth.ts        # Composite hook coordinating store interactions
+```
+
+**Key Features:**
+- **Persistence Strategy**: Native localStorage with encryption migration
+- **State Recovery**: Automatic state restoration after page refresh
+- **Security**: Token management with smart renewal and validation
+- **Type Safety**: Complete TypeScript interfaces with Zod validation
+
+#### **Layout System Design**
+```typescript
+// Modular Layout Components
+├── LayoutProvider.tsx     # Unified state management and context
+├── LayoutStructure.tsx    # Pure presentation component
+└── modules/
+    ├── Header/           # Breadcrumb, user dropdown, notifications
+    ├── Sidebar/          # Logo, menu tree with permissions
+    └── TabSystem/        # Multi-tab with context menu and persistence
+```
+
+**Design Principles:**
+- **Separation of Concerns**: Each module manages its own state via hooks
+- **Context Pattern**: Shared layout state via React Context
+- **Responsive Design**: Automatic sidebar collapse, mobile adaptation
+- **Performance**: Memoized styles, optimized re-renders
+
+#### **Smart Tab System**
+- **Multi-tab Management**: Open, close, switch between pages
+- **Context Menu**: Close left/right/other tabs functionality  
+- **State Persistence**: Tab list and active state saved to localStorage
+- **Page Refresh**: Individual tab refresh without affecting others
+- **Route Integration**: Automatic tab creation from menu navigation
+
+#### **Dynamic Routing System**
+```typescript
+// Dynamic Page Loading Flow
+URL: /System/Menu
+├── 1. Matches wildcard route (*) → DynamicPage
+├── 2. Checks user permissions via menu tree
+├── 3. Converts path: /System/Menu → ../../pages/System/Menu/index.tsx
+├── 4. Loads component via import.meta.glob
+└── 5. Renders with error boundary protection
+```
+
+**Security Features:**
+- **Four-Layer Protection**: Auth → Role Selection → Status Validation → Permission Check
+- **Strict Matching**: Case-sensitive route permissions
+- **Permission Validation**: Based on user's menu tree from backend
+- **Error Boundaries**: Graceful handling of component loading failures
+
 ## Project Structure
 
 ```
@@ -83,17 +150,50 @@ SVT/
 ├── SVT-Web/                             # React Frontend
 │   ├── src/
 │   │   ├── api/                         # API service layer with encryption
-│   │   ├── components/Layout/           # Modular layout system
-│   │   │   ├── modules/Header/          # Header with breadcrumb, user dropdown
-│   │   │   ├── modules/Sidebar/         # Sidebar with menu tree
-│   │   │   └── modules/TabSystem/       # Multi-tab management
-│   │   ├── pages/                       # Page components
-│   │   │   ├── Auth/                    # Login page
-│   │   │   ├── System/                  # System management pages
-│   │   │   └── Home/                    # Dashboard
+│   │   │   ├── auth.ts                  # Authentication APIs
+│   │   │   └── system/                  # System module APIs (menu, role, user)
+│   │   ├── components/
+│   │   │   ├── Layout/                  # Modular layout system
+│   │   │   │   ├── core/                # LayoutProvider, LayoutStructure
+│   │   │   │   ├── modules/             # Independent layout modules
+│   │   │   │   │   ├── Header/          # Breadcrumb, user dropdown, hooks
+│   │   │   │   │   ├── Sidebar/         # Logo, menu tree, hooks
+│   │   │   │   │   └── TabSystem/       # Multi-tab, context menu, hooks
+│   │   │   │   └── shared/              # Common layout types and utils
+│   │   │   ├── DynamicPage/             # Dynamic page loader with error boundary
+│   │   │   ├── Common/                  # Reusable components
+│   │   │   └── Loading/                 # Loading states and spinners
+│   │   ├── pages/                       # Page components by business domain
+│   │   │   ├── Auth/                    # Login page with encryption
+│   │   │   ├── System/                  # System management (Menu, Role, User)
+│   │   │   ├── Business/                # Business modules
+│   │   │   ├── Home/                    # Dashboard and homepage
+│   │   │   └── Error/                   # Error pages (404, etc)
 │   │   ├── stores/                      # Zustand state management
-│   │   ├── utils/                       # Crypto, token, session managers
-│   │   └── router/                      # Protected routes
+│   │   │   ├── authStore.ts             # Authentication state
+│   │   │   ├── userStore.ts             # User info and session
+│   │   │   └── useAuth.ts               # Composite authentication hook
+│   │   ├── hooks/                       # Custom React hooks
+│   │   │   ├── useUserStatus.ts         # User status validation
+│   │   │   ├── useMobile.ts             # Mobile responsiveness
+│   │   │   └── useTable*.ts             # Table utilities
+│   │   ├── utils/                       # Utility functions
+│   │   │   ├── tokenManager.ts          # JWT token management
+│   │   │   ├── crypto.ts                # AES encryption/decryption
+│   │   │   ├── debugManager.ts          # Debug logging system
+│   │   │   ├── sessionManager.ts        # Session state management
+│   │   │   ├── messageManager.ts        # Global message handling
+│   │   │   └── request.ts               # HTTP client with encryption
+│   │   ├── router/                      # Routing configuration
+│   │   │   ├── index.tsx                # Main router setup
+│   │   │   └── ProtectedRoute.tsx       # Four-layer route protection
+│   │   ├── types/                       # TypeScript type definitions
+│   │   │   ├── user.ts                  # User and authentication types
+│   │   │   ├── api.ts                   # API response types
+│   │   │   └── session.ts               # Session management types
+│   │   └── styles/                      # Theme and styling
+│   │       ├── theme.ts                 # Ant Design theme configuration
+│   │       └── *.css                    # Component-specific styles
 │   └── docs/                            # Frontend documentation
 ```
 
@@ -108,10 +208,88 @@ SVT/
 
 ### Frontend Patterns
 - **Modular Layout Architecture**: Independent Header, Sidebar, TabSystem modules with shared context
-- **Smart State Management**: Zustand stores with persistence, encryption, and automatic cleanup
+- **Smart State Management**: Zustand stores with persistence, encryption, and automatic cleanup  
 - **Type-Safe API Layer**: TypeScript interfaces with Zod validation and automatic encryption
-- **Responsive Component System**: Ant Design components with custom hooks and utilities
-- **Session Management**: JWT token management with automatic renewal and security monitoring
+- **Dynamic Component Loading**: Route-based component loading with import.meta.glob and error boundaries
+- **Four-Layer Security**: Auth → Role Selection → Status Validation → Permission Check
+- **Smart Tab Management**: Multi-tab system with context menus and persistent state
+- **Responsive Design**: Mobile-first approach with automatic layout adaptation
+- **Performance Optimization**: Lazy loading, memoization, and optimized re-renders
+
+#### **Frontend Development Patterns**
+
+**Component Structure:**
+```typescript
+// Modular component design with TypeScript
+interface ComponentProps {
+  data: DataType[];
+  loading?: boolean;
+  onAction?: (item: DataType) => void;
+}
+
+const Component: React.FC<ComponentProps> = ({ data, loading, onAction }) => {
+  const { state, actions } = useCustomHook();
+  
+  return (
+    <div className="component-container">
+      {/* Component JSX with proper typing */}
+    </div>
+  );
+};
+```
+
+**Hook-Based State Management:**
+```typescript
+// Custom hooks for component logic separation
+const useComponentLogic = () => {
+  const [state, setState] = useState<StateType>(initialState);
+  
+  const handleAction = useCallback((data: DataType) => {
+    // Business logic
+  }, []);
+  
+  return { state, handleAction };
+};
+```
+
+**Store Integration Pattern:**
+```typescript
+// Zustand store with TypeScript and persistence
+interface StoreState {
+  data: DataType[];
+  loading: boolean;
+  actions: {
+    fetchData: () => Promise<void>;
+    updateData: (item: DataType) => void;
+  };
+}
+
+export const useDataStore = create<StoreState>()(
+  persist(
+    (set, get) => ({
+      data: [],
+      loading: false,
+      actions: {
+        fetchData: async () => {
+          set({ loading: true });
+          try {
+            const data = await api.fetchData();
+            set({ data, loading: false });
+          } catch (error) {
+            set({ loading: false });
+            throw error;
+          }
+        },
+        updateData: (item) => {
+          const { data } = get();
+          set({ data: data.map(d => d.id === item.id ? item : d) });
+        }
+      }
+    }),
+    { name: 'data-storage' }
+  )
+);
+```
 
 ## Development Guidelines
 
@@ -224,6 +402,28 @@ VITE_DEBUG_MODE=true                                    # Enable debug logging
 - Header, Sidebar, and TabSystem are independent modules with their own hooks
 - Tab state is automatically persisted and managed
 - All pages should use the `BasicLayout` wrapper
+
+### Frontend Development Best Practices
+- **TypeScript First**: All components and hooks must have proper TypeScript interfaces
+- **Separation of Concerns**: Use custom hooks to separate business logic from UI components
+- **Performance**: Leverage useMemo, useCallback, and React.memo for optimization
+- **Error Handling**: Implement error boundaries for robust component error handling
+- **Accessibility**: Follow WCAG guidelines and use semantic HTML elements
+- **Testing**: Write unit tests for custom hooks and integration tests for complex components
+
+### Frontend Security Considerations
+- **Data Encryption**: All API requests/responses are automatically encrypted via AES-256
+- **Token Management**: JWT tokens are securely stored and automatically renewed
+- **Permission Validation**: Route access is validated against user's menu permissions
+- **XSS Prevention**: All user inputs are properly sanitized and validated
+- **CSRF Protection**: Implemented via JWT token validation and same-origin policies
+
+### Frontend Performance Optimization
+- **Code Splitting**: Routes and components are lazy-loaded using React.lazy
+- **Bundle Optimization**: Vendor libraries are split into separate chunks
+- **Caching Strategy**: API responses cached via TanStack Query with smart invalidation
+- **Image Optimization**: Images are optimized and served with proper formats
+- **Tree Shaking**: Unused code is automatically removed during build process
 
 ## Debugging and Troubleshooting
 

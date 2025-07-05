@@ -25,6 +25,7 @@ import { migrateFromSecureStorage } from '@/utils/encryptedStorage';
 import { message } from 'antd';
 import { DebugManager } from '@/utils/debugManager';
 import { sessionManager } from '@/utils/sessionManager';
+import { resetGlobalVerificationStatus } from '@/hooks/useUserStatus';
 
 // 原生localStorage存储键
 const AUTH_STORAGE_KEY = 'auth-storage';
@@ -270,6 +271,13 @@ export const useAuthStore = create<AuthState>()((set, get) => {
         DebugManager.log('🧹 [JWT智能续期测试] localStorage已清理', {}, { 
           component: 'authStore', 
           action: 'localStorageCleared' 
+        });
+        
+        // 重置全局用户状态验证状态
+        resetGlobalVerificationStatus();
+        DebugManager.log('🔄 [JWT智能续期测试] 全局用户状态验证状态已重置', {}, { 
+          component: 'authStore', 
+          action: 'globalVerificationReset' 
         });
         
         // 清理旧的SecureStorage（如果存在）
