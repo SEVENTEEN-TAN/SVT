@@ -82,11 +82,28 @@ export const useAuth = () => {
         action: 'logout' 
       });
       
+      // 确保跳转到登录页
+      setTimeout(() => {
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }, 100);
+      
     } catch (error) {
       DebugManager.error('完整登出流程失败', error as Error, { 
         component: 'useAuth', 
         action: 'logout' 
       });
+      // 即使出错也清理状态
+      try {
+        user.clearUser();
+        session.clearSession();
+      } catch (cleanupError) {
+        DebugManager.error('清理状态失败', cleanupError as Error, { 
+          component: 'useAuth', 
+          action: 'cleanupOnError' 
+        });
+      }
       throw error;
     }
   };
@@ -159,6 +176,11 @@ export const useAuth = () => {
 
   // 🔥 简化的状态检查：只检查基本的认证一致性
   useEffect(() => {
+    // 添加防护：避免在loading状态或logout过程中执行
+    if (auth.loading || user.loading) {
+      return;
+    }
+
     // 如果已认证但没有用户数据，且不在登录流程中，尝试刷新用户信息
     if (auth.isAuthenticated && 
         !user.user && 
@@ -177,11 +199,13 @@ export const useAuth = () => {
           component: 'useAuth',
           action: 'autoRefreshFailed'
         });
-        // 如果刷新失败，清理认证状态
-        clearAllState();
+        // 只有在仍然认证状态下才清理，避免重复清理
+        if (auth.isAuthenticated) {
+          clearAllState();
+        }
       });
     }
-  }, [auth.isAuthenticated, user.user, session.loginStep]);
+  }, [auth.isAuthenticated, auth.loading, user.user, user.loading, session.loginStep]);
 
   return {
     // 分离的Store访问
