@@ -3,7 +3,6 @@ import { Button, Space, Popconfirm } from 'antd';
 import { 
   PlusOutlined, 
   DeleteOutlined, 
-  ReloadOutlined,
   CheckOutlined,
   TeamOutlined,
   SettingOutlined
@@ -15,7 +14,6 @@ interface TableHeaderOperationProps {
   loading: boolean;
   onAdd: () => void;
   onBatchDelete: () => void;
-  onRefresh: () => void;
   onPermissionConfig?: () => void;
   onRelatedUsers?: () => void;
 }
@@ -25,7 +23,6 @@ const TableHeaderOperation: React.FC<TableHeaderOperationProps> = ({
   loading,
   onAdd,
   onBatchDelete,
-  onRefresh,
   onPermissionConfig,
   onRelatedUsers
 }) => {
@@ -60,12 +57,6 @@ const TableHeaderOperation: React.FC<TableHeaderOperationProps> = ({
           onClick={onBatchDelete}
         >
           删除
-        </Button>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={onRefresh}
-        >
-          刷新
         </Button>
       </div>
       {selectedRole && (

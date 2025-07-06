@@ -2,57 +2,95 @@
 
 /* ===== 页面容器 ===== */
 .role-page-container {
-  height: 100vh;
+  height: calc(100vh - 93px - 48px - 8px); /* 减去Header(48px) + TabSystem(45px) + Footer(48px) + 底部安全间距(8px) */
   display: flex;
   flex-direction: column;
   padding: 16px;
-  gap: 16px;
+  gap: 8px; /* 减少组件间的间隔 */
   box-sizing: border-box;
   overflow: hidden;
 }
 
-/* ===== 搜索区域 - 固定高度 ===== */
+/* ===== 搜索区域 - 可折叠 ===== */
 .search-section {
   flex-shrink: 0;
-  /* 搜索区域高度：标题(48px) + 内容(60px) + 边框(2px) = 110px */
-  height: 110px;
+  margin-bottom: 8px; /* 减少与数据区域的间隔 */
 }
 
-.search-section .ant-card {
-  height: 100%;
+.search-collapse {
+  background: #fff;
   border: 1px solid #f0f0f0;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-.search-section .ant-card-head {
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
-  padding: 0 24px;
-  min-height: 48px;
-  flex-shrink: 0;
+.search-collapse .ant-collapse-item {
+  border: none !important;
 }
 
-.search-section .ant-card-head-title {
-  font-size: 14px;
+.search-collapse .ant-collapse-header {
+  padding: 12px 24px !important;
+  background: #fafafa !important; /* 强制保持背景色 */
+  border-radius: 8px 8px 0 0 !important;
   font-weight: 500;
   color: #262626;
+  font-size: 16px; /* 与数据卡片标题保持一致 */
+  transition: all 0.3s ease;
 }
 
-.search-section .ant-card-body {
-  padding: 12px 24px;
-  height: calc(100% - 48px);
-  overflow: visible;
+/* 确保展开和收起状态都保持一致的背景色 */
+.search-collapse .ant-collapse-header[aria-expanded="true"] {
+  background: #fafafa !important;
+  border-radius: 8px 8px 0 0 !important;
 }
 
-/* ===== 数据区域 - 精确计算高度 ===== */
+.search-collapse .ant-collapse-header[aria-expanded="false"] {
+  background: #fafafa !important;
+  border-radius: 8px !important;
+}
+
+.search-collapse .ant-collapse-header:hover {
+  background: #f0f0f0 !important;
+}
+
+.search-collapse .ant-collapse-content {
+  border: none !important;
+  background: transparent;
+}
+
+.search-collapse .ant-collapse-content-box {
+  padding: 16px 24px !important;
+  background: #fff;
+  border-radius: 0 0 8px 8px;
+}
+
+/* 折叠动画优化 */
+.search-collapse .ant-collapse-content {
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 额外确保背景色一致性 */
+.search-collapse .ant-collapse-item > .ant-collapse-header {
+  background: #fafafa !important;
+}
+
+.search-collapse .ant-collapse-item-active > .ant-collapse-header {
+  background: #fafafa !important;
+}
+
+.search-collapse .ant-collapse-item:not(.ant-collapse-item-active) > .ant-collapse-header {
+  background: #fafafa !important;
+}
+
+/* ===== 数据区域 - 动态高度 ===== */
 .data-section {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  /* 数据区域高度 = 100vh - 32px(padding) - 110px(搜索区域) - 16px(gap) - 64px(分页区域) - 16px(gap) */
-  height: calc(100vh - 32px - 110px - 16px - 64px - 16px);
+  /* 动态计算高度，适应搜索区域的展开收起，现在有Footer */
+  /* 不设置固定高度，让flex布局自动处理 */
+  margin-bottom: 6px; /* 适当增加底部间距，确保分页器完整显示 */
 }
 
 .data-card {
@@ -88,27 +126,18 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  padding: 16px;
-  /* 表格区域高度 = 数据区域高度 - 标题(56px) - 内边距(32px) - 边框(2px) */
-  height: calc(100vh - 32px - 110px - 16px - 64px - 16px - 56px - 32px - 2px);
+  padding: 16px; /* 恢复正常内边距，确保分页器有足够空间 */
+  /* 表格区域使用动态高度计算 */
 }
 
-/* ===== 分页区域 - 固定在底部 ===== */
-.pagination-section {
-  flex-shrink: 0;
-  height: 64px;
-  display: flex;
-  align-items: center;
+/* ===== Table内置分页样式优化 ===== */
+.data-card .ant-table-pagination {
+  margin: 16px 0 0 0; /* 移除底部间距，因为Card body现在有底部内边距 */
+  padding: 0;
+}
+
+.data-card .ant-table-pagination .ant-pagination {
   justify-content: flex-end;
-  padding: 16px 24px;
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
-
-.pagination-section .ant-pagination {
-  margin: 0;
 }
 
 /* ===== 卡片包装器样式 ===== */
@@ -123,8 +152,8 @@
 .search-form-inline {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
+  /* 改为块级布局，避免 Flex 压缩导致 Row/Col 宽度不满 */
+  display: block;
 }
 
 .search-form-inline .ant-form-item {
@@ -240,58 +269,25 @@
   padding-bottom: 80px;
 }
 
-/* ===== 响应式样式 ===== */
-@media (max-width: 768px) {
-  .role-page-container {
-    padding: 8px;
-    gap: 8px;
-  }
+/* ===== PC端优化样式 ===== */
+/* 专注于桌面端体验，移除移动端适配 */
 
-  /* 移动端高度调整 */
-  .search-section {
-    height: 100px;
-  }
+/* 搜索区域展开收起时的平滑过渡 */
+.search-section {
+  transition: all 0.3s ease;
+}
 
-  .data-section {
-    height: calc(100vh - 16px - 100px - 8px - 56px - 8px);
-  }
+/* 表格行悬停效果优化 */
+.data-card .ant-table-tbody > tr:hover {
+  background-color: #f5f5f5;
+  transition: background-color 0.2s ease;
+}
 
-  .data-card .ant-card-body {
-    height: calc(100vh - 16px - 100px - 8px - 56px - 8px - 48px - 24px - 2px);
-    padding: 12px;
-  }
-
-  .pagination-section {
-    height: 56px;
-    padding: 12px 16px;
-  }
-
-  .search-section .ant-card-body {
-    padding: 8px 16px;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .action-buttons-left {
-    justify-content: center;
-  }
-
-  .drawer-actions {
-    flex-direction: column-reverse;
-    padding: 12px 16px;
-  }
-
-  .drawer-actions .ant-btn {
-    width: 100%;
-  }
-
-  .table-container .ant-table {
-    font-size: 12px;
-  }
+/* 操作按钮悬停效果 */
+.action-buttons .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 /* ===== 角色特定样式 ===== */
@@ -313,6 +309,80 @@
 
 .ant-btn {
   transition: all 0.2s ease;
+}
+
+/* ===== 高级筛选气泡卡片样式 ===== */
+.advanced-filter-popover .ant-popover-inner {
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e8e8e8;
+  overflow: hidden;
+}
+
+.advanced-filter-popover .ant-popover-title {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 500;
+  color: #262626;
+  font-size: 14px;
+  background: #fafafa;
+  margin: 0;
+}
+
+.advanced-filter-popover .ant-popover-inner-content {
+  padding: 0;
+  background: #fff;
+}
+
+/* 气泡内容区域样式 */
+.advanced-filter-popover .ant-form-item {
+  margin-bottom: 0;
+}
+
+.advanced-filter-popover .ant-input {
+  height: 32px; /* 与外部输入框保持一致 */
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.advanced-filter-popover .ant-input:hover {
+  border-color: #40a9ff;
+}
+
+.advanced-filter-popover .ant-input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 气泡内容标签样式 */
+.advanced-filter-popover .filter-label {
+  font-weight: 500;
+  color: #262626;
+  font-size: 14px;
+}
+
+/* 更多筛选按钮样式 */
+.search-form-inline .ant-btn.filter-button {
+  position: relative;
+}
+
+.search-form-inline .ant-btn.filter-button .ant-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+}
+
+.search-form-inline .ant-btn.filter-button.has-filters {
+  color: #1890ff;
+  border-color: #1890ff;
+}
+
+.search-form-inline .ant-btn.filter-button.has-filters:hover {
+  color: #40a9ff;
+  border-color: #40a9ff;
 }
 
 /* ===== 通用工具类 ===== */

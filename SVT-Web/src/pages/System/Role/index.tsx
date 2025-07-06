@@ -1,8 +1,8 @@
 // {{CHENGQI:
-// Action: Modified; Timestamp: 2025-07-03 14:30:00 +08:00; Reason: 恢复Table内置分页，优化高度计算和CSS布局; Principle_Applied: 组件一体化设计;
+// Action: Modified; Timestamp: 2025-07-06 15:30:00 +08:00; Reason: 优化布局算法，添加动态高度计算和可折叠搜索区域; Principle_Applied: 动态布局算法，PC端优化;
 // }}
 
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import {
   Button,
   Space,
@@ -21,7 +21,6 @@ import {
   Spin,
   Transfer,
   Popconfirm,
-  Pagination,
 } from 'antd';
 import type { TransferDirection } from 'antd/es/transfer';
 import type { Key } from 'react';
@@ -31,6 +30,7 @@ import {
   DeleteOutlined,
   ExclamationCircleFilled,
   UserOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 
 // 导入样式
@@ -38,7 +38,6 @@ import '@/styles/PageContainer.css';
 import './RoleManagement.css';
 
 // 导入hooks和组件
-import { useMobile } from '@/hooks/useMobile';
 import RoleSearch from './components/RoleSearch';
 import TableHeaderOperation from './components/TableHeaderOperation';
 
@@ -56,9 +55,44 @@ import type { PageQuery } from '@/types/api';
 // 懒加载抽屉组件
 const RoleOperateDrawer = lazy(() => import('./components/RoleOperateDrawer'));
 
+// 动态高度计算Hook
+const useTableScroll = () => {
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState<number>();
+
+  const updateHeight = useCallback(() => {
+    if (tableWrapperRef.current) {
+      const containerHeight = tableWrapperRef.current.clientHeight;
+      // 预留空间：表头(56px) + 卡片内边距上下(32px) + Table内置分页器(56px) + 安全间距(16px)
+      const reservedHeight = 160;
+      const availableHeight = containerHeight - reservedHeight;
+      setScrollY(availableHeight > 200 ? availableHeight : 280);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateHeight();
+
+    // 防抖处理
+    let timeoutId: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(updateHeight, 150);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
+  }, [updateHeight]);
+
+  return { scrollY, tableWrapperRef };
+};
+
 const RoleManagement: React.FC = () => {
   const { modal } = App.useApp();
-  const isMobile = useMobile();
+  const { scrollY, tableWrapperRef } = useTableScroll();
 
   // 基础状态
   const [roleData, setRoleData] = useState<RoleData[]>([]);
@@ -482,20 +516,35 @@ const RoleManagement: React.FC = () => {
 
   return (
     <div className="role-page-container">
-      {/* 搜索区域 - 固定展开 */}
+      {/* 搜索区域 - 可折叠，默认展开 */}
       <div className="search-section">
-        <Card className="card-wrapper" title="搜索条件">
-          <RoleSearch
-            form={searchForm}
-            searchParams={currentSearchParams}
-            onSearch={handleSearch}
-            onReset={handleReset}
-          />
-        </Card>
+        <Collapse
+          bordered={false}
+          defaultActiveKey={['search']}
+          className="search-collapse"
+          items={[
+            {
+              key: 'search',
+              label: (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>搜索条件</span>
+                </div>
+              ),
+              children: (
+                <RoleSearch
+                  form={searchForm}
+                  searchParams={currentSearchParams}
+                  onSearch={handleSearch}
+                  onReset={handleReset}
+                />
+              )
+            }
+          ]}
+        />
       </div>
 
-      {/* 数据区域 - 精确计算高度 */}
-      <div className="data-section">
+      {/* 数据区域 - 动态计算高度 */}
+      <div className="data-section" ref={tableWrapperRef}>
         {/* 表格卡片 */}
         <Card
           className="data-card card-wrapper"
@@ -517,7 +566,6 @@ const RoleManagement: React.FC = () => {
                 });
               }}
               onBatchDelete={() => selectedRole && handleDelete(selectedRole)}
-              onRefresh={refreshData}
               onPermissionConfig={() => selectedRole && handlePermissionConfig(selectedRole)}
               onRelatedUsers={() => selectedRole && handleRelatedUsers(selectedRole)}
             />
@@ -531,34 +579,30 @@ const RoleManagement: React.FC = () => {
                 setSelectedRole(selectedRows[0] || null);
               },
             }}
-            scroll={{ x: 1200, y: 'calc(100vh - 280px)' }} // 精确计算表格高度
+            scroll={{ x: 1200, y: scrollY }} // 使用动态计算的高度
             size="small"
             columns={columns}
             dataSource={roleData}
             rowKey="roleId"
             loading={loading}
-            pagination={false}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: pagination.showSizeChanger,
+              showQuickJumper: pagination.showQuickJumper,
+              showTotal: pagination.showTotal,
+              hideOnSinglePage: false,
+              onChange: (page, pageSize) => {
+                handleTableChange({ current: page, pageSize });
+              },
+              onShowSizeChange: (_, size) => {
+                handleTableChange({ current: 1, pageSize: size });
+              },
+              pageSizeOptions: ['10', '20', '50', '100'],
+            }}
           />
         </Card>
-
-        {/* 分页器 - 独立在Card外部 */}
-        <div className="pagination-section">
-          <Pagination
-            current={pagination.current}
-            pageSize={pagination.pageSize}
-            total={pagination.total}
-            showSizeChanger={pagination.showSizeChanger}
-            showQuickJumper={pagination.showQuickJumper}
-            showTotal={pagination.showTotal}
-            hideOnSinglePage={false}
-            onChange={(page, pageSize) => {
-              handleTableChange({ current: page, pageSize });
-            }}
-            onShowSizeChange={(_, size) => {
-              handleTableChange({ current: 1, pageSize: size });
-            }}
-          />
-        </div>
       </div>
 
       {/* 懒加载抽屉 */}
