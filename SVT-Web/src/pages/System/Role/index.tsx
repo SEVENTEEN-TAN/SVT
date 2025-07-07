@@ -21,6 +21,7 @@ import {
   Spin,
   Transfer,
   Popconfirm,
+  Result,
 } from 'antd';
 import type { TransferDirection } from 'antd/es/transfer';
 import type { Key } from 'react';
@@ -40,6 +41,7 @@ import './RoleManagement.css';
 // 导入hooks和组件
 import RoleSearch from './components/RoleSearch';
 import TableHeaderOperation from './components/TableHeaderOperation';
+import { useHasPermission } from '@/hooks/usePermission';
 
 // 导入API和类型
 import roleApi, { 
@@ -93,6 +95,9 @@ const useTableScroll = () => {
 const RoleManagement: React.FC = () => {
   const { modal } = App.useApp();
   const { scrollY, tableWrapperRef } = useTableScroll();
+
+  // 权限判断：查看角色列表
+  const canView = useHasPermission('system:role:view');
 
   // 基础状态
   const [roleData, setRoleData] = useState<RoleData[]>([]);
@@ -180,8 +185,10 @@ const RoleManagement: React.FC = () => {
 
   // 组件初始化时加载数据
   useEffect(() => {
-    loadRoleData();
-  }, []);
+    if (canView) {
+      loadRoleData();
+    }
+  }, [canView]);
 
 
   // 处理搜索
@@ -513,6 +520,12 @@ const RoleManagement: React.FC = () => {
       )
     }
   ];
+
+  if (!canView) {
+    return (
+      <Result status="403" title="403" subTitle="暂无查看角色权限" />
+    );
+  }
 
   return (
     <div className="role-page-container">
