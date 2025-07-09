@@ -28,9 +28,8 @@ public class RolePermissionServiceImpl extends ServiceImpl<RolePermissionMapper,
                 .select(PERMISSION_INFO.ALL_COLUMNS)
                 .from(ROLE_PERMISSION.as("rp"))
                 .leftJoin(PERMISSION_INFO).as("pi")
-                    .on(PERMISSION_INFO.PERMISSION_ID.eq(ROLE_PERMISSION.PERMISSION_ID)
-                            .and(PERMISSION_INFO.STATUS.eq(SystemConstant.Status.NORMAL)))
-                .where(ROLE_PERMISSION.ROLE_ID.eq(roleId))
+                    .on(PERMISSION_INFO.PERMISSION_ID.eq(ROLE_PERMISSION.PERMISSION_ID))
+                .where(ROLE_PERMISSION.ROLE_ID.eq(roleId).and(ROLE_PERMISSION.STATUS.eq(SystemConstant.Status.NORMAL).and(PERMISSION_INFO.STATUS.eq(SystemConstant.Status.NORMAL))))
                 .orderBy(PERMISSION_INFO.PERMISSION_SORT, true);
         return mapper.selectListByQueryAs(queryWrapper,PermissionInfo.class);
     }
