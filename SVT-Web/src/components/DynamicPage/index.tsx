@@ -160,6 +160,22 @@ const DynamicPage: React.FC = () => {
   const { currentUser: user, isAuthenticated, isLoading } = useAuth();
   const currentPath = location.pathname;
 
+  // 🚀 优化：使用useMemo缓存权限索引，避免每次渲染都遍历菜单树
+  const permissionPaths = useMemo(() => {
+    return user?.menuTrees ? buildPermissionIndex(user.menuTrees as MenuItem[]) : new Set<string>();
+  }, [user?.menuTrees]);
+
+  // 🚀 优化：使用useMemo缓存页面映射，只有menuTrees变化时才重新计算
+  const pageMap = useMemo(() => {
+    return user?.menuTrees ? createDynamicPageMap(user.menuTrees as MenuItem[]) : {};
+  }, [user?.menuTrees]);
+
+  // 🚀 优化：O(1)权限检查，替代O(n)递归遍历
+  const hasPermission = permissionPaths.has(currentPath);
+
+  // 获取对应的页面组件（只支持精确匹配）
+  const PageComponent = pageMap[currentPath];
+
   // 如果用户未认证，显示404
   if (!isAuthenticated) {
     return <NotFoundPage />;
@@ -170,26 +186,10 @@ const DynamicPage: React.FC = () => {
     return <PageLoading />;
   }
 
-  // 🚀 优化：使用useMemo缓存权限索引，避免每次渲染都遍历菜单树
-  const permissionPaths = useMemo(() => {
-    return user?.menuTrees ? buildPermissionIndex(user.menuTrees as MenuItem[]) : new Set<string>();
-  }, [user?.menuTrees]);
-
-  // 🚀 优化：O(1)权限检查，替代O(n)递归遍历
-  const hasPermission = permissionPaths.has(currentPath);
-
   // 如果没有权限，显示404
   if (!hasPermission) {
     return <NotFoundPage />;
   }
-
-  // 🚀 优化：使用useMemo缓存页面映射，只有menuTrees变化时才重新计算
-  const pageMap = useMemo(() => {
-    return user?.menuTrees ? createDynamicPageMap(user.menuTrees as MenuItem[]) : {};
-  }, [user?.menuTrees]);
-
-  // 获取对应的页面组件（只支持精确匹配）
-  const PageComponent = pageMap[currentPath];
 
   // 如果无法加载组件，统一显示404页面
   if (!PageComponent) {
