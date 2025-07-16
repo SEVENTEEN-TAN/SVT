@@ -39,13 +39,13 @@ public class MenuInfo implements Serializable {
     @Column(value = "menu_icon", comment = "菜单图标")
     private String menuIcon;
 
-    @Column(value = "menu_sort", comment = "显示顺序")
+    @Column(value = "menu_sort", comment = "显示顺序", defaultValue = "1")
     private Integer menuSort;
 
-    @Column(value = "status", comment = "状态（0：正常，1：停用）")
+    @Column(value = "status", comment = "状态（0：正常，1：停用）", defaultValue = "0")
     private String status;
 
-    @Column(value = "del_flag", comment = "删除标志（0：存在，1：删除）", isLogicDelete = true)
+    @Column(value = "del_flag", comment = "删除标志（0：存在，1：删除）", isLogicDelete = true, defaultValue = "0")
     private String delFlag;
 
     @AutoFill(type = FillType.USER_ID, operation = OperationType.INSERT)

@@ -122,7 +122,8 @@ public class MenuInfoServiceImpl extends ServiceImpl<MenuInfoMapper, MenuInfo>
             menuInfo.setMenuIcon(insertOrUpdateMenuDTO.getMenuIcon());
             menuInfo.setMenuSort(insertOrUpdateMenuDTO.getMenuSort());
             menuInfo.setRemark(insertOrUpdateMenuDTO.getRemark());
-            mapper.insertSelective(menuInfo);
+            // 使用insert方法而不是insertSelective，确保类型转换器和默认值生效
+            mapper.insert(menuInfo);
             menuId = menuInfo.getMenuId();
         }
 
