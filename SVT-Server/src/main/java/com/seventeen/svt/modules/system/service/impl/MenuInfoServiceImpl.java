@@ -101,8 +101,51 @@ public class MenuInfoServiceImpl extends ServiceImpl<MenuInfoMapper, MenuInfo>
             throw new BusinessException("菜单路径已存在");
         }
 
+        // 创建菜单对象
+        MenuInfo menuInfo = new MenuInfo();
+        menuInfo.setMenuId(menuId); // 如果是更新，设置主键
+        menuInfo.setParentId(insertOrUpdateMenuDTO.getParentId());
+        menuInfo.setMenuNameZh(insertOrUpdateMenuDTO.getMenuNameZh());
+        menuInfo.setMenuNameEn(insertOrUpdateMenuDTO.getMenuNameEn());
+        menuInfo.setMenuPath(insertOrUpdateMenuDTO.getMenuPath());
+        menuInfo.setMenuIcon(insertOrUpdateMenuDTO.getMenuIcon());
+        menuInfo.setMenuSort(insertOrUpdateMenuDTO.getMenuSort());
+        menuInfo.setRemark(insertOrUpdateMenuDTO.getRemark());
+        
+        // 使用 MyBatis-Flex 的 insertOrUpdate 方法
+        // 这会自动判断是插入还是更新，并正确处理类型转换器和默认值
+        mapper.insertOrUpdate(menuInfo);
+        menuId = menuInfo.getMenuId();
+
+        //调整对角色的关联
+        if (ObjectUtil.isNotEmpty(insertOrUpdateMenuDTO.getRoleIds())) {
+            roleMenuServiceImpl.deleteRoleMenuByMenuId(menuId);
+            roleMenuServiceImpl.batchInsertRoleMenu(insertOrUpdateMenuDTO.getRoleIds(), menuId);
+        }
+    }
+
+    /**
+     * 编辑菜单（手动方式，备选方案）
+     *
+     * @param insertOrUpdateMenuDTO 编辑菜单DTO
+     */
+    public void insertOrUpdateMenuManual(InsertOrUpdateMenuDTO insertOrUpdateMenuDTO) {
+        String menuId = insertOrUpdateMenuDTO.getMenuId();
+
+        //检查菜单路径是否重复
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .select(MENU_INFO.ALL_COLUMNS)
+                .from(MENU_INFO)
+                .where(MENU_INFO.MENU_PATH.eq(insertOrUpdateMenuDTO.getMenuPath())
+                        .and(MENU_INFO.MENU_ID.ne(menuId))
+                        .and(MENU_INFO.DEL_FLAG.eq(SystemConstant.DelFlag.EXIST)));
+        if (ObjectUtil.isNotEmpty(mapper.selectListByQuery(queryWrapper))) {
+            throw new BusinessException("菜单路径已存在");
+        }
+
         //如果存在则更新，否则插入
         if (StrUtil.isNotEmpty(menuId)) {
+            // 更新时，使用 UpdateChain 但要注意默认值不会自动生成
             UpdateChain.of(MenuInfo.class)
                     .set(MenuInfo::getParentId, insertOrUpdateMenuDTO.getParentId())
                     .set(MenuInfo::getMenuNameZh, insertOrUpdateMenuDTO.getMenuNameZh())
@@ -114,6 +157,7 @@ public class MenuInfoServiceImpl extends ServiceImpl<MenuInfoMapper, MenuInfo>
                     .where(MenuInfo::getMenuId).eq(menuId)
                     .update();
         } else {
+            // 插入时，创建完整对象确保类型转换器和默认值生效
             MenuInfo menuInfo = new MenuInfo();
             menuInfo.setParentId(insertOrUpdateMenuDTO.getParentId());
             menuInfo.setMenuNameZh(insertOrUpdateMenuDTO.getMenuNameZh());
@@ -122,7 +166,8 @@ public class MenuInfoServiceImpl extends ServiceImpl<MenuInfoMapper, MenuInfo>
             menuInfo.setMenuIcon(insertOrUpdateMenuDTO.getMenuIcon());
             menuInfo.setMenuSort(insertOrUpdateMenuDTO.getMenuSort());
             menuInfo.setRemark(insertOrUpdateMenuDTO.getRemark());
-            // 使用insert方法而不是insertSelective，确保类型转换器和默认值生效
+            
+            // 使用 insert 方法，确保所有字段都被处理
             mapper.insert(menuInfo);
             menuId = menuInfo.getMenuId();
         }
