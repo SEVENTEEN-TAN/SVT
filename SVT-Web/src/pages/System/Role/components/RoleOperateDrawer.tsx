@@ -17,7 +17,6 @@ const RoleOperateDrawer: React.FC<RoleOperateDrawerProps> = ({
   open,
   onClose,
   mode,
-  currentRecord,
   form,
   loading,
   onSubmit

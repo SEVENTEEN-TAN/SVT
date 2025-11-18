@@ -118,17 +118,17 @@ export const createEncryptedStorage = (): StateStorage => {
     },
 
     setItem: (name: string, value: string): void => {
+      // 确保 value 是字符串类型
+      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+
       try {
-        // 确保 value 是字符串类型
-        const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
-        
-        DebugManager.log(`[加密存储] 准备存储: ${name}`, { 
+        DebugManager.log(`[加密存储] 准备存储: ${name}`, {
           valueType: typeof value,
           valueLength: valueStr.length,
           isString: typeof value === 'string'
-        }, { 
-          component: 'EncryptedStorage', 
-          action: 'setItem' 
+        }, {
+          component: 'EncryptedStorage',
+          action: 'setItem'
         });
         
         // 检查是否需要加密

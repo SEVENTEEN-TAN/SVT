@@ -10,8 +10,6 @@ import {
   message,
   Modal,
   Form,
-  Input,
-  InputNumber,
   Select,
   Card,
   Collapse,
@@ -20,7 +18,6 @@ import {
   App,
   Spin,
   Transfer,
-  Popconfirm,
   Result,
 } from 'antd';
 import type { TransferDirection } from 'antd/es/transfer';
@@ -28,10 +25,8 @@ import type { Key } from 'react';
 import {
   EyeOutlined,
   EditOutlined,
-  DeleteOutlined,
   ExclamationCircleFilled,
   UserOutlined,
-  SearchOutlined,
 } from '@ant-design/icons';
 
 // 导入样式
@@ -44,11 +39,10 @@ import TableHeaderOperation from './components/TableHeaderOperation';
 import { useHasPermission } from '@/hooks/usePermission';
 
 // 导入API和类型
-import roleApi, { 
-  type RoleData, 
-  type RoleConditionDTO, 
+import roleApi, {
+  type RoleData,
+  type RoleConditionDTO,
   type InsertOrUpdateRoleDetailDTO,
-  type UserDetailDTO as RoleUserDetailDTO,
   type PermissionDetailDTO
 } from '@/api/system/roleApi';
 import userApi, { type UserData } from '@/api/system/userApi';
@@ -208,11 +202,6 @@ const RoleManagement: React.FC = () => {
     searchForm.resetFields();
     setCurrentSearchParams({});
     loadRoleData({}, 1); // 清空搜索条件并重置到第一页
-  };
-
-  // 刷新数据
-  const refreshData = () => {
-    loadRoleData(); // 使用当前搜索条件刷新
   };
 
 

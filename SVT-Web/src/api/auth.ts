@@ -6,8 +6,6 @@ import type { LoginRequest, LoginResponse, User } from '@/types/user';
 import type {
   UserOrgInfo,
   UserRoleInfo,
-  GetUserOrgResponse,
-  GetUserRoleResponse,
   GetUserDetailsRequest,
   UserDetailCache
 } from '@/types/org-role';
@@ -21,7 +19,6 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
   const response = await api.post<LoginResponse>('/auth/login', {
     loginId: credentials.loginId,
     password: credentials.password,
-    rememberMe: credentials.rememberMe,
   });
   return response;
 };

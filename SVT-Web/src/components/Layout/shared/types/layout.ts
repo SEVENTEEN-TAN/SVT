@@ -22,7 +22,7 @@ export interface MenuItem {
   menuPath?: string;
   menuIcon?: string;
   menuNameZh?: string;
-  menuSort?: string;
+  menuSort?: number;
   children?: MenuItem[];
 }
 

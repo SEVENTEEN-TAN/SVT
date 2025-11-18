@@ -60,7 +60,7 @@ spring:
   # 数据源通用配置 (Druid)
   # 具体连接URL、用户名、密码在环境文件中指定
   datasource:
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
       initial-size: 5

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import { verifyUserStatus, type UserStatusVerificationResult } from '@/api/auth';
@@ -27,9 +27,8 @@ export const resetGlobalVerificationStatus = () => {
  */
 export const useUserStatus = () => {
   const [userStatus, setUserStatus] = useState<UserStatusVerificationResult | null>(null);
-  const [loading, setLoading] = useState(false); // 🔧 修复：初始不加载，根据认证状态决定
+  const [loading, setLoading] = useState(false); // 🔧 修复:初始不加载,根据认证状态决定
   const [error, setError] = useState<string | null>(null);
-  const hasVerifiedRef = useRef(false); // 🔧 使用useRef防重复验证（不触发重新渲染）
   const navigate = useNavigate();
   const { logout, isAuthenticated, auth, hasSelectedOrgRole } = useAuth();
 

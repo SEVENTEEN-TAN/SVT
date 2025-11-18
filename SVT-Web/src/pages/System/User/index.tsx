@@ -12,7 +12,6 @@ import {
   Modal,
   Form,
   Input,
-  InputNumber,
   Select,
   Card,
   Collapse,
@@ -44,7 +43,7 @@ import './UserManagement.css';
 
 // 导入API和类型
 import userApi, { type UserData, type UserConditionDTO, type InsertOrUpdateUserDetailDTO } from '@/api/system/userApi';
-import roleApi, { type RoleData } from '@/api/system/roleApi';
+import roleApi, { type ActiveRole } from '@/api/system/roleApi';
 import type { PageQuery } from '@/types/api';
 
 const { RangePicker } = DatePicker;
@@ -72,8 +71,8 @@ const UserManagement: React.FC = () => {
   // 当前搜索条件状态
   const [currentSearchParams, setCurrentSearchParams] = useState<UserConditionDTO>({});
 
-  // 角色数据状态（用于下拉选择）
-  const [roleList, setRoleList] = useState<RoleData[]>([]);
+  // 角色数据状态(用于下拉选择)
+  const [roleList, setRoleList] = useState<ActiveRole[]>([]);
 
   // 角色分配弹窗状态
   const [roleAssignModalOpen, setRoleAssignModalOpen] = useState(false);
@@ -433,12 +432,12 @@ const UserManagement: React.FC = () => {
         return (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {roles.slice(0, 2).map((role, index) => (
-              <Tag key={index} color="blue" size="small">
+              <Tag key={index} color="blue">
                 {role}
               </Tag>
             ))}
             {roles.length > 2 && (
-              <Tag color="default" size="small">
+              <Tag color="default">
                 +{roles.length - 2}
               </Tag>
             )}
@@ -846,7 +845,7 @@ const UserManagement: React.FC = () => {
                   optionFilterProp="children"
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   }
                 >
                   {roleList.map(role => (

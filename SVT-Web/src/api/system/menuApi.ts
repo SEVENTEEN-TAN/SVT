@@ -98,7 +98,7 @@ class MenuApiService {
   async updateMenuSort(menuId: string, sort: number): Promise<any> {
     const request: UpdateMenuSortRequest = {
       menuId,
-      sort: sort.toString(),
+      sort,
     };
     return api.post<any>(`${this.prefix}/update-menu-sort`, request);
   }

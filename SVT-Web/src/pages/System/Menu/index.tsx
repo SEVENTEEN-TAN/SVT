@@ -27,8 +27,6 @@ import '@/styles/PageContainer.css';
 import './MenuManagement.css';
 import { useLayout } from '@/components/Layout/core/LayoutProvider';
 
-const { Text } = Typography;
-
 import type { ColumnsType } from 'antd/es/table';
 import menuApi from '@/api/system/menuApi';
 import roleApi from '@/api/system/roleApi';
@@ -322,7 +320,7 @@ const MenuManagement: React.FC = () => {
       key: 'menuSort',
       align: 'center',
       width: '12%',
-      render: (sort: number, record: MenuNode) => {
+      render: (_: number, record: MenuNode) => {
         const siblings = treeToFlat(tree).filter(n => n.parentId === record.parentId);
         const firstId = siblings[0]?.menuId;
         const lastId = siblings[siblings.length - 1]?.menuId;
@@ -459,20 +457,6 @@ const MenuManagement: React.FC = () => {
     }
   };
 
-  // 处理新增子菜单
-  const handleAddChild = (record: MenuNode) => {
-    setDrawerMode('create');
-    setCurrentRecord(record);
-    setDrawerOpen(true);
-    setDrawerLoading(false); // 新增模式不需要加载
-    setRoleLoading(false);
-
-    // 重置表单和角色状态
-    drawerForm.resetFields();
-    drawerForm.setFieldsValue({ parentId: record.menuId, menuSort: getNextSort(record.menuId) });
-    setSelectedRoleIds([]);
-  };
-
   // 处理删除
   const handleDelete = (record: MenuNode) => {
     if (Array.isArray(record.children) && record.children.length > 0) {
@@ -551,9 +535,6 @@ const MenuManagement: React.FC = () => {
 
   // 扁平化列表（用于排序等逻辑）
   const flat = useMemo(() => treeToFlat(tree), [tree]);
-
-  const getRoleLabel = (id:string)=> roles.find(r=>r.roleId===id)?.roleNameZh || id;
-
 
 
   const getNextSort = (parentId: string | null | undefined): number => {

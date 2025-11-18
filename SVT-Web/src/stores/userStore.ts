@@ -207,16 +207,20 @@ export const useUserStore = create<UserState>()((set, get) => {
 
           // 1. 获取用户机构列表
           const orgResponse = await authApi.getUserOrgList();
-          DebugManager.logSensitive('用户机构列表获取成功', orgResponse, { 
-            component: 'userStore', 
-            action: 'getUserOrgList' 
+          DebugManager.logSensitive('用户机构列表获取成功', orgResponse, {
+            component: 'userStore',
+            action: 'getUserOrgList'
           });
 
-          // 2. 获取用户角色列表
-          const roleResponse = await authApi.getUserRoleList();
-          DebugManager.logSensitive('用户角色列表获取成功', roleResponse, { 
-            component: 'userStore', 
-            action: 'getUserRoleList' 
+          // 2. 获取用户角色列表(使用第一个机构的ID)
+          if (orgResponse.length === 0) {
+            throw new Error('未找到有效的机构信息');
+          }
+
+          const roleResponse = await authApi.getUserRoleList(orgResponse[0].orgId);
+          DebugManager.logSensitive('用户角色列表获取成功', roleResponse, {
+            component: 'userStore',
+            action: 'getUserRoleList'
           });
           
           // 3. 选择第一个机构和角色获取详情

@@ -1,11 +1,10 @@
 import React from 'react';
 import { Button } from 'antd';
-import { 
-  PlusOutlined, 
-  DeleteOutlined, 
+import {
+  PlusOutlined,
+  DeleteOutlined,
   CheckOutlined,
-  TeamOutlined,
-  SettingOutlined
+  TeamOutlined
 } from '@ant-design/icons';
 import type { RoleData } from '@/api/system/roleApi';
 import Permission from '@/components/Permission';
@@ -21,7 +20,6 @@ interface TableHeaderOperationProps {
 
 const TableHeaderOperation: React.FC<TableHeaderOperationProps> = ({
   selectedRole,
-  loading,
   onAdd,
   onBatchDelete,
   onPermissionConfig,

@@ -18,9 +18,9 @@ const MenuTree: React.FC<MenuTreeProps> = ({ menuTrees, activeKey, onMenuClick }
     return menus
       .map(menu => ({
         ...menu,
-        menuSort: menu.menuSort || '0'
+        menuSort: menu.menuSort ?? 0
       }))
-      .sort((a, b) => parseInt(a.menuSort) - parseInt(b.menuSort))
+      .sort((a, b) => (a.menuSort as number) - (b.menuSort as number))
       .map(menu => {
         const menuItem: Record<string, unknown> = {
           key: menu.menuPath,

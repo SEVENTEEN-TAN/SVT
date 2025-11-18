@@ -27,7 +27,7 @@ export interface User {
     menuNameEn: string;
     menuPath: string;
     menuIcon: string;
-    menuSort: string;
+    menuSort: number;
     children?: Array<unknown>;
   }>;
 }

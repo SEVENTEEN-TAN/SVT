@@ -12,7 +12,6 @@ const BasicLayout = React.lazy(() => import('@/components/Layout/BasicLayout'));
 const LoginPage = React.lazy(() => import('@/pages/Auth/LoginPage'));
 const HomePage = React.lazy(() => import('@/pages/Home/HomePage'));
 const DynamicPage = React.lazy(() => import('@/components/DynamicPage'));
-const MenuManagement = React.lazy(() => import('@/pages/System/Menu'));
 
 // 简单的加载组件
 const fallbackElement = (

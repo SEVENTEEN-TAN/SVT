@@ -89,7 +89,7 @@ interface MenuItem {
   menuNameEn?: string;
   menuPath?: string;
   menuIcon?: string;
-  menuSort?: string;
+  menuSort?: number;
   children?: MenuItem[];
 }
 

@@ -93,7 +93,7 @@ class TokenManager {
   /**
    * @deprecated 前端不应该解析JWT，使用后端API响应判断
    */
-  getTokenRemainingTime(token?: string): number {
+  getTokenRemainingTime(_token?: string): number {
     console.warn('⚠️ [TokenManager] getTokenRemainingTime已废弃，请使用后端API响应判断Token状态');
     return 0;
   }
@@ -101,7 +101,7 @@ class TokenManager {
   /**
    * @deprecated 前端不应该解析JWT，使用后端API响应判断
    */
-  isTokenExpiringSoon(token?: string, thresholdMinutes: number = 5): boolean {
+  isTokenExpiringSoon(_token?: string, _thresholdMinutes: number = 5): boolean {
     console.warn('⚠️ [TokenManager] isTokenExpiringSoon已废弃，请使用后端API响应判断Token状态');
     return false;
   }
@@ -109,7 +109,7 @@ class TokenManager {
   /**
    * @deprecated 前端不应该解析JWT，使用后端API响应判断
    */
-  isTokenExpired(token?: string): boolean {
+  isTokenExpired(_token?: string): boolean {
     console.warn('⚠️ [TokenManager] isTokenExpired已废弃，请使用后端API响应判断Token状态');
     return false;
   }

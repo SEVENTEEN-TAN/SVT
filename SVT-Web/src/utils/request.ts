@@ -8,7 +8,6 @@ import type {
 import { AESCryptoUtils, isEncryptedData } from './crypto';
 import { useAuthStore } from '@/stores/authStore';
 import { messageManager } from './messageManager';
-import { modalManager } from './modalManager';
 import { clearStorageOnTokenExpired } from './localStorageManager';
 import { DebugManager } from './debugManager';
 import { sessionManager } from './sessionManager';

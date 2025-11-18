@@ -5,9 +5,9 @@ server:
 # 生产环境数据库配置
 spring:
   datasource:
-    url: jdbc:sqlserver://123.60.68.66:1433;databaseName=svt-prod;encrypt=true;trustServerCertificate=true # 生产环境数据库URL
-    username: sa                # 生产环境数据库用户名
-    password: SM4(uBQb/d1CJViO4PTPpg8nZEwq8Tx789oNdVwTgPWAxrI=)   # 生产环境数据库密码
+    url: jdbc:mysql://localhost:3306/svt_db?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true # 生产环境MySQL数据库URL (请根据实际情况修改,建议启用SSL)
+    username: root                # 生产环境数据库用户名 (请根据实际情况修改)
+    password: SM4(uBQb/d1CJViO4PTPpg8nZEwq8Tx789oNdVwTgPWAxrI=)   # 生产环境数据库密码 (需要重新加密)
 
 
 # 生产环境日志配置
