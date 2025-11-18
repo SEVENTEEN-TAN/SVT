@@ -54,10 +54,17 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 配置请求授权
             .authorizeHttpRequests(auth -> {
-                // 逐个添加放行路径，确保使用AntPathRequestMatcher
+                // 🔧 修复：优先放行所有非 /api 开头的路径（前端路由和静态资源）
+                auth.requestMatchers(request ->
+                    !request.getRequestURI().startsWith("/api")
+                ).permitAll();
+
+                // 逐个添加放行路径（特定的 API 白名单）
                 for (String path : permitAllPaths) {
                     auth.requestMatchers(new AntPathRequestMatcher(path)).permitAll();
                 }
+
+                // 其他 /api 路径需要认证
                 auth.anyRequest().authenticated();
             })
             // 添加JWT过滤器

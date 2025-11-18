@@ -32,18 +32,34 @@ public class SecurityPathConfig {
         
         // 定义基础路径数组（不包含上下文路径）
         String[] basePaths = {
-            "/auth/login",           // 认证相关接口
-            "/doc.html",             // Knife4j接口文档
-            "/doc.html/**",          // Knife4j相关资源
-            "/swagger-ui.html",      // Swagger UI
-            "/swagger-ui/**",        // Swagger UI资源
-            "/webjars/**",           // Swagger相关资源
-            "/v3/api-docs/**",       // OpenAPI文档
-            "/swagger-resources/**", // Swagger资源
-            "/druid/**",             // Druid监控
-            "/actuator/**",          // Spring Boot Actuator监控
-            "/error",                // 错误页面
-            "/favicon.ico"           // 网站图标
+            // ========== 业务API白名单（有 /api 前缀）==========
+            "/api/auth/login",           // 认证登录接口（业务API）
+
+            // ========== 第三方管理平台（无 /api 前缀）==========
+            "/doc.html",                 // Knife4j 接口文档
+            "/doc.html/**",              // Knife4j 相关资源
+            "/swagger-ui.html",          // Swagger UI 主页
+            "/swagger-ui/**",            // Swagger UI 资源
+            "/webjars/**",               // WebJars 资源（Swagger、Knife4j 依赖）
+            "/v3/api-docs/**",           // OpenAPI 文档接口（Springdoc 提供）
+            "/swagger-resources/**",     // Swagger 资源配置
+            "/druid/**",                 // Druid 数据源监控
+            "/actuator/**",              // Spring Boot Actuator 监控
+
+            // ========== 系统路径 ==========
+            "/error",                    // 错误页面
+            "/favicon.ico",              // 网站图标
+
+            // ========== 前端SPA静态资源和路由（无 /api 前缀）==========
+            "/",                         // 根路径
+            "/index.html",               // 主页面
+            "/assets/**",                // 静态资源目录（JS、CSS、图片等）
+            "/*.js",                     // 根目录下的JS文件
+            "/*.css",                    // 根目录下的CSS文件
+            "/*.png",                    // 图片文件
+            "/*.jpg",                    // 图片文件
+            "/*.svg",                    // SVG图标
+            "/*.ico"                     // ICO图标
         };
         
         // 保存不含上下文路径的原始配置

@@ -13,7 +13,7 @@
 server:
   # 端口在各环境文件中指定
   servlet:
-    context-path: /api
+    # context-path: /api
     encoding:
       charset: UTF-8
       force: true

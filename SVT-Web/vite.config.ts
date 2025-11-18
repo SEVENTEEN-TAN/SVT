@@ -7,10 +7,11 @@ import UnoCSS from '@unocss/vite'
 export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '');
-  const apiBaseUrl = env.VITE_API_BASE_URL || 'http://localhost:8080';
 
   return {
     plugins: [react(), UnoCSS()],
+    // 设置base路径为根路径，适配Spring Boot静态资源部署
+    base: '/',
     resolve: {
       alias: {
         '@': resolve(__dirname, './src'),
@@ -20,16 +21,18 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       host: true,
       proxy: {
+        // 将 /api 请求代理到后端服务器
         '/api': {
-          target: apiBaseUrl,
+          target: 'http://localhost:8080',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '/api')
         }
       }
     },
     build: {
       outDir: 'dist',
       sourcemap: false,
+      // 确保资源路径使用相对路径
+      assetsDir: 'assets',
       rollupOptions: {
         output: {
           manualChunks: {

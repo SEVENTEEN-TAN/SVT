@@ -68,8 +68,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // 检查请求路径是否在放行名单中
             String requestPath = request.getRequestURI();
+
+            // 🔧 修复：智能路径判断逻辑
+            // 1. 如果路径不以 /api 开头（前端路由和静态资源），直接放行
+            if (!requestPath.startsWith("/api")) {
+                log.debug("🌐 [路径放行] 前端路由/静态资源: {}", requestPath);
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // 2. 如果路径以 /api 开头，检查是否在白名单中（特定的API）
             if (isPermitAllPath(requestPath)) {
-                log.debug(MessageUtils.getMessage("log.path.permit"), requestPath);
+                log.debug("✅ [路径放行] 白名单API: {}", requestPath);
                 filterChain.doFilter(request, response);
                 return;
             }
