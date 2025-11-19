@@ -61,7 +61,7 @@ public class SecurityConfig {
 
                 // 逐个添加放行路径（特定的 API 白名单）
                 for (String path : permitAllPaths) {
-                    auth.requestMatchers(new AntPathRequestMatcher(path)).permitAll();
+                    auth.requestMatchers(path).permitAll();
                 }
 
                 // 其他 /api 路径需要认证
