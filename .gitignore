@@ -1,6 +1,6 @@
 # BMad-Method 工作流文件
 .bmad-core/
-.claude/commands/BMad/
+.claude/**
 /SVT-Server/src/main/resources/static/
 # Spec Workflow
 .spec-workflow/
