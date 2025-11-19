@@ -1,8 +1,8 @@
 # SVT-Server 后端服务
 
-基于 **Spring Boot 3.3.2 + Java 21 + MyBatis-Flex** 构建的企业级风险管理系统后端服务，采用分层模块化架构，提供完整的用户权限管理、API数据加密、SM4配置加密、数据库分布式锁、审计日志、分布式ID生成等核心功能。
+基于 **Spring Boot 3.5.7 + Java 21 + MyBatis-Flex** 构建的企业级风险管理系统后端服务，采用分层模块化架构，提供完整的用户权限管理、API数据加密、SM4配置加密、数据库分布式锁、审计日志、分布式ID生成等核心功能。
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.2-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.7-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/)
 [![MyBatis-Flex](https://img.shields.io/badge/MyBatis--Flex-1.10.9-blue.svg)](https://mybatis-flex.com/)
 
@@ -23,7 +23,7 @@
 
 ## 🎯 技术特色
 
-- **现代化技术栈**: Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 1.10.9
+- **现代化技术栈**: Spring Boot 3.5.7 + Java 21 + MyBatis-Flex 1.10.9
 - **企业级安全**: JWT智能续期 + AES-256加密 + SM4国密加密 + Argon2密码哈希
 - **高性能设计**: Caffeine本地缓存 + Session Sticky + 异步日志 + 连接池优化
 - **分层架构**: 通用层(common) + 框架层(frame) + 业务层(modules)
@@ -38,7 +38,7 @@
 
 | 技术 | 版本 | 说明 |
 |------|------|------|
-| **Spring Boot** | 3.3.2 | 核心应用框架，支持Java 21新特性 |
+| **Spring Boot** | 3.5.7 | 核心应用框架，支持Java 21新特性 |
 | **Spring Security** | 6.x | 安全框架，JWT认证和权限控制 |
 | **Spring AOP** | 内置 | 面向切面编程，实现审计、事务、权限切面 |
 

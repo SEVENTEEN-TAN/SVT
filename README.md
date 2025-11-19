@@ -4,7 +4,7 @@
 
 **现代化技术栈 · 企业级架构 · 生产就绪**
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.2-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.7-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19.1.0-blue.svg)](https://reactjs.org/)
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
@@ -94,7 +94,7 @@ SVT (Seventeen) 是一个**企业级风险管理系统**，采用前后端分离
 
 | 层级 | 技术 | 版本 | 说明 |
 |------|------|------|------|
-| **核心框架** | Spring Boot | 3.3.2 | 企业级Java应用框架 |
+| **核心框架** | Spring Boot | 3.5.7 | 企业级Java应用框架 |
 | **编程语言** | Java | 21 (LTS) | 支持虚拟线程、模式匹配等现代特性 |
 | **ORM框架** | MyBatis-Flex | 1.10.9 | 轻量级MyBatis增强框架 |
 | **数据库** | SQL Server | 2019+ | 关系型数据库 + 分布式锁 + 分布式ID |
@@ -142,7 +142,7 @@ SVT (Seventeen) 是一个**企业级风险管理系统**，采用前后端分离
                             │
 ┌─────────────────────────────────────────────────────────────┐
 │                       应用服务层                             │
-│  Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 1.10.9         │
+│  Spring Boot 3.5.7 + Java 21 + MyBatis-Flex 1.10.9         │
 └─────────────────────────────────────────────────────────────┘
                             │
 ┌─────────────────────────────────────────────────────────────┐

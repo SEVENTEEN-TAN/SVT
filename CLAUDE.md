@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SVT (Seventeen) is an enterprise-grade risk management system built with Spring Boot 3.3.2 (Java 21) backend and React 19.1.0 (TypeScript) frontend. It features JWT smart renewal authentication, AES-256 encryption, distributed locking system, and comprehensive permission management with dynamic routing.
+SVT (Seventeen) is an enterprise-grade risk management system built with Spring Boot 3.5.7 (Java 21) backend and React 19.1.0 (TypeScript) frontend. It features JWT smart renewal authentication, AES-256 encryption, distributed locking system, and comprehensive permission management with dynamic routing.
 
 ## Essential Commands
 
@@ -52,7 +52,7 @@ npm run preview                      # Preview production build
 ## Architecture Overview
 
 ### Core Technology Stack
-**Backend**: Spring Boot 3.3.2 + Java 21 + MyBatis-Flex 1.10.9 + SQL Server + Redis + SM4 Encryption  
+**Backend**: Spring Boot 3.5.7 + Java 21 + MyBatis-Flex 1.10.9 + SQL Server + Redis + SM4 Encryption  
 **Frontend**: React 19.1.0 + TypeScript 5.8.3 + Ant Design 5.25.4 + Zustand 5.0.5 + Vite 6.3.5
 
 ### Recent Architecture Updates
