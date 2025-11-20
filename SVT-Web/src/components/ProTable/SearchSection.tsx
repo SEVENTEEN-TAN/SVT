@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { Form, Input, Select, DatePicker, InputNumber, Button, Space, Popover, Badge, theme } from 'antd';
 import { SearchOutlined, ReloadOutlined, FilterOutlined } from '@ant-design/icons';
-import type { SearchField, SearchFieldType } from './types';
+import type { CommonFieldProps } from './types';
 
 const { RangePicker } = DatePicker;
 
 interface SearchSectionProps {
-    fields: SearchField[];
+    fields: CommonFieldProps[];
     onSearch: (values: any) => void;
     onReset: () => void;
     loading?: boolean;
@@ -18,38 +18,35 @@ const SearchSection: React.FC<SearchSectionProps> = ({ fields, onSearch, onReset
     const [popoverOpen, setPopoverOpen] = useState(false);
 
     // 渲染单个表单项
-    const renderFormItem = (field: SearchField) => {
+    const renderFormItem = (field: CommonFieldProps) => {
         let inputNode: React.ReactNode;
 
-        switch (field.type) {
+        switch (field.valueType) {
             case 'select':
-                inputNode = <Select placeholder={field.placeholder} options={field.options} allowClear />;
+                inputNode = <Select placeholder={field.placeholder} options={field.options} allowClear style={{ width: 200 }} />;
                 break;
             case 'date':
-                inputNode = <DatePicker placeholder={field.placeholder} style={{ width: '100%' }} />;
+                inputNode = <DatePicker placeholder={field.placeholder} style={{ width: 200 }} />;
                 break;
             case 'dateRange':
-                inputNode = <RangePicker style={{ width: '100%' }} />;
+                inputNode = <RangePicker style={{ width: 200 }} />;
                 break;
             case 'number':
-                inputNode = <InputNumber placeholder={field.placeholder} style={{ width: '100%' }} />;
-                break;
-            case 'custom':
-                inputNode = field.render ? field.render() : null;
+                inputNode = <InputNumber placeholder={field.placeholder} style={{ width: 200 }} />;
                 break;
             case 'input':
             default:
-                inputNode = <Input placeholder={field.placeholder} allowClear />;
+                inputNode = <Input placeholder={field.placeholder} allowClear style={{ width: 200 }} />;
                 break;
         }
 
         return (
             <Form.Item
-                key={field.name}
-                name={field.name}
+                key={field.name!}
+                name={field.name!}
                 label={field.label}
                 initialValue={field.defaultValue}
-                style={{ marginBottom: 0 }} // 紧凑布局
+                style={{ marginBottom: 0, minWidth: 200 }} // 统一宽度
             >
                 {inputNode}
             </Form.Item>
@@ -66,7 +63,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ fields, onSearch, onReset
         const values = form.getFieldsValue();
         let count = 0;
         hiddenFields.forEach(field => {
-            const value = values[field.name];
+            const value = values[field.name!];
             if (value !== undefined && value !== null && value !== '') {
                 count++;
             }
@@ -95,7 +92,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ fields, onSearch, onReset
                 component={false} // 不创建新的 Form Context，复用外部的
             >
                 {hiddenFields.map(field => (
-                    <div key={field.name} style={{ marginBottom: 12 }}>
+                    <div key={field.name!} style={{ marginBottom: 12 }}>
                         {renderFormItem(field)}
                     </div>
                 ))}

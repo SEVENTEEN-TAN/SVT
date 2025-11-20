@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { message, Modal } from 'antd';
-import SearchSection from './SearchSection';
-import DataSection from './DataSection';
-import ActionDrawer from './ActionDrawer';
-import type { PageSchema, TableColumn } from './types';
+import { SearchSection, DataSection, ActionDrawer } from '@/components/ProTable';
+import type { PageSchema, TableColumn } from '@/components/ProTable/types';
 
 interface SchemaPageProps {
     schema: PageSchema;
@@ -75,7 +73,7 @@ const SchemaPage: React.FC<SchemaPageProps> = ({ schema }) => {
     };
 
     // 表格变化 (排序/筛选)
-    const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+    const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
         const { field, order } = sorter;
         const params = { ...searchParams };
         if (field && order) {
@@ -188,30 +186,98 @@ const SchemaPage: React.FC<SchemaPageProps> = ({ schema }) => {
         }
     };
 
+
+    // 生成行操作列
+    const rowActionButtons = schema.rowActions?.buttons || [
+        {
+            text: '查看',
+            onClick: handleView,
+        },
+        ...(schema.api.updateApi ? [{
+            text: '编辑',
+            onClick: handleEdit,
+        }] : []),
+        ...(schema.api.deleteApi ? [{
+            text: '删除',
+            onClick: handleDelete,
+            style: { color: '#ff4d4f' },
+        }] : []),
+    ];
+
     // 注入操作列
     const columns: TableColumn[] = [
-        ...schema.table.columns,
-        {
+        ...schema.table.columns.filter(col => !col.hideInTable),
+        ...(rowActionButtons.length > 0 ? [{
             title: '操作',
             key: 'action',
             dataIndex: 'action',
-            width: schema.table.actionWidth || 150,
-            fixed: 'right',
-            render: (_, record) => (
+            width: schema.rowActions?.width || schema.table.actionWidth || 150,
+            fixed: 'right' as const,
+            render: (_: any, record: any) => (
                 <div style={{ display: 'flex', gap: 8 }}>
-                    <a onClick={() => handleView(record)}>查看</a>
-                    {schema.api.updateApi && <a onClick={() => handleEdit(record)}>编辑</a>}
-                    {schema.api.deleteApi && <a onClick={() => handleDelete(record)} style={{ color: '#ff4d4f' }}>删除</a>}
+                    {rowActionButtons.map((btn, index) => {
+                        const isVisible = typeof btn.visible === 'function'
+                            ? btn.visible(record)
+                            : btn.visible !== false;
+
+                        if (!isVisible) return null;
+
+                        return (
+                            <a
+                                key={index}
+                                onClick={() => btn.onClick(record)}
+                                style={btn.style}
+                            >
+                                {btn.text}
+                            </a>
+                        );
+                    })}
                 </div>
             ),
+        }] : []),
+    ];
+
+    // 生成搜索字段
+    const searchFields = schema.table.columns
+        .filter(col => col.hideInSearch === false)
+        .map(col => ({
+            name: col.dataIndex as string,
+            label: col.title as string,
+            valueType: col.valueType,
+            options: col.options,
+            placeholder: col.searchProps?.placeholder || `请输入${col.title}`,
+            ...col.searchProps,
+        }))
+
+        ;
+
+    // 生成工具栏按钮
+    const toolbarButtons = schema.toolbar?.buttons || [
+        {
+            text: '新增',
+            type: 'primary' as const,
+            onClick: async () => {
+                handleCreate();
+            },
+        },
+        {
+            text: '批量删除',
+            onClick: async (selectedRowKeys: React.Key[]) => {
+                if (selectedRowKeys.length === 0) {
+                    message.warning('请先选择要删除的数据');
+                    return;
+                }
+                handleBatchDelete();
+            },
+            needSelection: true,
         },
     ];
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '16px' }}>
-            {schema.search && (
+            {searchFields.length > 0 && (
                 <SearchSection
-                    fields={schema.search.fields}
+                    fields={searchFields}
                     onSearch={handleSearch}
                     onReset={handleReset}
                     loading={loading}
@@ -227,18 +293,11 @@ const SchemaPage: React.FC<SchemaPageProps> = ({ schema }) => {
                     ...pagination,
                     onChange: handlePageChange,
                 }}
-                actions={{
-                    create: schema.actions?.create ?? true,
-                    batchDelete: schema.actions?.batchDelete ?? true,
-                    export: schema.actions?.export ?? false,
-                    import: schema.actions?.import ?? false,
-                    extra: schema.actions?.extra,
-                }}
-                onAction={(type) => {
-                    if (type === 'create') handleCreate();
-                    if (type === 'batchDelete') handleBatchDelete();
-                    // export TODO
-                }}
+                toolbarButtons={toolbarButtons}
+                selectedRowKeys={selectedRowKeys}
+                selectedRows={dataSource.filter(item =>
+                    selectedRowKeys.includes(item[schema.table.rowKey || 'id'])
+                )}
                 rowSelection={
                     schema.table.rowSelection !== false
                         ? {

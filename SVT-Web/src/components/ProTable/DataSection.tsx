@@ -1,15 +1,20 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Table, Button, Space, Card, theme, Pagination, Tooltip, Popover, Checkbox } from 'antd';
 import {
-    PlusOutlined,
-    DeleteOutlined,
-    ExportOutlined,
-    ImportOutlined,
     SettingOutlined,
     FullscreenOutlined,
     FullscreenExitOutlined
 } from '@ant-design/icons';
 import type { TableColumn } from './types';
+
+interface ToolbarButton {
+    text: string;
+    type?: 'primary' | 'default' | 'dashed' | 'link' | 'text';
+    icon?: React.ReactNode;
+    onClick: (selectedRowKeys: React.Key[], selectedRows: any[]) => void | Promise<void>;
+    needSelection?: boolean;
+    visible?: boolean;
+}
 
 interface DataSectionProps {
     columns: TableColumn[];
@@ -22,14 +27,10 @@ interface DataSectionProps {
         total: number;
         onChange: (page: number, pageSize: number) => void;
     };
-    actions?: {
-        create?: boolean;
-        batchDelete?: boolean;
-        import?: boolean;
-        export?: boolean;
-        extra?: React.ReactNode[];
-    };
-    onAction: (type: 'create' | 'batchDelete' | 'import' | 'export' | 'sort') => void;
+    toolbarButtons?: ToolbarButton[];
+    selectedRowKeys?: React.Key[];
+    selectedRows?: any[];
+    onAction?: (type: string) => void;
     rowSelection?: {
         selectedRowKeys: React.Key[];
         onChange: (selectedRowKeys: React.Key[], selectedRows: any[]) => void;
@@ -43,8 +44,9 @@ const DataSection: React.FC<DataSectionProps> = ({
     loading,
     rowKey = 'id',
     pagination,
-    actions,
-    onAction,
+    toolbarButtons = [],
+    selectedRowKeys = [],
+    selectedRows = [],
     rowSelection,
     onChange,
 }) => {
@@ -153,36 +155,27 @@ const DataSection: React.FC<DataSectionProps> = ({
                 {/* 工具栏 */}
                 <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Space>
-                        {actions?.create && (
-                            <Button type="primary" icon={<PlusOutlined />} onClick={() => onAction('create')}>
-                                新增
-                            </Button>
-                        )}
-                        {actions?.batchDelete && (
-                            <Button
-                                danger
-                                icon={<DeleteOutlined />}
-                                disabled={!rowSelection?.selectedRowKeys.length}
-                                onClick={() => onAction('batchDelete')}
-                            >
-                                批量删除
-                            </Button>
-                        )}
-                        {actions?.extra}
+                        {toolbarButtons.map((btn, index) => {
+                            const isVisible = btn.visible !== false;
+                            const isDisabled = btn.needSelection && selectedRowKeys.length === 0;
+
+                            if (!isVisible) return null;
+
+                            return (
+                                <Button
+                                    key={index}
+                                    type={btn.type || 'default'}
+                                    icon={btn.icon}
+                                    disabled={isDisabled}
+                                    onClick={() => btn.onClick(selectedRowKeys, selectedRows)}
+                                >
+                                    {btn.text}
+                                </Button>
+                            );
+                        })}
                     </Space>
 
                     <Space size={8}>
-                        {/* 功能区 */}
-                        {actions?.import && (
-                            <Tooltip title="导入">
-                                <Button type="text" icon={<ImportOutlined />} onClick={() => onAction('import')} />
-                            </Tooltip>
-                        )}
-                        {actions?.export && (
-                            <Tooltip title="导出">
-                                <Button type="text" icon={<ExportOutlined />} onClick={() => onAction('export')} />
-                            </Tooltip>
-                        )}
 
                         <Popover
                             content={columnSettingContent}

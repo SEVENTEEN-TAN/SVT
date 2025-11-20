@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Drawer, Form, Button, Space, Input, Select, DatePicker, InputNumber, Switch } from 'antd';
-import type { TableColumn, SearchFieldType } from './types';
+import type { TableColumn, ValueType } from './types';
 
 interface ActionDrawerProps {
     open: boolean;
@@ -48,13 +48,12 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
         if (col.hideInForm) return null;
 
         let inputNode: React.ReactNode;
-        const type: SearchFieldType = col.formType || 'input';
+        const type: ValueType = col.valueType || 'input';
+        const options = col.formProps?.options || col.options;
 
         switch (type) {
             case 'select':
-                // TODO: 需要支持 options 配置，目前 TableColumn 定义中尚未包含 options
-                // 临时处理：如果 columns 中没有 options，需要扩展 TableColumn 定义
-                inputNode = <Select placeholder={`请选择${col.title}`} />;
+                inputNode = <Select placeholder={`请选择${col.title}`} options={options} />;
                 break;
             case 'date':
                 inputNode = <DatePicker style={{ width: '100%' }} />;
@@ -65,6 +64,12 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
             case 'switch':
                 inputNode = <Switch />;
                 break;
+            case 'textarea':
+                inputNode = <Input.TextArea rows={4} placeholder={`请输入${col.title}`} />;
+                break;
+            case 'password':
+                inputNode = <Input.Password placeholder={`请输入${col.title}`} />;
+                break;
             case 'input':
             default:
                 inputNode = <Input placeholder={`请输入${col.title}`} />;
@@ -73,9 +78,14 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
 
         // View 模式下只展示文本
         if (isView) {
+            let displayValue = initialValues?.[col.dataIndex as string];
+            if (type === 'select' && options) {
+                const option = options.find(opt => opt.value === displayValue);
+                if (option) displayValue = option.label;
+            }
             return (
-                <Form.Item key={col.dataIndex as string} label={col.title}>
-                    <span className="ant-form-text">{initialValues?.[col.dataIndex as string]}</span>
+                <Form.Item key={col.dataIndex as string} label={col.title as React.ReactNode}>
+                    <span className="ant-form-text">{displayValue}</span>
                 </Form.Item>
             );
         }
@@ -84,7 +94,7 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
             <Form.Item
                 key={col.dataIndex as string}
                 name={col.dataIndex as string}
-                label={col.title}
+                label={col.title as React.ReactNode}
                 rules={col.formRules}
                 valuePropName={type === 'switch' ? 'checked' : 'value'}
             >

@@ -12,7 +12,7 @@ const BasicLayout = React.lazy(() => import('@/components/Layout/BasicLayout'));
 const LoginPage = React.lazy(() => import('@/pages/Auth/LoginPage'));
 const HomePage = React.lazy(() => import('@/pages/Home/HomePage'));
 const DynamicPage = React.lazy(() => import('@/components/DynamicPage'));
-const QuickDevDemo = React.lazy(() => import('@/pages/Demo/QuickDev'));
+const SchemaPageDemo = React.lazy(() => import('@/pages/Demo/SchemaPageDemo'));
 
 // 简单的加载组件
 const fallbackElement = (
@@ -55,10 +55,10 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'demo/quick-dev',
+        path: 'demo/schema-page',
         element: (
           <Suspense fallback={fallbackElement}>
-            <QuickDevDemo />
+            <SchemaPageDemo />
           </Suspense>
         ),
       },

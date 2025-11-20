@@ -1,5 +1,5 @@
 import React from 'react';
-import { SchemaPage } from '@/components/QuickDev';
+import { SchemaPage } from '@/components/SchemaPage';
 import { productSchema } from './schema';
 
 const QuickDevDemo: React.FC = () => {

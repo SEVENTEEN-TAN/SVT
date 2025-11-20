@@ -1,4 +1,4 @@
-import type { PageSchema } from '@/components/QuickDev/types';
+import type { PageSchema } from '@/components/ProTable/types';
 
 // 模拟数据
 let mockData = Array.from({ length: 20 }).map((_, i) => ({
@@ -8,7 +8,7 @@ let mockData = Array.from({ length: 20 }).map((_, i) => ({
     category: i % 3 === 0 ? '电子产品' : i % 3 === 1 ? '家居用品' : '服装',
     price: Math.floor(Math.random() * 1000) + 100,
     stock: Math.floor(Math.random() * 100),
-    status: i % 4 === 0 ? '0' : '1', // 0: 下架, 1: 上架
+    status: i % 4 === 0 ? 'offline' : 'online',
     createTime: '2025-11-20 10:00:00',
 }));
 
@@ -16,7 +16,7 @@ let mockData = Array.from({ length: 20 }).map((_, i) => ({
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const productSchema: PageSchema = {
-    title: '商品管理 (QuickDev Demo)',
+    title: '商品管理',
 
     api: {
         listApi: async (params) => {
@@ -87,37 +87,6 @@ export const productSchema: PageSchema = {
         }
     },
 
-    search: {
-        fields: [
-            { name: 'name', label: '商品名称', type: 'input', placeholder: '请输入商品名称' },
-            { name: 'code', label: '商品编码', type: 'input', placeholder: '请输入商品编码' },
-            {
-                name: 'category',
-                label: '商品分类',
-                type: 'select',
-                placeholder: '请选择分类',
-                options: [
-                    { label: '电子产品', value: '电子产品' },
-                    { label: '家居用品', value: '家居用品' },
-                    { label: '服装', value: '服装' },
-                ]
-            },
-            // 隐藏字段 (测试 3+N)
-            {
-                name: 'status',
-                label: '状态',
-                type: 'select',
-                placeholder: '请选择状态',
-                options: [
-                    { label: '上架', value: '1' },
-                    { label: '下架', value: '0' },
-                ]
-            },
-            { name: 'minPrice', label: '最低价格', type: 'number' },
-            { name: 'maxPrice', label: '最高价格', type: 'number' },
-        ],
-    },
-
     table: {
         rowKey: 'id',
         columns: [
@@ -126,58 +95,113 @@ export const productSchema: PageSchema = {
                 dataIndex: 'id',
                 width: 80,
                 sorter: true,
+                hideInForm: true,
             },
             {
                 title: '商品名称',
                 dataIndex: 'name',
-                formType: 'input',
+                valueType: 'input',
+                hideInSearch: false, // 显示在搜索栏
                 formRules: [{ required: true, message: '请输入商品名称' }],
             },
             {
                 title: '商品编码',
                 dataIndex: 'code',
-                formType: 'input',
+                valueType: 'input',
+                hideInSearch: false, // 显示在搜索栏
                 formRules: [{ required: true, message: '请输入商品编码' }],
             },
             {
                 title: '分类',
                 dataIndex: 'category',
-                formType: 'select',
-                // options 会在 ActionDrawer 中处理，或者这里可以预定义
+                valueType: 'select',
+                hideInSearch: false, // 显示在搜索栏
+                options: [
+                    { label: '电子产品', value: '电子产品' },
+                    { label: '家居用品', value: '家居用品' },
+                    { label: '服装', value: '服装' },
+                ],
             },
             {
                 title: '价格',
                 dataIndex: 'price',
+                valueType: 'number',
                 render: (val: number) => `¥${val}`,
-                formType: 'number',
                 sorter: true,
             },
             {
                 title: '库存',
                 dataIndex: 'stock',
-                formType: 'number',
+                valueType: 'number',
                 sorter: true,
             },
             {
                 title: '状态',
                 dataIndex: 'status',
+                valueType: 'select',
+                hideInSearch: false, // 显示在搜索栏
+                options: [
+                    { label: '上架', value: 'online' },
+                    { label: '下架', value: 'offline' },
+                ],
                 render: (val: string) => val === 'online' ? '上架' : '下架',
-                formType: 'select',
             },
             {
                 title: '创建时间',
                 dataIndex: 'createTime',
                 width: 180,
-                formType: 'date',
+                hideInForm: true,
                 sorter: true,
             },
         ],
         rowSelection: true,
     },
-    actions: {
-        create: true,
-        batchDelete: true,
-        export: true,
-        import: true,
+    toolbar: {
+        buttons: [
+            {
+                text: '新增',
+                type: 'primary',
+                onClick: async () => {
+                    console.log('新增按钮点击');
+                },
+            },
+            {
+                text: '批量删除',
+                onClick: async (selectedRowKeys, selectedRows) => {
+                    console.log('批量删除:', selectedRowKeys, selectedRows);
+                },
+                needSelection: true,
+            },
+            {
+                text: '导出',
+                onClick: async (_selectedRowKeys, selectedRows) => {
+                    console.log('导出数据:', selectedRows);
+                },
+            },
+        ],
+    },
+    rowActions: {
+        buttons: [
+            {
+                text: '查看',
+                onClick: (record) => {
+                    console.log('查看:', record);
+                },
+            },
+            {
+                text: '编辑',
+                onClick: (record) => {
+                    console.log('编辑:', record);
+                },
+            },
+            {
+                text: '删除',
+                onClick: (record) => {
+                    console.log('删除:', record);
+                },
+                style: { color: '#ff4d4f' },
+            },
+        ],
+        width: 180,
     },
 };
