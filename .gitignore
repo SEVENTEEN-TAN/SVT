@@ -4,6 +4,7 @@
 /SVT-Server/src/main/resources/static/
 # Spec Workflow
 .spec-workflow/
+node_modules/
 
 # IDE
 .idea/
