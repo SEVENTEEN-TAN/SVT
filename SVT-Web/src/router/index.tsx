@@ -12,6 +12,7 @@ const BasicLayout = React.lazy(() => import('@/components/Layout/BasicLayout'));
 const LoginPage = React.lazy(() => import('@/pages/Auth/LoginPage'));
 const HomePage = React.lazy(() => import('@/pages/Home/HomePage'));
 const DynamicPage = React.lazy(() => import('@/components/DynamicPage'));
+const QuickDevDemo = React.lazy(() => import('@/pages/Demo/QuickDev'));
 
 // 简单的加载组件
 const fallbackElement = (
@@ -53,16 +54,14 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
       },
-      // 这里后续可以添加更多受保护的路由
       {
-        path: 'users',
-        element: <div>用户管理页面 - 待开发</div>,
+        path: 'demo/quick-dev',
+        element: (
+          <Suspense fallback={fallbackElement}>
+            <QuickDevDemo />
+          </Suspense>
+        ),
       },
-      {
-        path: 'settings',
-        element: <div>系统设置页面 - 待开发</div>,
-      },
-
       {
         path: '*',
         element: (
@@ -75,4 +74,4 @@ export const router = createBrowserRouter([
   },
 ]);
 
-export default router; 
+export default router;
