@@ -97,7 +97,7 @@ SVT (Seventeen) 是一个**企业级风险管理系统**，采用前后端分离
 | **核心框架** | Spring Boot | 3.5.7 | 企业级Java应用框架 |
 | **编程语言** | Java | 21 (LTS) | 支持虚拟线程、模式匹配等现代特性 |
 | **ORM框架** | MyBatis-Flex | 1.10.9 | 轻量级MyBatis增强框架 |
-| **数据库** | SQL Server | 2019+ | 关系型数据库 + 分布式锁 + 分布式ID |
+| **数据库** | MySQL | 8.4.0 | 关系型数据库 + 分布式锁 + 分布式ID |
 | **本地缓存** | Caffeine | 3.1.8 | 高性能本地缓存（W-TinyLFU算法） |
 | **连接池** | Druid | 1.2.24 | 数据库连接池 + SQL监控 |
 | **安全框架** | Spring Security | 6.x | 认证和授权框架 |
@@ -147,7 +147,7 @@ SVT (Seventeen) 是一个**企业级风险管理系统**，采用前后端分离
                             │
 ┌─────────────────────────────────────────────────────────────┐
 │                       数据持久层                             │
-│    SQL Server 2019+ (主数据库 + 分布式锁 + 分布式ID)        │
+│    MySQL 8.4.0 (主数据库 + 分布式锁 + 分布式ID)             │
 │    Caffeine Cache (本地缓存: JWT + 用户详情 + ID批量)       │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -161,7 +161,7 @@ SVT (Seventeen) 是一个**企业级风险管理系统**，采用前后端分离
 - **Java 21+** (推荐使用OpenJDK或Oracle JDK 21 LTS)
 - **Node.js 18+** (推荐使用LTS版本)
 - **Maven 3.8+**
-- **SQL Server 2019+**
+- **MySQL 8.4.0+**
 - **Redis 6.0+** (可选，当前使用Caffeine本地缓存)
 - **Git**
 
@@ -174,15 +174,15 @@ cd SVT
 
 ### 2. 数据库初始化
 
-```bash
-# 1. 创建数据库（推荐命名为 svt_db）
-CREATE DATABASE svt_db;
+```sql
+-- 1. 创建数据库（推荐命名为 svt_db）
+CREATE DATABASE svt_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 2. 执行DDL脚本（创建表结构）
-# SVT-Server/src/main/resources/db/init/ddl.sql
+-- 2. 执行DDL脚本（创建表结构）
+-- SVT-Server/src/main/resources/db/init/ddl.sql
 
-# 3. 执行DML脚本（初始化数据）
-# SVT-Server/src/main/resources/db/init/dml.sql
+-- 3. 执行DML脚本（初始化数据）
+-- SVT-Server/src/main/resources/db/init/dml.sql
 ```
 
 ### 3. 环境变量配置
@@ -203,7 +203,7 @@ export SENSITIVE_ENABLED=true
 ```
 
 ⚠️ **重要**:
-- `SM4_ENCRYPTION_KEY`: 用于配置文件加密（替代已废弃的JASYPT_ENCRYPTOR_PASSWORD）
+- `SM4_ENCRYPTION_KEY`: 用于配置文件加密（使用SM4国密算法）
 - `SVT_AES_KEY`: 必须是32字符长度，用于API请求/响应加密
 - 生产环境请使用强密码和随机密钥，建议定期轮换
 
@@ -214,7 +214,7 @@ export SENSITIVE_ENABLED=true
 ```yaml
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=svt_db
+    url: jdbc:mysql://localhost:3306/svt_db?useSSL=false&serverTimezone=Asia/Shanghai
     username: your_username
     password: SM4@encrypted(your_encrypted_password)  # 使用SM4加密
 
@@ -617,21 +617,21 @@ services:
     networks:
       - svt-network
 
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2019-latest
-    container_name: svt-sqlserver
+  mysql:
+    image: mysql:8.4.0
+    container_name: svt-mysql
     ports:
-      - "1433:1433"
+      - "3306:3306"
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=svt_db
     volumes:
-      - sqlserver-data:/var/opt/mssql
+      - mysql-data:/var/lib/mysql
     networks:
       - svt-network
 
 volumes:
-  sqlserver-data:
+  mysql-data:
 
 networks:
   svt-network:

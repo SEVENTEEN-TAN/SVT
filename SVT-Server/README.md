@@ -47,7 +47,7 @@
 | 技术 | 版本 | 说明 |
 |------|------|------|
 | **MyBatis-Flex** | 1.10.9 | 现代化ORM框架，类型安全 |
-| **SQL Server** | 2019+ | 企业级关系数据库 |
+| **MySQL** | 8.4.0 | 开源关系数据库 |
 | **Druid** | 1.2.24 | 数据库连接池 + SQL监控 |
 
 ### 缓存与性能
@@ -121,14 +121,14 @@ src/main/java/com/seventeen/svt/
 
 - **Java 21+** (推荐使用OpenJDK或Oracle JDK 21 LTS)
 - **Maven 3.8+**
-- **SQL Server 2019+**
+- **MySQL 8.4.0+**
 - **Redis 6.0+** (可选，当前使用Caffeine本地缓存)
 
 ### 1. 数据库准备
 
 ```sql
--- 创建数据库
-CREATE DATABASE svt_db COLLATE Chinese_PRC_CI_AS;
+-- 创建数据库 (MySQL)
+CREATE DATABASE svt_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 执行表结构创建脚本
 -- src/main/resources/db/init/ddl.sql
@@ -155,7 +155,7 @@ export SENSITIVE_ENABLED=true
 ```
 
 ⚠️ **重要说明**:
-- `SM4_ENCRYPTION_KEY`: 用于配置文件加密（替代已废弃的JASYPT_ENCRYPTOR_PASSWORD）
+- `SM4_ENCRYPTION_KEY`: 用于配置文件加密（使用SM4国密算法）
 - `SVT_AES_KEY`: 必须是32字符长度，用于API请求/响应加密
 - 生产环境请使用强密码和随机密钥，建议定期轮换
 
@@ -166,7 +166,7 @@ export SENSITIVE_ENABLED=true
 ```yaml
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=svt_db
+    url: jdbc:mysql://localhost:3306/svt_db?useSSL=false&serverTimezone=Asia/Shanghai
     username: your_username
     password: SM4@encrypted(your_encrypted_password)  # 使用SM4加密
 
