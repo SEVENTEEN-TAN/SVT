@@ -5,6 +5,11 @@
 # Spec Workflow
 .spec-workflow/
 node_modules/
+.kiro/
+.cursor/
+.claude/
+.factory/
+.vscode/
 
 # IDE
 .idea/
