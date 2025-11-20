@@ -1,57 +1,146 @@
-# BMad-Method 工作流文件
+# ============================================
+# SVT 项目 .gitignore
+# 只保留源代码和文档，排除所有构建产物和依赖
+# ============================================
+
+# ============================================
+# 工作流和工具配置（排除）
+# ============================================
 .bmad-core/
-.claude/**
-/SVT-Server/src/main/resources/static/
-# Spec Workflow
 .spec-workflow/
-node_modules/
 .kiro/
 .cursor/
 .claude/
 .factory/
-.vscode/
 
-# IDE
+# ============================================
+# IDE 配置文件（排除）
+# ============================================
 .idea/
+.vscode/
 *.iml
 *.iws
 *.ipr
-.vscode/
 *.swp
 *.swo
 *~
 
-# Maven
+# ============================================
+# 后端 (SVT-Server) 构建产物
+# ============================================
+# Maven 构建目录
 SVT-Server/target/
 SVT-Server/.mvn/
 SVT-Server/mvnw
 SVT-Server/mvnw.cmd
 
-# Node.js
+# 编译产物
+SVT-Server/**/*.class
+SVT-Server/**/*.jar
+SVT-Server/**/*.war
+
+# ============================================
+# 前端 (SVT-Web) 构建产物
+# ============================================
+# 依赖目录
 SVT-Web/node_modules/
+node_modules/
+
+# 构建产物
 SVT-Web/dist/
 SVT-Web/.vite/
 SVT-Web/.cache/
+
+# 前端静态资源（后端集成）
+SVT-Server/src/main/resources/static/
+
+# 包管理器日志
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Logs
+# ============================================
+# 日志文件（排除）
+# ============================================
 logs/
 *.log
+SVT-Server/logs/
 
-# OS
+# ============================================
+# 操作系统文件（排除）
+# ============================================
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Environment variables
+# ============================================
+# 环境变量文件（排除敏感信息）
+# ============================================
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Temporary files
+# 保留环境变量模板
+!.env.example
+!.env.development
+!.env.uat
+!.env.production
+
+# ============================================
+# 临时文件（排除）
+# ============================================
 *.tmp
 *.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ============================================
+# 测试覆盖率报告（排除）
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+
+# ============================================
+# 数据库文件（排除）
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# 保留的文件和目录
+# ============================================
+# 源代码目录（保留）
+# - SVT-Server/src/
+# - SVT-Web/src/
+# 
+# 文档目录（保留）
+# - docs/
+# - README.md
+# - SVT-Server/README.md
+# - SVT-Web/README.md
+# - SVT-Web/docs/
+# - SVT-Server/docs/
+#
+# 配置文件（保留）
+# - pom.xml
+# - package.json
+# - vite.config.ts
+# - tsconfig.json
+# - application.yml
+# - application-*.yml
+#
+# 脚本文件（保留）
+# - scripts/
+#
+# 数据库初始化脚本（保留）
+# - SVT-Server/src/main/resources/db/
