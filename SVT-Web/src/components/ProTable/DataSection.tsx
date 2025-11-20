@@ -150,7 +150,13 @@ const DataSection: React.FC<DataSectionProps> = ({
                     display: 'flex',
                     flexDirection: 'column'
                 }}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                    borderRadius: token.borderRadiusLG,
+                }}
             >
                 {/* 工具栏 */}
                 <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -199,19 +205,31 @@ const DataSection: React.FC<DataSectionProps> = ({
                     </Space>
                 </div>
 
-                {/* 表格区域 (自适应高度) */}
-                <div style={{ flex: 1, overflow: 'hidden' }} ref={tableWrapperRef}>
-                    <Table
-                        columns={visibleColumns}
-                        dataSource={dataSource}
-                        rowKey={rowKey}
-                        loading={loading}
-                        scroll={{ y: scrollY }}
-                        pagination={false}
-                        rowSelection={rowSelection}
-                        size="middle"
-                        onChange={onChange}
-                    />
+                {/* 表格区域 (固定高度容器，始终显示边框) */}
+                <div
+                    style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        border: `1px solid ${token.colorBorderSecondary}`,
+                        borderRadius: token.borderRadiusLG,
+                    }}
+                    ref={tableWrapperRef}
+                >
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <Table
+                            columns={visibleColumns}
+                            dataSource={dataSource}
+                            rowKey={rowKey}
+                            loading={loading}
+                            scroll={{ x: 'max-content', y: scrollY }}
+                            pagination={false}
+                            rowSelection={rowSelection}
+                            size="middle"
+                            onChange={onChange}
+                        />
+                    </div>
                 </div>
 
                 {/* 独立分页区域 */}
