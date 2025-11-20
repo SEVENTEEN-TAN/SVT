@@ -423,6 +423,95 @@ src/
 
 ---
 
+## 🚀 SchemaPage 快速开发框架
+
+### 简介
+
+**SchemaPage** 是一个基于配置的快速开发框架，专为标准 CRUD 列表页面设计。通过简单的 Schema 配置，即可快速生成包含搜索、表格、表单的完整页面。
+
+### 适用场景
+
+**✅ 推荐使用 SchemaPage**：
+- 标准 CRUD 列表页面（用户管理、商品管理等）
+- 需要搜索、筛选、分页功能的数据表格
+- 需要新增、编辑、删除操作的管理页面
+
+**❌ 不推荐使用 SchemaPage**：
+- 详情页 - 直接使用 `Descriptions` 组件更简单
+- 仪表盘 - 直接使用 `Card` + `Statistic` 更灵活
+- 复杂自定义布局 - 直接使用 Ant Design 组件
+
+### 快速开始
+
+#### 1. 创建 Schema 配置
+
+```typescript
+// pages/Product/schema.ts
+import type { PageSchema } from '@/components/ProTable/types';
+
+export const productSchema: PageSchema = {
+  title: '商品管理',
+  
+  api: {
+    listApi: (params) => request.post('/api/product/list', params),
+    createApi: (data) => request.post('/api/product/create', data),
+    updateApi: (data) => request.post('/api/product/update', data),
+    deleteApi: (id) => request.post('/api/product/delete', { id }),
+  },
+  
+  table: {
+    columns: [
+      {
+        title: '商品名称',
+        dataIndex: 'name',
+        valueType: 'input',
+        hideInSearch: false,  // 显示在搜索栏
+        formRules: [{ required: true, message: '请输入商品名称' }],
+      },
+      {
+        title: '分类',
+        dataIndex: 'category',
+        valueType: 'select',
+        hideInSearch: false,
+        options: [
+          { label: '电子产品', value: '电子产品' },
+          { label: '家居用品', value: '家居用品' },
+        ],
+      },
+    ],
+  },
+};
+```
+
+#### 2. 使用 SchemaPage 组件
+
+```typescript
+// pages/Product/index.tsx
+import { SchemaPage } from '@/components/SchemaPage';
+import { productSchema } from './schema';
+
+const ProductPage = () => {
+  return <SchemaPage schema={productSchema} />;
+};
+
+export default ProductPage;
+```
+
+### 核心特性
+
+- **统一配置**: 一个 `columns` 配置同时控制搜索、表格、表单
+- **自定义按钮**: 完全自定义工具栏和行操作按钮
+- **类型安全**: 完整的 TypeScript 类型支持
+- **开箱即用**: 内置搜索、分页、排序、列设置、全屏等功能
+
+### 详细文档
+
+完整的使用指南和 API 文档请查看：[SchemaPage 文档](docs/SchemaPage.md)
+
+**示例页面**: 访问 `/demo/schema-page` 查看完整示例
+
+---
+
 ## 🔨 开发指南
 
 ### 1. 创建新页面
