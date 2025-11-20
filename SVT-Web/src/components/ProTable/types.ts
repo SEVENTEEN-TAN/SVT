@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ColumnType } from 'antd/es/table';
 import type { Rule as FormRule } from 'antd/es/form';
+import type { PermissionEnum } from '@/constants/permissions';
 
 // ==================== API Configuration ====================
 
@@ -105,6 +106,8 @@ export interface PageSchema {
             needSelection?: boolean;
             /** 是否显示 */
             visible?: boolean;
+            /** 权限标识 (如果设置,则只有拥有该权限的用户才能看到此按钮) */
+            permission?: PermissionEnum;
         }>;
     };
     /** 行操作按钮配置 */
@@ -119,6 +122,8 @@ export interface PageSchema {
             visible?: boolean | ((record: any) => boolean);
             /** 按钮样式 */
             style?: React.CSSProperties;
+            /** 权限标识 (如果设置,则只有拥有该权限的用户才能看到此按钮) */
+            permission?: PermissionEnum;
         }>;
         /** 操作列宽度 */
         width?: number;
