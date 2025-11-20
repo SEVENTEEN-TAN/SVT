@@ -2,6 +2,7 @@ import type { PageSchema } from '@/components/ProTable/types';
 import roleApi from '@/api/system/roleApi';
 import { message, Modal, Tag } from 'antd';
 import React from 'react';
+import { PermissionEnum } from '@/constants/permissions';
 
 export const roleSchema: PageSchema = {
     title: '角色管理',
@@ -134,18 +135,20 @@ export const roleSchema: PageSchema = {
         ],
     },
 
-    // 工具栏按钮
+    // 工具栏按钮 (🔑 添加权限控制)
     toolbar: {
         buttons: [
             {
                 text: '新增角色',
                 type: 'primary',
+                permission: PermissionEnum.ROLE_ADD, // 🔑 新增权限
                 onClick: async () => {
                     console.log('新增角色');
                 },
             },
             {
                 text: '批量启用',
+                permission: PermissionEnum.ROLE_EDIT, // 🔑 修改权限
                 onClick: async (selectedRowKeys) => {
                     if (selectedRowKeys.length === 0) {
                         message.warning('请先选择要启用的角色');
@@ -169,6 +172,7 @@ export const roleSchema: PageSchema = {
             },
             {
                 text: '批量停用',
+                permission: PermissionEnum.ROLE_EDIT, // 🔑 修改权限
                 onClick: async (selectedRowKeys) => {
                     if (selectedRowKeys.length === 0) {
                         message.warning('请先选择要停用的角色');
@@ -192,6 +196,7 @@ export const roleSchema: PageSchema = {
             },
             {
                 text: '批量删除',
+                permission: PermissionEnum.ROLE_DELETE, // 🔑 删除权限
                 onClick: async (selectedRowKeys) => {
                     if (selectedRowKeys.length === 0) {
                         message.warning('请先选择要删除的角色');
@@ -216,23 +221,26 @@ export const roleSchema: PageSchema = {
         ],
     },
 
-    // 行操作按钮
+    // 行操作按钮 (🔑 添加权限控制)
     rowActions: {
         buttons: [
             {
                 text: '查看',
+                permission: PermissionEnum.ROLE_QUERY, // 🔑 查询权限
                 onClick: (record) => {
                     console.log('查看角色:', record);
                 },
             },
             {
                 text: '编辑',
+                permission: PermissionEnum.ROLE_EDIT, // 🔑 修改权限
                 onClick: (record) => {
                     console.log('编辑角色:', record);
                 },
             },
             {
                 text: '删除',
+                permission: PermissionEnum.ROLE_DELETE, // 🔑 删除权限
                 onClick: (record) => {
                     Modal.confirm({
                         title: '确认删除',
@@ -250,21 +258,7 @@ export const roleSchema: PageSchema = {
                 },
                 style: { color: '#ff4d4f' },
             },
-            {
-                text: '分配用户',
-                onClick: (record) => {
-                    message.info('分配用户功能待实现');
-                    console.log('分配用户:', record);
-                },
-            },
-            {
-                text: '分配权限',
-                onClick: (record) => {
-                    message.info('分配权限功能待实现');
-                    console.log('分配权限:', record);
-                },
-            },
         ],
-        width: 280,
+        width: 200,
     },
 };

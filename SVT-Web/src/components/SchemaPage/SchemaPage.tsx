@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { message, Modal } from 'antd';
 import { SearchSection, DataSection, ActionDrawer } from '@/components/ProTable';
 import type { PageSchema, TableColumn } from '@/components/ProTable/types';
+import { useFilteredRowActions, useFilteredToolbarButtons } from '@/utils/permissionUtils';
 
 interface SchemaPageProps {
     schema: PageSchema;
@@ -204,10 +205,14 @@ const SchemaPage: React.FC<SchemaPageProps> = ({ schema }) => {
         }] : []),
     ];
 
-    // 注入操作列
-    const columns: TableColumn[] = [
+    // 🔑 根据权限过滤行操作按钮
+    const filteredRowActionButtons = useFilteredRowActions(rowActionButtons);
+
+    // 注入操作列 (使用过滤后的按钮)
+    const columns: TableColumn[] = useMemo(() => [
         ...schema.table.columns.filter(col => !col.hideInTable),
-        ...(rowActionButtons.length > 0 ? [{
+        // 🔑 只有当有权限的按钮时才显示操作列
+        ...(filteredRowActionButtons.length > 0 ? [{
             title: '操作',
             key: 'action',
             dataIndex: 'action',
@@ -215,7 +220,7 @@ const SchemaPage: React.FC<SchemaPageProps> = ({ schema }) => {
             fixed: 'right' as const,
             render: (_: any, record: any) => (
                 <div style={{ display: 'flex', gap: 8 }}>
-                    {rowActionButtons.map((btn, index) => {
+                    {filteredRowActionButtons.map((btn, index) => {
                         const isVisible = typeof btn.visible === 'function'
                             ? btn.visible(record)
                             : btn.visible !== false;
@@ -235,7 +240,7 @@ const SchemaPage: React.FC<SchemaPageProps> = ({ schema }) => {
                 </div>
             ),
         }] : []),
-    ];
+    ], [schema.table.columns, schema.rowActions?.width, schema.table.actionWidth, filteredRowActionButtons]);
 
     // 生成搜索字段
     const searchFields = schema.table.columns
@@ -273,6 +278,9 @@ const SchemaPage: React.FC<SchemaPageProps> = ({ schema }) => {
         },
     ];
 
+    // 🔑 根据权限过滤工具栏按钮
+    const filteredToolbarButtons = useFilteredToolbarButtons(toolbarButtons);
+
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '16px' }}>
             {searchFields.length > 0 && (
@@ -293,7 +301,7 @@ const SchemaPage: React.FC<SchemaPageProps> = ({ schema }) => {
                     ...pagination,
                     onChange: handlePageChange,
                 }}
-                toolbarButtons={toolbarButtons}
+                toolbarButtons={filteredToolbarButtons}
                 selectedRowKeys={selectedRowKeys}
                 selectedRows={dataSource.filter(item =>
                     selectedRowKeys.includes(item[schema.table.rowKey || 'id'])
