@@ -277,23 +277,61 @@ npm run dev
 
 ---
 
-## 📖 架构文档
+## 📖 文档导航
 
-我们提供了完整的架构文档，帮助您快速理解系统设计和实现细节。
+我们提供了完整的文档体系，帮助您快速理解系统设计和实现细节。
 
-### 📚 主要文档
+### 📚 架构文档
 
 | 文档 | 说明 | 适合人群 |
 |------|------|----------|
-| **[完整架构文档](docs/architecture.md)** | 11章节完整系统架构（1471行） | 架构师、技术负责人 |
-| **[技术栈文档](docs/architecture/tech-stack.md)** | 技术选型和版本说明（600行） | 所有开发人员 |
-| **[编码标准文档](docs/architecture/coding-standards.md)** | Java和TypeScript编码规范（1104行） | 所有开发人员 |
-| **[源码树文档](docs/architecture/source-tree.md)** | 完整源码结构导航（719行） | 新团队成员 |
+| **[架构概述](docs/architecture/overview.md)** | 11章节完整系统架构（1471行） | 架构师、技术负责人 |
+| **[技术栈](docs/architecture/tech-stack.md)** | 技术选型和版本说明（600行） | 所有开发人员 |
+| **[编码规范](docs/architecture/coding-standards.md)** | Java和TypeScript编码规范（1104行） | 所有开发人员 |
+| **[源码结构](docs/architecture/source-tree.md)** | 完整源码结构导航（719行） | 新团队成员 |
+
+### 🔧 后端文档
+
+**[后端文档导航](docs/backend/README.md)**
+
+#### 安全与认证
+- [认证与安全](docs/backend/Authentication-and-Security.md) - JWT认证和安全机制
+- [API加密](docs/backend/API-Encryption-AES.md) - AES-256端到端加密
+- [密码哈希](docs/backend/Argon2-Password-Hashing.md) - Argon2密码存储
+- [配置加密](docs/backend/SM4-Configuration-Encryption.md) - SM4国密算法
+
+#### 核心功能
+- [审计日志](docs/backend/Audit-Logging.md) - 完整的操作审计
+- [事务管理](docs/backend/Automated-Transaction-Management.md) - 自动化事务处理
+- [分布式ID](docs/backend/Distributed-ID-Generation.md) - 分布式ID生成策略
+
+### 🎨 前端文档
+
+**[前端文档导航](docs/frontend/README.md)**
+
+#### 架构设计
+- [模块化架构](docs/frontend/Modular-Architecture.md) - 前端架构设计
+- [组件结构](docs/frontend/Component-Structure.md) - 组件组织方式
+- [状态管理](docs/frontend/State-Management.md) - Zustand状态管理
+
+#### 核心功能
+- [权限控制](docs/frontend/PERMISSION_CONTROL_GUIDE.md) - 权限系统设计
+- [Tab系统](docs/frontend/Tab-System-Design.md) - 多Tab管理
+- [SchemaPage](docs/frontend/SchemaPage.md) - 动态页面组件
+
+#### 系统特性
+- [响应式布局](docs/frontend/Responsive-Layout-System.md) - 响应式设计
+- [存储管理](docs/frontend/Storage-Management.md) - 本地存储策略
+
+#### 开发指南
+- [开发指南](docs/frontend/开发指南.md) - 开发规范和最佳实践
+- [环境变量](docs/frontend/环境变量配置说明.md) - 环境配置说明
+- [Schema配置](docs/frontend/Schema配置规范.md) - Schema配置规范
 
 ### 📑 文档导航
 
 **新人入门推荐阅读顺序**:
-1. `docs/architecture.md` (第一章：项目概述)
+1. `docs/architecture/overview.md` (第一章：项目概述)
 2. `docs/architecture/tech-stack.md` (第一、二、三章)
 3. `docs/architecture/source-tree.md` (完整阅读)
 4. `docs/architecture/coding-standards.md` (根据技术栈选择章节)
@@ -301,16 +339,16 @@ npm run dev
 **开发人员推荐阅读**:
 1. `docs/architecture/coding-standards.md` (第二、三章：后端/前端规范)
 2. `docs/architecture/source-tree.md` (第七、八章：关键路径)
-3. `docs/architecture.md` (第三、四章：后端/前端架构)
+3. `docs/architecture/overview.md` (第三、四章：后端/前端架构)
 
 **架构设计推荐阅读**:
-1. `docs/architecture.md` (完整阅读11章节)
+1. `docs/architecture/overview.md` (完整阅读11章节)
 2. `docs/architecture/tech-stack.md` (第八、九章：技术选型原则)
-3. `docs/architecture.md` (第九、十章：技术债务和未来规划)
+3. `docs/architecture/overview.md` (第九、十章：技术债务和未来规划)
 
 ### 🔍 关键架构亮点
 
-详见 `docs/architecture.md`:
+详见 `docs/architecture/overview.md`:
 
 - **后端架构** (第三章): JWT九步验证、数据库分布式锁、分布式ID生成、AOP切面
 - **前端架构** (第四章): 模块化Layout系统、智能Tab管理、O(1)权限检查、动态路由
