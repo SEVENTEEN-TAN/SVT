@@ -1,6 +1,6 @@
 # SVT-Server 后端服务
 
-基于 **Spring Boot 3.5.7 + Java 21 + MyBatis-Flex** 构建的企业级风险管理系统后端服务，采用分层模块化架构，提供完整的用户权限管理、API数据加密、SM4配置加密、数据库分布式锁、审计日志、分布式ID生成等核心功能。
+基于 **Spring Boot 3.5.7 + Java 21 + MyBatis-Flex** 构建的企业级管理系统后端服务，采用分层模块化架构，提供完整的用户权限管理、API数据加密、SM4配置加密、数据库分布式锁、审计日志、分布式ID生成等核心功能。
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.7-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/)
